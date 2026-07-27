@@ -12,8 +12,8 @@
         <flux:sidebar sticky stashable class="navigation-typeface w-72 border-r border-zinc-300 bg-zinc-50/95 shadow-[0_0_0_1px_rgba(0,0,0,0.03)] dark:border-zinc-700 dark:bg-zinc-900 lg:w-80">
             <flux:sidebar.toggle class="lg:hidden" icon="x-mark" />
 
-            <a href="{{ route('dashboard') }}" class="flex w-full items-center justify-center px-4 py-2" wire:navigate>
-                <x-app-logo class="size-8" href="#"></x-app-logo>
+            <a href="{{ route('dashboard') }}" class="flex min-h-40 w-full items-center justify-center px-3 py-3" wire:navigate>
+                <x-app-logo />
             </a>
 
             <flux:navlist variant="outline" class="px-2">
