@@ -228,7 +228,6 @@
     </section>
 
     @push('scripts')
-        <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
         <script>
             document.addEventListener('DOMContentLoaded', () => {
                 const searchInput = document.getElementById('facility-search');

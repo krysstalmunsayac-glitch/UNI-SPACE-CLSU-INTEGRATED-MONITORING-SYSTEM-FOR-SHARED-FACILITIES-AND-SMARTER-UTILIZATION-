@@ -484,7 +484,6 @@
     </section>
 
     @push('scripts')
-        <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
         <script>
             window.initUserDashboard = window.initUserDashboard || function () {
                 const searchInput = document.getElementById('facility-search');
