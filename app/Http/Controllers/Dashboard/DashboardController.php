@@ -48,7 +48,7 @@ class DashboardController extends Controller
                 ->get(),
             'mapFacilities' => Facilities::query()
                 ->orderBy('Facility_Name')
-                ->get(['FID', 'Facility_Name', 'Location', 'Description', 'Status']),
+                ->get(['FID', 'Facility_Name', 'Location', 'Latitude', 'Longitude', 'Description', 'Status']),
             'events' => Events::query()->where('Status', 'Upcoming')->orderBy('Event_Title')->get(),
             'requests' => $userRequests,
             'requestSort' => $requestSort,

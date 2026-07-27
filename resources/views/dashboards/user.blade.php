@@ -556,6 +556,18 @@
                     };
                     const locateFacilities = async () => {
                         for (const facility of facilities) {
+                            const savedLatitude = Number(facility.Latitude);
+                            const savedLongitude = Number(facility.Longitude);
+                            if (
+                                Number.isFinite(savedLatitude)
+                                && Number.isFinite(savedLongitude)
+                                && savedLatitude !== 0
+                                && savedLongitude !== 0
+                            ) {
+                                addFacilityMarker(facility, [savedLatitude, savedLongitude]);
+                                continue;
+                            }
+
                             const cacheKey = `clsu-facility-map-${facility.FID}-${facility.Location || ''}`;
                             const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
 

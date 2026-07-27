@@ -28,6 +28,8 @@ class Facilities extends Model
         'Office',
         'Description',
         'Location',
+        'Latitude',
+        'Longitude',
         'Capacity',
         'Status',
     ];
@@ -35,6 +37,8 @@ class Facilities extends Model
     protected $casts = [
         'Price' => 'float',
         'Capacity' => 'integer',
+        'Latitude' => 'float',
+        'Longitude' => 'float',
     ];
 
     public function primaryImageUrl(): string

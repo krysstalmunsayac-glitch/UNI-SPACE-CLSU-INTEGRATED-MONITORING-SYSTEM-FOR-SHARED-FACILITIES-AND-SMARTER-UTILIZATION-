@@ -52,7 +52,7 @@ class HomeController extends Controller
                 ->get(),
             'mapFacilities' => Facilities::query()
                 ->orderBy('Facility_Name')
-                ->get(['FID', 'Facility_Name', 'Location', 'Description', 'Status']),
+                ->get(['FID', 'Facility_Name', 'Location', 'Latitude', 'Longitude', 'Description', 'Status']),
             'schedules' => $schedules->values()->all(),
         ]);
     }

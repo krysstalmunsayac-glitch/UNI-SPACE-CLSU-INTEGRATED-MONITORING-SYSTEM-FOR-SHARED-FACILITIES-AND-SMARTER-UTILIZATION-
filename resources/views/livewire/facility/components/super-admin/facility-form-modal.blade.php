@@ -29,6 +29,43 @@
             @error('Location') <span class="text-sm text-red-600">{{ $message }}</span> @enderror
         </div>
 
+        <div
+            x-data="facilityLocationPicker($wire)"
+            x-effect="$wire.showModal && openPicker()"
+            class="space-y-3"
+        >
+            <div class="flex items-end justify-between gap-3">
+                <div>
+                    <p class="text-sm font-semibold text-zinc-900 dark:text-white">Exact map pin</p>
+                    <p class="text-xs text-zinc-500 dark:text-zinc-400">Search the saved location, then click or drag the marker to the exact building.</p>
+                </div>
+                <button
+                    type="button"
+                    x-on:click="findLocation()"
+                    x-bind:disabled="searching"
+                    class="shrink-0 rounded-lg bg-emerald-700 px-3 py-2 text-xs font-bold text-white transition hover:bg-emerald-800 disabled:opacity-50"
+                >
+                    <span x-text="searching ? 'Finding...' : 'Find location'"></span>
+                </button>
+            </div>
+
+            <div x-ref="map" class="h-64 w-full overflow-hidden rounded-xl border border-emerald-900/10 dark:border-white/10"></div>
+
+            <div class="grid gap-3 sm:grid-cols-2">
+                <label class="text-xs font-semibold text-zinc-600 dark:text-zinc-300">
+                    Latitude
+                    <input wire:model="Latitude" readonly class="mt-1 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900" placeholder="Click the map">
+                </label>
+                <label class="text-xs font-semibold text-zinc-600 dark:text-zinc-300">
+                    Longitude
+                    <input wire:model="Longitude" readonly class="mt-1 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900" placeholder="Click the map">
+                </label>
+            </div>
+            <button type="button" x-on:click="clearPin()" class="text-xs font-bold text-red-600 hover:text-red-700">Clear exact pin</button>
+            @error('Latitude') <span class="text-sm text-red-600">{{ $message }}</span> @enderror
+            @error('Longitude') <span class="text-sm text-red-600">{{ $message }}</span> @enderror
+        </div>
+
         <div>
             <flux:select wire:model="facility_type" label="Facility type">
                 <flux:select.option value="">Select type</flux:select.option>

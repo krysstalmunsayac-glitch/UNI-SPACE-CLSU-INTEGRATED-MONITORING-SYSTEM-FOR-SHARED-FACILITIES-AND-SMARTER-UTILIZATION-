@@ -50,6 +50,12 @@ new #[Layout('components.layouts.app')] class extends Component {
     #[Validate('nullable|string|max:255')]
     public ?string $Location = null;
 
+    #[Validate('nullable|numeric|between:-90,90')]
+    public ?float $Latitude = null;
+
+    #[Validate('nullable|numeric|between:-180,180')]
+    public ?float $Longitude = null;
+
     #[Validate('nullable|integer|min:1')]
     public ?int $Capacity = null;
 
@@ -108,6 +114,8 @@ new #[Layout('components.layouts.app')] class extends Component {
             'Office',
             'Description',
             'Location',
+            'Latitude',
+            'Longitude',
             'Capacity',
             'selectedAmenityIds',
         ]);
@@ -135,6 +143,8 @@ new #[Layout('components.layouts.app')] class extends Component {
         $this->Office = $facility->Office;
         $this->Description = $facility->Description;
         $this->Location = $facility->Location;
+        $this->Latitude = $facility->Latitude;
+        $this->Longitude = $facility->Longitude;
         $this->Capacity = $facility->Capacity;
         $this->Status = $facility->Status;
         $this->images = [];
@@ -156,6 +166,8 @@ new #[Layout('components.layouts.app')] class extends Component {
             'Office' => $this->Office,
             'Description' => $this->Description,
             'Location' => $this->Location,
+            'Latitude' => $this->Latitude,
+            'Longitude' => $this->Longitude,
             'Capacity' => $this->Capacity,
             'Status' => $this->Status,
         ];
