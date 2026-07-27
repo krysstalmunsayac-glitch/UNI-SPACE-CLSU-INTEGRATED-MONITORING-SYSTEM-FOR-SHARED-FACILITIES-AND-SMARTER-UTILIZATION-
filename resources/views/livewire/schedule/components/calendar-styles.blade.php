@@ -1,4 +1,45 @@
 <style>
+    .admin-booking-calendar {
+        display: grid;
+        grid-template-columns: 220px minmax(0, 1fr);
+        border-radius: 1rem;
+    }
+
+    .admin-booking-sidebar {
+        border-right: 1px solid rgb(209 250 229);
+        background: rgb(236 253 245);
+        padding: 1.25rem;
+    }
+
+    .admin-booking-date-card {
+        margin-bottom: 1.25rem;
+        border: 1px solid rgb(209 250 229);
+        border-radius: 0.875rem;
+        background: #fff;
+        padding: 1.25rem;
+        text-align: center;
+        box-shadow: 0 10px 25px rgba(6, 78, 59, 0.06);
+    }
+
+    .admin-calendar-control {
+        width: 100%;
+        border: 1px solid rgb(209 250 229);
+        border-radius: 0.625rem;
+        background: #fff;
+        padding: 0.7rem 0.8rem;
+        color: rgb(6 78 59);
+        font-size: 0.8125rem;
+        font-weight: 700;
+        transition: 150ms ease;
+    }
+
+    .admin-calendar-control:hover,
+    .admin-calendar-control.is-active {
+        border-color: rgb(5 150 105);
+        background: rgb(6 95 70);
+        color: #fff;
+    }
+
     #fc-calendar .fc {
         --fc-border-color: rgb(229 231 235);
         --fc-page-bg-color: transparent;
@@ -149,6 +190,43 @@
 
     .dark #fc-calendar .fc-event {
         box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+    }
+
+    .dark .admin-booking-sidebar {
+        border-color: rgb(63 63 70);
+        background: rgb(24 24 27);
+    }
+
+    .dark .admin-booking-date-card,
+    .dark .admin-calendar-control {
+        border-color: rgb(63 63 70);
+        background: rgb(9 9 11);
+    }
+
+    .dark .admin-calendar-control {
+        color: rgb(167 243 208);
+    }
+
+    .dark .admin-calendar-control:hover,
+    .dark .admin-calendar-control.is-active {
+        border-color: rgb(52 211 153);
+        background: rgb(6 95 70);
+        color: #fff;
+    }
+
+    @media (max-width: 900px) {
+        .admin-booking-calendar {
+            grid-template-columns: 1fr;
+        }
+
+        .admin-booking-sidebar {
+            border-right: 0;
+            border-bottom: 1px solid rgb(209 250 229);
+        }
+
+        .dark .admin-booking-sidebar {
+            border-bottom-color: rgb(63 63 70);
+        }
     }
 
     @media (max-width: 640px) {

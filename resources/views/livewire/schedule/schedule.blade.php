@@ -408,7 +408,6 @@ new #[Layout('components.layouts.app')] class extends Component {
 >
     @include('schedule.components.calendar-assets')
     @include('schedule.components.page-header')
-    @include('schedule.components.view-toggle')
     @include('schedule.components.calendar')
     @include('schedule.components.archived-schedules-modal')
     @include('schedule.components.schedule-form-modal')
