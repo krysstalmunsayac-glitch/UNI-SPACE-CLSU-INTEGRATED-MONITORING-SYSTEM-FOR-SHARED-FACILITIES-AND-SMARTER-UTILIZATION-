@@ -54,10 +54,11 @@
     [data-flux-navlist-item] {
         font-family: 'Barlow Condensed', sans-serif !important;
         font-weight: 800 !important;
-        font-size: 17px !important;
+        font-size: 19px !important;
         letter-spacing: 0.8px;
         text-transform: uppercase;
         color: rgba(255, 255, 255, 0.9) !important;
+        min-height: 44px;
     }
 
     [data-flux-navlist-group] > div:first-child,
@@ -67,6 +68,7 @@
         color: #ffffff !important;
         font-family: 'Barlow Condensed', sans-serif !important;
         font-weight: 800 !important;
+        font-size: 15px !important;
         letter-spacing: 0.8px;
         text-transform: uppercase;
     }
