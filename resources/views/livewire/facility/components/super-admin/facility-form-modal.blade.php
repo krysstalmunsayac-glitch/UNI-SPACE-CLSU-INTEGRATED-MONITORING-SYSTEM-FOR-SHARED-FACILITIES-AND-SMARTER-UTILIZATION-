@@ -29,11 +29,12 @@
             @error('Location') <span class="text-sm text-red-600">{{ $message }}</span> @enderror
         </div>
 
-        <div
-            x-data="facilityLocationPicker($wire)"
-            x-effect="$wire.showModal && openPicker()"
-            class="space-y-3"
-        >
+        @if (auth()->user()?->isSuperAdmin())
+            <div
+                x-data="facilityLocationPicker($wire)"
+                x-effect="$wire.showModal && openPicker()"
+                class="space-y-3"
+            >
             <div class="flex items-end justify-between gap-3">
                 <div>
                     <p class="text-sm font-semibold text-zinc-900 dark:text-white">Exact map pin</p>
@@ -64,7 +65,8 @@
             <button type="button" x-on:click="clearPin()" class="text-xs font-bold text-red-600 hover:text-red-700">Clear exact pin</button>
             @error('Latitude') <span class="text-sm text-red-600">{{ $message }}</span> @enderror
             @error('Longitude') <span class="text-sm text-red-600">{{ $message }}</span> @enderror
-        </div>
+            </div>
+        @endif
 
         <div>
             <flux:select wire:model="facility_type" label="Facility type">
