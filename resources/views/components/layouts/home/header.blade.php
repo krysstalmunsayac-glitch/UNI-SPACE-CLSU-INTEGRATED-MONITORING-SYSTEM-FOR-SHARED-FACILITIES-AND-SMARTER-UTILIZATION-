@@ -4,9 +4,9 @@
     @include('partials.head')
 </head>
 
-<body class="min-h-screen bg-white font-sans text-[#14532d] antialiased dark:bg-zinc-950 dark:text-zinc-100">
+<body class="min-h-screen bg-white font-sans text-[#1e6031] antialiased dark:bg-zinc-950 dark:text-zinc-100">
     @php
-        $navLink = 'border-b-2 border-transparent py-7 transition hover:border-emerald-700 hover:text-emerald-700 dark:hover:border-emerald-300 dark:hover:text-emerald-300';
+        $navLink = 'border-b-2 border-transparent py-5 transition hover:border-emerald-700 hover:text-emerald-700 dark:hover:border-emerald-300 dark:hover:text-emerald-300';
         $navActive = 'border-emerald-700 text-emerald-700 dark:border-emerald-300 dark:text-emerald-300';
         $mobileNavLink = 'transition hover:text-emerald-700 dark:hover:text-emerald-300';
         $mobileNavActive = 'text-emerald-700 dark:text-emerald-300';
@@ -15,14 +15,12 @@
     @endphp
 
     <header class="sticky top-0 z-[2000] border-b border-emerald-900/10 bg-white/95 backdrop-blur dark:border-white/10 dark:bg-zinc-950/95">
-        <div class="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-            <a href="{{ route('home') }}" class="flex items-center gap-3" aria-label="UNI Space home">
-                <img src="{{ asset('images/Logo_Black.png') }}" alt="CLSU" class="h-12 w-auto object-contain dark:hidden">
-                <img src="{{ asset('images/Logo_white.png') }}" alt="CLSU" class="hidden h-12 w-auto object-contain dark:block">
-                <img src="{{ asset('images/uni-space-logo.png') }}" alt="UNI Space" class="h-20 w-auto rounded-md object-contain">
+        <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+            <a href="{{ route('home') }}" class="flex h-14 w-44 shrink-0 items-center overflow-hidden" aria-label="UNI Space home">
+                <img src="{{ asset('images/uni-space-logo.png') }}" alt="UNI Space" class="h-14 w-44 object-cover object-center">
             </a>
 
-            <nav class="navigation-typeface hidden items-center gap-8 text-base font-semibold text-emerald-950 dark:text-zinc-100 lg:flex">
+            <nav class="navigation-typeface hidden items-center gap-6 text-sm font-semibold text-emerald-950 dark:text-zinc-100 lg:flex">
                 @auth
                     @if ($isEndUser)
                         <a href="{{ route('home') }}" @class([$navLink, $navActive => request()->routeIs('home')])>Home</a>
@@ -196,5 +194,6 @@
 
     @fluxScripts
     @stack('scripts')
+    @include('partials.site-auto-refresh')
 </body>
 </html>

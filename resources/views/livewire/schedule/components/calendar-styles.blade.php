@@ -2,7 +2,17 @@
     .admin-booking-calendar {
         display: grid;
         grid-template-columns: 220px minmax(0, 1fr);
+        width: 100%;
+        max-width: 100%;
         border-radius: 1rem;
+    }
+
+    #fc-calendar,
+    #fc-calendar .fc,
+    #fc-calendar .fc-view-harness,
+    #fc-calendar .fc-view-harness-active {
+        min-width: 0;
+        max-width: 100%;
     }
 
     .admin-booking-sidebar {

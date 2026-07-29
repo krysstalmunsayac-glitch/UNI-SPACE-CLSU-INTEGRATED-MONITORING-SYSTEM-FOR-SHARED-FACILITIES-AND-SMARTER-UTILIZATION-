@@ -2,23 +2,14 @@
         <div class="mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <flux:heading size="lg">Requests</flux:heading>
             <div class="flex w-full flex-wrap items-center gap-2 xl:w-auto xl:justify-end">
-                <div class="flex shrink-0 gap-2">
-                    <a href="{{ route('exports.requests.csv') }}" download class="inline-flex items-center justify-center rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-800 transition hover:border-emerald-600 hover:bg-emerald-50 hover:text-emerald-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-emerald-400 dark:hover:bg-emerald-500/15">
-                        Download CSV
-                    </a>
-
-                    <a href="{{ route('exports.requests.pdf') }}" download class="inline-flex items-center justify-center rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-800 transition hover:border-emerald-600 hover:bg-emerald-50 hover:text-emerald-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-emerald-400 dark:hover:bg-emerald-500/15">
-                        Download PDF
-                    </a>
-                </div>
-
-                <flux:select
-                    wire:model.live="receivedOrder"
-                    class="min-w-[160px] flex-1 sm:flex-none sm:w-[180px]"
-                >
-                    <flux:select.option value="fifo">Oldest First</flux:select.option>
-                    <flux:select.option value="recent">Newest first</flux:select.option>
-                </flux:select>
+                <flux:dropdown position="bottom" align="end">
+                    <flux:button icon="arrow-down-tray" icon:trailing="chevron-down">Download</flux:button>
+                    <flux:menu>
+                        <flux:menu.item icon="document-text" href="{{ route('exports.requests.csv') }}">CSV</flux:menu.item>
+                        <flux:menu.item icon="table-cells" href="{{ route('exports.requests.xlsx') }}">Excel (.xlsx)</flux:menu.item>
+                        <flux:menu.item icon="document" href="{{ route('exports.requests.pdf') }}">PDF</flux:menu.item>
+                    </flux:menu>
+                </flux:dropdown>
 
                 <flux:select
                     wire:model.live="statusFilter"
@@ -28,25 +19,41 @@
                     <flux:select.option value="Pending">Pending</flux:select.option>
                     <flux:select.option value="Needs Revision">Needs Revision</flux:select.option>
                     <flux:select.option value="Approved">Approved</flux:select.option>
+                    <flux:select.option value="Ended">Event Ended</flux:select.option>
                     <flux:select.option value="Cancelled">Cancelled</flux:select.option>
                     <flux:select.option value="Rejected">Rejected</flux:select.option>
                 </flux:select>
 
-                <flux:button wire:click="openArchivedRecords" icon="archive-box" variant="danger" class="shrink-0">
-                    Archived
-                </flux:button>
             </div>
         </div>
 
         <flux:table :paginate="$this->requests">
             <flux:table.columns>
-                <flux:table.column
-                    sortable
-                    :sorted="$sortBy === 'RID'"
-                    :direction="$sortDirection"
-                    wire:click="sort('RID')"
-                >
-                    Request ID
+                <flux:table.column>
+                    <flux:dropdown position="bottom" align="start">
+                        <button
+                            type="button"
+                            class="inline-flex items-center gap-1.5 font-semibold text-zinc-700 transition hover:text-emerald-700 dark:text-zinc-200 dark:hover:text-emerald-300"
+                            aria-label="Sort requests by Request ID"
+                        >
+                            Request ID
+                            <flux:icon.chevron-down class="size-3.5" />
+                        </button>
+                        <flux:menu>
+                            <flux:menu.item
+                                :icon="$sortBy === 'RID' && $receivedOrder === 'fifo' ? 'check' : null"
+                                wire:click="setRequestIdOrder('fifo')"
+                            >
+                                Oldest first
+                            </flux:menu.item>
+                            <flux:menu.item
+                                :icon="$sortBy === 'RID' && $receivedOrder === 'recent' ? 'check' : null"
+                                wire:click="setRequestIdOrder('recent')"
+                            >
+                                Newest first
+                            </flux:menu.item>
+                        </flux:menu>
+                    </flux:dropdown>
                 </flux:table.column>
 
                 <flux:table.column
@@ -127,12 +134,15 @@
                                     'Approved'  => 'green',
                                     'Rejected'  => 'red',
                                     'Cancelled' => 'amber',
+                                    'Ended'     => 'zinc',
                                     'Pending' => $request->Review_Requested_At ? 'amber' : 'blue',
                                     default     => 'blue',
                                 }"
                                 inset="top bottom"
                             >
-                                {{ $request->Review_Requested_At && $request->Status === 'Pending' ? 'Needs Revision' : $request->Status }}
+                                {{ $request->Review_Requested_At && $request->Status === 'Pending'
+                                    ? 'Needs Revision'
+                                    : ($request->Status === 'Ended' ? 'Event Ended' : $request->Status) }}
                             </flux:badge>
                         </flux:table.cell>
 
@@ -147,7 +157,7 @@
                                     >
                                         View
                                     </flux:menu.item>
-                                    @if (! in_array($request->Status, ['Approved', 'Cancelled'], true))
+                                    @if (! in_array($request->Status, ['Approved', 'Cancelled', 'Ended'], true))
                                         <flux:menu.item
                                             icon="document-magnifying-glass"
                                             class="text-amber-700 dark:text-amber-300"
@@ -156,7 +166,7 @@
                                             Review
                                         </flux:menu.item>
                                     @endif
-                                    @if (! in_array($request->Status, ['Approved', 'Cancelled'], true))
+                                    @if (! in_array($request->Status, ['Approved', 'Cancelled', 'Ended'], true))
                                         <flux:menu.separator />
                                         <flux:menu.item
                                             icon="check"
@@ -167,7 +177,7 @@
                                             Approve
                                         </flux:menu.item>
                                     @endif
-                                    @if ($request->Status !== 'Cancelled')
+                                    @if (! in_array($request->Status, ['Cancelled', 'Ended'], true))
                                         @if (in_array($request->Status, ['Approved'], true))
                                             <flux:menu.separator />
                                         @endif

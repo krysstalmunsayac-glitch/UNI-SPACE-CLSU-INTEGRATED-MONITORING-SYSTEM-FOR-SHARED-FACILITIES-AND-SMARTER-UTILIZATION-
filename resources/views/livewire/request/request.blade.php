@@ -22,6 +22,11 @@ new #[Layout('components.layouts.app')] class extends Component {
     public bool $showModal = false;
     public bool $showViewModal = false;
     public bool $showArchivedModal = false;
+
+    public function mount(): void
+    {
+        $this->showArchivedModal = request()->boolean('archive');
+    }
     public bool $showRejectModal = false;
     public bool $showReviewModal = false;
     public ?int $rejectingId = null;
@@ -31,7 +36,7 @@ new #[Layout('components.layouts.app')] class extends Component {
     public string $otherRejectionReason = '';
     public string $searchInput = '';
     public string $search = '';
-    public $sortBy = 'Created_at';
+    public $sortBy = 'RID';
     public $sortDirection = 'asc';
     public string $receivedOrder = 'fifo';
     public string $statusFilter = '';
@@ -55,10 +60,10 @@ new #[Layout('components.layouts.app')] class extends Component {
     #[Validate('required|in:Pending,Approved,Rejected,Cancelled')]
     public string $Status = 'Pending';
 
-    #[Validate('required|string')]
+    #[Validate('required|string|min:5|max:1000')]
     public string $Purpose = '';
 
-    #[Validate('nullable|integer|min:1')]
+    #[Validate('nullable|integer|min:1|max:100000')]
     public ?int $Capacity = null;
 
     public ?string $Event_Title = null;
@@ -69,25 +74,35 @@ new #[Layout('components.layouts.app')] class extends Component {
 
     public function updatingSearch(): void
     {
-        $this->resetPage();
+        $this->resetPage('requestsPage');
     }
 
     public function applySearch(): void
     {
         $this->search = trim($this->searchInput);
-        $this->resetPage();
+        $this->resetPage('requestsPage');
     }
 
     public function updatedReceivedOrder(): void
     {
-        $this->sortBy = 'Created_at';
+        $this->sortBy = 'RID';
         $this->sortDirection = $this->receivedOrder === 'recent' ? 'desc' : 'asc';
-        $this->resetPage();
+        $this->resetPage('requestsPage');
+    }
+
+    public function setRequestIdOrder(string $order): void
+    {
+        if (! in_array($order, ['fifo', 'recent'], true)) {
+            return;
+        }
+
+        $this->receivedOrder = $order;
+        $this->updatedReceivedOrder();
     }
 
     public function updatedStatusFilter(): void
     {
-        $this->resetPage();
+        $this->resetPage('requestsPage');
     }
 
     public function updatedArchiveStatusFilter(): void
@@ -175,7 +190,7 @@ new #[Layout('components.layouts.app')] class extends Component {
     {
         $request = $this->getScopedRequest($requestId)->load(['facility', 'user']);
 
-        if (in_array($request->Status, ['Approved', 'Cancelled'], true)) {
+        if (in_array($request->Status, ['Approved', 'Cancelled', 'Ended'], true)) {
             Flux::toast(text: 'This request cannot be approved from its current status.', variant: 'warning');
             return;
         }
@@ -215,8 +230,8 @@ new #[Layout('components.layouts.app')] class extends Component {
     {
         $request = $this->getScopedRequest($requestId);
 
-        if ($request->Status === 'Cancelled') {
-            Flux::toast(text: 'A cancelled request can no longer be rejected.', variant: 'warning');
+        if (in_array($request->Status, ['Cancelled', 'Ended'], true)) {
+            Flux::toast(text: 'This request can no longer be rejected.', variant: 'warning');
             return;
         }
 
@@ -251,7 +266,7 @@ new #[Layout('components.layouts.app')] class extends Component {
         }
 
         $request = $this->getScopedRequest($this->rejectingId);
-        abort_if($request->Status === 'Cancelled', 409);
+        abort_if(in_array($request->Status, ['Cancelled', 'Ended'], true), 409);
 
         $reasons = collect($this->rejectionReasons)
             ->reject(fn (string $reason) => $reason === 'Other')
@@ -285,7 +300,7 @@ new #[Layout('components.layouts.app')] class extends Component {
         $request = $this->getScopedRequest($requestId)
             ->load(['user', 'event', 'facility']);
 
-        if (in_array($request->Status, ['Approved', 'Cancelled'], true)) {
+        if (in_array($request->Status, ['Approved', 'Cancelled', 'Ended'], true)) {
             Flux::toast(text: 'This request can no longer be returned for revision.', variant: 'warning');
             return;
         }
@@ -537,6 +552,8 @@ new #[Layout('components.layouts.app')] class extends Component {
     #[Computed]
     public function requests()
     {
+        Requests::markPastRequestsAsEnded();
+
         return Requests::query()
             ->with(['user', 'facility', 'event'])
             ->when(auth()->user()->isAdmin(), fn ($query) => $query->whereHas('facility.assignedAdmins', fn ($facilityQuery) =>
@@ -556,7 +573,7 @@ new #[Layout('components.layouts.app')] class extends Component {
             )
             ->orderBy($this->sortBy, $this->sortDirection)
             ->orderBy('RID', $this->sortDirection)
-            ->paginate(10);
+            ->paginate(10, pageName: 'requestsPage');
     }
 
     #[Computed]

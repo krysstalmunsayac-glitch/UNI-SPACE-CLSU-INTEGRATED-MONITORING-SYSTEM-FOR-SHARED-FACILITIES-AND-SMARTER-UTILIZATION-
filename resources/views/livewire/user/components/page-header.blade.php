@@ -1,13 +1,18 @@
     {{-- Page header --}}
     <div class="mb-6 flex flex-col items-start gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-            <h1 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
-                User Management
-            </h1>
+        <div class="flex items-center gap-3">
+            <span class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+                <flux:icon.users class="size-6" />
+            </span>
+            <div>
+                <h1 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
+                    User Management
+                </h1>
 
-            <p class="text-gray-600 dark:text-gray-400">
-                Manage Superadmin, Office Admin, and End User accounts.
-            </p>
+                <p class="text-gray-600 dark:text-gray-400">
+                    Manage Superadmin, Office Admin, and End User accounts.
+                </p>
+            </div>
         </div>
 
         {{-- Search --}}
@@ -16,6 +21,7 @@
                 wire:model="searchInput"
                 wire:keydown.enter="applySearch"
                 placeholder="Search by name or email..."
+                icon="magnifying-glass"
                 class="w-full sm:w-[240px]"
             />
 

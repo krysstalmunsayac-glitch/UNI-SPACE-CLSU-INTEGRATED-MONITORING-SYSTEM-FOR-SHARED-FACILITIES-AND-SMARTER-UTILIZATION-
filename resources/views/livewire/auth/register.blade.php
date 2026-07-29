@@ -21,10 +21,12 @@ new #[Layout('components.layouts.auth')] class extends Component {
     public function nextStep(): void
     {
         $this->validate([
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'min:2', 'max:100'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
-            'contact_number' => ['required', 'string', 'min:11', 'max:12', 'regex:/^[0-9]+$/'],
-            'address' => ['required', 'string', 'max:255'],
+            'contact_number' => ['required', 'string', 'regex:'.User::PH_CONTACT_REGEX],
+            'address' => ['required', 'string', 'min:5', 'max:500'],
+        ], [
+            'contact_number.regex' => 'Enter a valid PH mobile number: 09XXXXXXXXX or +639XXXXXXXXX.',
         ]);
 
         $this->step = 2;
@@ -41,7 +43,7 @@ new #[Layout('components.layouts.auth')] class extends Component {
     public function register(): void
     {
         $validated = $this->validate([
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'min:2', 'max:100'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
             'password' => [
                 'required',
@@ -50,11 +52,12 @@ new #[Layout('components.layouts.auth')] class extends Component {
                 Rules\Password::min(8)->numbers(),
                 'regex:/[A-Z]/',
             ],
-            'contact_number' => ['required', 'string', 'min:11', 'max:12', 'regex:/^[0-9]+$/'],
-            'address' => ['required', 'string', 'max:255'],
+            'contact_number' => ['required', 'string', 'regex:'.User::PH_CONTACT_REGEX],
+            'address' => ['required', 'string', 'min:5', 'max:500'],
             'terms' => ['accepted'],
         ], [
             'password.regex' => 'The password must contain at least one capital letter.',
+            'contact_number.regex' => 'Enter a valid PH mobile number: 09XXXXXXXXX or +639XXXXXXXXX.',
         ]);
 
         unset($validated['terms']);
@@ -111,19 +114,19 @@ new #[Layout('components.layouts.auth')] class extends Component {
 
         @if ($step === 1)
             <div class="grid gap-2">
-                <flux:input wire:model="name" id="name" label="{{ __('Name') }}" type="text" name="name" required autofocus autocomplete="name" placeholder="Full name" />
+                <flux:input wire:model="name" id="name" label="{{ __('Name') }}" type="text" name="name" required minlength="2" maxlength="100" autofocus autocomplete="name" placeholder="Full name" />
             </div>
 
             <div class="grid gap-2">
-                <flux:input wire:model="email" id="email" label="{{ __('Email address') }}" type="email" name="email" required autocomplete="email" placeholder="email@example.com" />
+                <flux:input wire:model="email" id="email" label="{{ __('Email address') }}" type="email" name="email" required maxlength="255" autocomplete="email" placeholder="email@example.com" />
             </div>
 
             <div class="grid gap-2">
-                <flux:input wire:model="contact_number" id="contact_number" label="{{ __('Contact Number') }}" type="tel" name="contact_number" required autocomplete="tel" placeholder="09123456789" />
+                <flux:input wire:model="contact_number" id="contact_number" label="{{ __('Contact Number') }}" type="tel" name="contact_number" required minlength="11" maxlength="13" pattern="(?:09[0-9]{9}|\+639[0-9]{9})" title="Use 09XXXXXXXXX or +639XXXXXXXXX." autocomplete="tel" placeholder="09123456789" />
             </div>
 
             <div class="grid gap-2">
-                <flux:input wire:model="address" id="address" label="{{ __('Address') }}" type="text" name="address" required autocomplete="street-address" placeholder="123 Main St, City" />
+                <flux:input wire:model="address" id="address" label="{{ __('Address') }}" type="text" name="address" required minlength="5" maxlength="500" autocomplete="street-address" placeholder="123 Main St, City" />
             </div>
 
             <flux:button type="button" variant="primary" wire:click="nextStep" class="mx-auto w-36 rounded-full bg-emerald-700 py-3 text-xs font-black uppercase tracking-wide text-white hover:bg-emerald-800">

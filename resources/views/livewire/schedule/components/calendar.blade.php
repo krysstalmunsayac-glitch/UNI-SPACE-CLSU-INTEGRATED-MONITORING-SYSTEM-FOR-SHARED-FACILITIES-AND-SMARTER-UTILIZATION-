@@ -1,4 +1,4 @@
-<div class="admin-booking-calendar overflow-hidden border border-emerald-900/10 bg-white shadow-sm dark:border-white/10 dark:bg-zinc-950">
+<div class="admin-booking-calendar min-w-0 max-w-full overflow-hidden border border-emerald-900/10 bg-white shadow-sm dark:border-white/10 dark:bg-zinc-950">
     <aside class="admin-booking-sidebar">
         <div class="admin-booking-date-card">
             <div class="text-sm font-black uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300">
@@ -40,7 +40,7 @@
         </p>
     </aside>
 
-    <section class="min-w-0 p-3 sm:p-5">
+    <section class="min-w-0 max-w-full overflow-hidden p-3 sm:p-5">
         <div
             wire:ignore
             id="fc-calendar"

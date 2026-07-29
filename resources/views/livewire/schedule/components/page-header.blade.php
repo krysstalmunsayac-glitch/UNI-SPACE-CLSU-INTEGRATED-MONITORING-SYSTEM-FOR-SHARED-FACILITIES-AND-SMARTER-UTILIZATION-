@@ -11,13 +11,20 @@
                     {{ $roleLabel }}
                 </div>
 
-                <h1 class="text-3xl font-bold tracking-tight text-gray-950 dark:text-white">
-                    Facility Schedule
-                </h1>
+                <div class="flex items-center gap-3">
+                    <span class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-white text-emerald-700 shadow-sm dark:bg-zinc-950 dark:text-emerald-300">
+                        <flux:icon.calendar-days class="size-6" />
+                    </span>
+                    <div>
+                        <h1 class="text-3xl font-bold tracking-tight text-gray-950 dark:text-white">
+                            Facility Schedule
+                        </h1>
 
-                <p class="mt-1 text-sm text-gray-600 dark:text-zinc-400">
-                    Monitor bookings, block unavailable slots, and keep facility calendars updated.
-                </p>
+                        <p class="mt-1 text-sm text-gray-600 dark:text-zinc-400">
+                            Monitor bookings, block unavailable slots, and keep facility calendars updated.
+                        </p>
+                    </div>
+                </div>
             </div>
 
             <div class="flex flex-col gap-2 sm:flex-row">

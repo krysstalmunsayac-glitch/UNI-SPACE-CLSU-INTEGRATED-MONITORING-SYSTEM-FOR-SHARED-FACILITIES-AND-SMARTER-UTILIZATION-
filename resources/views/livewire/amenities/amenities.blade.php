@@ -15,15 +15,20 @@ new #[Layout('components.layouts.app')] class extends Component {
     public $editingId = null;
     public bool $showModal = false;
     public bool $showArchivedModal = false;
+
+    public function mount(): void
+    {
+        $this->showArchivedModal = request()->boolean('archive');
+    }
     public string $searchInput = '';
     public string $search = '';
     public $sortBy = 'name';
     public $sortDirection = 'asc';
 
-    #[Validate('required|string|max:255')]
+    #[Validate('required|string|min:2|max:100')]
     public string $name = '';
 
-    #[Validate('nullable|string')]
+    #[Validate('nullable|string|max:1000')]
     public ?string $Description = null;
 
     #[Validate('nullable|array')]
@@ -34,13 +39,13 @@ new #[Layout('components.layouts.app')] class extends Component {
 
     public function updatingSearch(): void
     {
-        $this->resetPage();
+        $this->resetPage('amenitiesPage');
     }
 
     public function applySearch(): void
     {
         $this->search = trim($this->searchInput);
-        $this->resetPage();
+        $this->resetPage('amenitiesPage');
     }
 
     public function sort($column): void
@@ -156,6 +161,7 @@ new #[Layout('components.layouts.app')] class extends Component {
 
     public function openArchivedRecords(): void
     {
+        $this->resetPage('archivedAmenitiesPage');
         $this->showArchivedModal = true;
     }
 
@@ -192,7 +198,7 @@ new #[Layout('components.layouts.app')] class extends Component {
         }
 
         return $query->orderBy($this->sortBy, $this->sortDirection)
-            ->paginate(10);
+            ->paginate(10, pageName: 'amenitiesPage');
     }
 
     #[Computed]
@@ -206,7 +212,8 @@ new #[Layout('components.layouts.app')] class extends Component {
             });
         }
 
-        return $query->orderByDesc('deleted_at')->paginate(10);
+        return $query->orderByDesc('deleted_at')
+            ->paginate(10, pageName: 'archivedAmenitiesPage');
     }
 
     #[Computed]

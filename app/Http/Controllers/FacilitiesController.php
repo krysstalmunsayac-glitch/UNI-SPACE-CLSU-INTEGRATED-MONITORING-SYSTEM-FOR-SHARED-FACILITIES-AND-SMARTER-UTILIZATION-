@@ -14,6 +14,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class FacilitiesController extends Controller
 {
@@ -27,6 +28,8 @@ class FacilitiesController extends Controller
 
     public function storeRequest(Request $request, Facilities $facility)
     {
+        $earliestReservationDate = now()->addDays(3)->toDateString();
+
         $validated = $request->validate([
             'Amenity_ID' => ['array', 'nullable'],
             'Amenity_ID.*' => [
@@ -35,17 +38,28 @@ class FacilitiesController extends Controller
                 Rule::exists('amenities', 'AID')->where('Status', 'Available'),
             ],
             'Event_ID' => ['nullable', 'integer', Rule::exists('events', 'EID')],
-            'Event_Title' => ['nullable', 'string', 'max:255'],
-            'Description' => ['nullable', 'string'],
+            'Event_Title' => ['nullable', 'string', 'min:3', 'max:255'],
+            'Description' => ['nullable', 'string', 'min:5', 'max:2000'],
             'Type_Event' => ['nullable', 'string', 'max:100'],
             'Other_Event_Type' => ['nullable', 'required_if:Type_Event,Other', 'string', 'max:100'],
-            'Proposed_Date' => ['required', 'date', 'after_or_equal:today'],
+            'Proposed_Date' => ['required', 'date', 'after_or_equal:'.$earliestReservationDate],
             'Proposed_Start_Time' => ['required', 'date_format:H:i'],
             'Proposed_End_Time' => ['required', 'date_format:H:i', 'after:Proposed_Start_Time'],
-            'Purpose' => ['required', 'string'],
-            'Capacity' => ['nullable', 'integer', 'min:1'],
+            'Purpose' => ['required', 'string', 'min:5', 'max:1000'],
+            'Capacity' => ['nullable', 'integer', 'min:1', 'max:'.($facility->Capacity ?? 100000)],
             'attachment' => ['nullable', 'file', 'mimes:pdf', 'max:5120'],
+        ], [
+            'Proposed_Date.after_or_equal' => 'Reservations must be submitted at least 3 days before the event date.',
         ]);
+
+        $this->validateDailyRequestLimit($validated['Proposed_Date']);
+
+        $this->validateAmenityAvailability(
+            $validated['Amenity_ID'] ?? [],
+            $validated['Proposed_Date'],
+            $validated['Proposed_Start_Time'],
+            $validated['Proposed_End_Time'],
+        );
 
         $attachmentPath = null;
 
@@ -105,18 +119,32 @@ class FacilitiesController extends Controller
             abort(403);
         }
 
+        $earliestReservationDate = now()->addDays(3)->toDateString();
+
         $validated = $request->validate([
-            'Event_Title' => ['nullable', 'string', 'max:255'],
-            'Description' => ['nullable', 'string'],
+            'Event_Title' => ['nullable', 'string', 'min:3', 'max:255'],
+            'Description' => ['nullable', 'string', 'min:5', 'max:2000'],
             'Type_Event' => ['nullable', 'string', 'max:100'],
-            'Proposed_Date' => ['required', 'date', 'after_or_equal:today'],
+            'Proposed_Date' => ['required', 'date', 'after_or_equal:'.$earliestReservationDate],
             'Proposed_Start_Time' => ['required', 'date_format:H:i'],
             'Proposed_End_Time' => ['required', 'date_format:H:i', 'after:Proposed_Start_Time'],
-            'Purpose' => ['required', 'string'],
-            'Capacity' => ['nullable', 'integer', 'min:1'],
+            'Purpose' => ['required', 'string', 'min:5', 'max:1000'],
+            'Capacity' => ['nullable', 'integer', 'min:1', 'max:100000'],
             'Event_Status' => ['nullable', 'string', 'in:Upcoming,Ongoing,Completed,Cancelled'],
             'attachment' => ['nullable', 'file', 'mimes:pdf', 'max:5120'],
+        ], [
+            'Proposed_Date.after_or_equal' => 'Reservations must be scheduled at least 3 days from today.',
         ]);
+
+        $this->validateDailyRequestLimit($validated['Proposed_Date'], $requestModel->RID);
+
+        $this->validateAmenityAvailability(
+            $requestModel->amenities()->pluck('amenities.AID')->all(),
+            $validated['Proposed_Date'],
+            $validated['Proposed_Start_Time'],
+            $validated['Proposed_End_Time'],
+            $requestModel->RID,
+        );
 
         $attachmentPath = $requestModel->attachment_path;
 
@@ -197,6 +225,46 @@ class FacilitiesController extends Controller
             ->with('success', 'Your request has been cancelled and moved to the archive.');
     }
 
+    /**
+     * Prevent limited shared amenities from being reserved beyond their stock
+     * during an overlapping date and time window.
+     *
+     * @param  array<int, int|string>  $amenityIds
+     */
+    private function validateAmenityAvailability(
+        array $amenityIds,
+        string $date,
+        string $startTime,
+        string $endTime,
+        ?int $ignoreRequestId = null,
+    ): void {
+        $limitedAmenities = Amenities::query()
+            ->whereIn('AID', $amenityIds)
+            ->whereNotNull('reservation_limit')
+            ->get();
+
+        foreach ($limitedAmenities as $amenity) {
+            if (! $amenity->isFullyReserved($date, $startTime, $endTime, $ignoreRequestId)) {
+                continue;
+            }
+
+            throw ValidationException::withMessages([
+                'Amenity_ID' => "{$amenity->name} is fully reserved for the selected date and time. Please choose another time or remove this amenity.",
+            ]);
+        }
+    }
+
+    private function validateDailyRequestLimit(string $date, ?int $ignoreRequestId = null): void
+    {
+        if (! Requests::userHasRequestOnDate(auth()->id(), $date, $ignoreRequestId)) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'Proposed_Date' => 'You may only submit one reservation request per event date. Please choose another date.',
+        ]);
+    }
+
     public function showEventRequest(Events $event)
     {
         $amenities = Amenities::where('Status', 'Available')->orderBy('name')->get();
@@ -206,15 +274,21 @@ class FacilitiesController extends Controller
 
     public function storeEventRequest(Request $request, Events $event)
     {
+        $earliestReservationDate = now()->addDays(3)->toDateString();
+
         $validated = $request->validate([
             'Amenity_ID' => ['nullable', 'array'],
             'Amenity_ID.*' => ['integer', Rule::exists('amenities', 'AID')],
-            'Proposed_Date' => ['required', 'date', 'after_or_equal:today'],
+            'Proposed_Date' => ['required', 'date', 'after_or_equal:'.$earliestReservationDate],
             'Proposed_Start_Time' => ['required', 'date_format:H:i'],
             'Proposed_End_Time' => ['required', 'date_format:H:i', 'after:Proposed_Start_Time'],
-            'Purpose' => ['required', 'string'],
-            'Capacity' => ['nullable', 'integer', 'min:1'],
+            'Purpose' => ['required', 'string', 'min:5', 'max:1000'],
+            'Capacity' => ['nullable', 'integer', 'min:1', 'max:100000'],
+        ], [
+            'Proposed_Date.after_or_equal' => 'Reservations must be submitted at least 3 days before the event date.',
         ]);
+
+        $this->validateDailyRequestLimit($validated['Proposed_Date']);
 
         $requestModel = Requests::create([
             'Event_ID' => $event->EID,

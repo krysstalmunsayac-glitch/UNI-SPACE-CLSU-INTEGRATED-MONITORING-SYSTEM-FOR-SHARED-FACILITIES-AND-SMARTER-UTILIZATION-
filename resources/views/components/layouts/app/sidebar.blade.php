@@ -9,42 +9,93 @@
                 ? route('profile.external')
                 : route('settings.profile');
         @endphp
-        <flux:sidebar sticky stashable class="navigation-typeface w-72 overflow-x-hidden border-r border-zinc-300 bg-zinc-50/95 shadow-[0_0_0_1px_rgba(0,0,0,0.03)] dark:border-zinc-700 dark:bg-zinc-900 lg:w-80">
-            <flux:sidebar.toggle class="lg:hidden" icon="x-mark" />
+        <flux:sidebar
+            sticky
+            collapsible
+            class="navigation-typeface w-64 overflow-x-hidden border-r border-zinc-300 bg-zinc-50/95 shadow-[0_0_0_1px_rgba(0,0,0,0.03)] dark:border-zinc-700 dark:bg-zinc-900 lg:w-72"
+        >
+            <div class="admin-sidebar-brand-row flex h-20 w-full items-center gap-2 px-2 in-data-flux-sidebar-collapsed-desktop:justify-center in-data-flux-sidebar-collapsed-desktop:px-0">
+                <flux:sidebar.toggle
+                    class="admin-sidebar-toggle hidden lg:inline-flex"
+                    icon="bars-2"
+                    aria-label="Open or close navigation menu"
+                    title="Open or close navigation"
+                />
+                <flux:sidebar.toggle class="admin-sidebar-toggle lg:hidden" icon="x-mark" />
 
-            <a href="{{ route('dashboard') }}" class="flex h-32 w-full max-w-full items-center justify-center overflow-hidden px-3 py-2" wire:navigate>
-                <x-app-logo />
-            </a>
+                <a href="{{ route('dashboard') }}" class="flex min-w-0 flex-1 items-center justify-center overflow-hidden in-data-flux-sidebar-collapsed-desktop:hidden" wire:navigate>
+                    <x-app-logo />
+                </a>
+            </div>
 
-            <flux:navlist variant="outline" class="px-2">
-                <flux:navlist.group heading="Platform" class="grid">
+            <flux:sidebar.nav class="px-2 in-data-flux-sidebar-collapsed-desktop:items-center in-data-flux-sidebar-collapsed-desktop:px-0">
+                <flux:sidebar.group
+                    heading="Platform"
+                    icon="squares-2x2"
+                    expandable
+                    @class(['sidebar-section-current' => request()->routeIs('dashboard.superadmin', 'dashboard.officeadmin', 'dashboard', 'UserManagement*', 'ReportManagement')])
+                >
                     @if (auth()->user()->hasrole('super_admin'))
-                        <flux:navlist.item icon="home" :href="route('dashboard.superadmin')" :current="request()->routeIs('dashboard.superadmin')" >Dashboard</flux:navlist.item>
-                        <flux:navlist.item icon="user" :href="route('UserManagement')" :current="request()->routeIs('UserManagement')" wire:navigate>User Management</flux:navlist.item>
+                        <flux:sidebar.item icon="home" :href="route('dashboard.superadmin')" :current="request()->routeIs('dashboard.superadmin')" >Dashboard</flux:sidebar.item>
+                        <flux:sidebar.item icon="user" :href="route('UserManagement')" :current="request()->routeIs('UserManagement*')" wire:navigate>User Management</flux:sidebar.item>
+                        <flux:sidebar.item icon="clipboard-document-list" :href="route('ReportManagement')" :current="request()->routeIs('ReportManagement')" wire:navigate>Report Management</flux:sidebar.item>
                     @elseif (auth()->user()->hasrole('admin'))
-                        <flux:navlist.item icon="home" :href="route('dashboard.officeadmin')" :current="request()->routeIs('dashboard.officeadmin')" wire:navigate>Dashboard</flux:navlist.item>
+                        <flux:sidebar.item icon="home" :href="route('dashboard.officeadmin')" :current="request()->routeIs('dashboard.officeadmin')" wire:navigate>Dashboard</flux:sidebar.item>
                     @else
-                        <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>Dashboard</flux:navlist.item>
+                        <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>Dashboard</flux:sidebar.item>
                     @endif
-                </flux:navlist.group>
+                </flux:sidebar.group>
 
                 @if (auth()->user()->hasrole('super_admin') || auth()->user()->hasrole('admin'))
-                    <flux:navlist.group heading="Service" class="grid">
+                    <flux:sidebar.group
+                        heading="Service"
+                        icon="wrench-screwdriver"
+                        expandable
+                        @class(['sidebar-section-current' =>
+                            (request()->routeIs('Facility*', 'Amenities', 'Request', 'Schedule*', 'Feedback*'))
+                            && ! request()->boolean('archive')
+                        ])
+                    >
                         @if (auth()->user()->hasrole('super_admin'))
-                        <flux:navlist.item icon="building-office" :href="route('Facility')" :current="request()->routeIs('Facility')" wire:navigate>Facility</flux:navlist.item>
-                        <flux:navlist.item icon="rectangle-stack" :href="route('Amenities')" :current="request()->routeIs('Amenities')" wire:navigate>Amenities</flux:navlist.item>
-                        <flux:navlist.item icon="document-text" :href="route('Request')" :current="request()->routeIs('Request')" wire:navigate>Request</flux:navlist.item>
-                        <flux:navlist.item icon="calendar" :href="route('Schedule')" :current="request()->routeIs('Schedule')">Schedule</flux:navlist.item>
-                        <flux:navlist.item icon="chat-bubble-left-right" :href="route('Feedback')" :current="request()->routeIs('Feedback')" wire:navigate>Feedback</flux:navlist.item>
+                        <flux:sidebar.item icon="building-office" :href="route('Facility')" :current="request()->routeIs('Facility*') && ! request()->boolean('archive')" wire:navigate>Facility</flux:sidebar.item>
+                        <flux:sidebar.item icon="rectangle-stack" :href="route('Amenities')" :current="request()->routeIs('Amenities*') && ! request()->boolean('archive')" wire:navigate>Amenities</flux:sidebar.item>
+                        <flux:sidebar.item
+                            icon="document-text"
+                            :href="route('Request')"
+                            :current="request()->routeIs('Request') && ! request()->boolean('archive')"
+                            @class(['sidebar-active-link' => request()->routeIs('Request') && ! request()->boolean('archive')])
+                            wire:navigate
+                        >Request</flux:sidebar.item>
+                        <flux:sidebar.item icon="calendar" :href="route('Schedule')" :current="request()->routeIs('Schedule*')">Schedule</flux:sidebar.item>
+                        <flux:sidebar.item icon="chat-bubble-left-right" :href="route('Feedback')" :current="request()->routeIs('Feedback*')" wire:navigate>Feedback</flux:sidebar.item>
                     @elseif (auth()->user()->hasrole('admin'))
-                        <flux:navlist.item icon="building-office" :href="route('Facility')" :current="request()->routeIs('Facility')" wire:navigate>Facility</flux:navlist.item>
-                        <flux:navlist.item icon="document-text" :href="route('Request')" :current="request()->routeIs('Request')" wire:navigate>Request</flux:navlist.item>
-                        <flux:navlist.item icon="calendar" :href="route('Schedule')" :current="request()->routeIs('Schedule')" >Schedule</flux:navlist.item>
-                        <flux:navlist.item icon="chat-bubble-left-right" :href="route('Feedback')" :current="request()->routeIs('Feedback')" wire:navigate>Feedback</flux:navlist.item>
+                        <flux:sidebar.item icon="building-office" :href="route('Facility')" :current="request()->routeIs('Facility*') && ! request()->boolean('archive')" wire:navigate>Facility</flux:sidebar.item>
+                        <flux:sidebar.item
+                            icon="document-text"
+                            :href="route('Request')"
+                            :current="request()->routeIs('Request') && ! request()->boolean('archive')"
+                            @class(['sidebar-active-link' => request()->routeIs('Request') && ! request()->boolean('archive')])
+                            wire:navigate
+                        >Request</flux:sidebar.item>
+                        <flux:sidebar.item icon="calendar" :href="route('Schedule')" :current="request()->routeIs('Schedule*')" >Schedule</flux:sidebar.item>
+                        <flux:sidebar.item icon="chat-bubble-left-right" :href="route('Feedback')" :current="request()->routeIs('Feedback*')" wire:navigate>Feedback</flux:sidebar.item>
                     @endif
-                    </flux:navlist.group>
+                    </flux:sidebar.group>
+
+                    <flux:sidebar.group
+                        heading="Archives"
+                        icon="archive-box"
+                        expandable
+                        @class(['sidebar-section-current' => request()->boolean('archive') || request()->routeIs('Archived')])
+                    >
+                        @if (auth()->user()->hasrole('super_admin'))
+                            <flux:sidebar.item icon="building-office" :href="route('Facility.SuperAdmin', ['archive' => 1])" :current="request()->routeIs('Facility.SuperAdmin') && request()->boolean('archive')" wire:navigate>Facilities</flux:sidebar.item>
+                        @endif
+                        <flux:sidebar.item icon="rectangle-stack" :href="route('Amenities', ['archive' => 1])" :current="request()->routeIs('Amenities') && request()->boolean('archive')" wire:navigate>Amenities</flux:sidebar.item>
+                        <flux:sidebar.item icon="archive-box" :href="route('Request', ['archive' => 1])" :current="request()->routeIs('Request') && request()->boolean('archive')" wire:navigate>Requests</flux:sidebar.item>
+                    </flux:sidebar.group>
                 @endif
-            </flux:navlist>
+            </flux:sidebar.nav>
 
             <flux:spacer />
 
@@ -117,7 +168,7 @@
 
         {{-- Mobile Header --}}
         <flux:header class="navigation-typeface sticky top-0 z-50 lg:hidden">
-            <flux:sidebar.toggle class="lg:hidden" icon="bars-2" inset="left" />
+            <flux:sidebar.toggle class="admin-sidebar-toggle lg:hidden" icon="bars-2" inset="left" />
 
             <flux:spacer />
 
@@ -176,5 +227,6 @@
 
         @fluxScripts
         @stack('scripts')
+        @include('partials.site-auto-refresh')
     </body>
 </html>

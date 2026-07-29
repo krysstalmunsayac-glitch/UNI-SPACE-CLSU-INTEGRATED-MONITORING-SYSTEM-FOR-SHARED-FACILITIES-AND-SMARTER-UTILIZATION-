@@ -23,6 +23,11 @@ class Amenities extends Model
         'name',
         'Description',
         'Status',
+        'reservation_limit',
+    ];
+
+    protected $casts = [
+        'reservation_limit' => 'integer',
     ];
 
     public function facilities(): BelongsToMany
@@ -33,6 +38,32 @@ class Amenities extends Model
             'Amenity_ID',
             'Facility_ID'
         )->withTimestamps();
+    }
+
+    public function overlappingReservationCount(
+        string $date,
+        string $startTime,
+        string $endTime,
+        ?int $ignoreRequestId = null,
+    ): int {
+        return Requests::query()
+            ->whereDate('Proposed_Date', $date)
+            ->whereIn('Status', ['Pending', 'Approved'])
+            ->when($ignoreRequestId, fn ($query) => $query->where('RID', '!=', $ignoreRequestId))
+            ->where('Proposed_Start_Time', '<', $endTime)
+            ->where('Proposed_End_Time', '>', $startTime)
+            ->whereHas('amenities', fn ($query) => $query->where('amenities.AID', $this->AID))
+            ->count();
+    }
+
+    public function isFullyReserved(
+        string $date,
+        string $startTime,
+        string $endTime,
+        ?int $ignoreRequestId = null,
+    ): bool {
+        return $this->reservation_limit !== null
+            && $this->overlappingReservationCount($date, $startTime, $endTime, $ignoreRequestId) >= $this->reservation_limit;
     }
 
     protected static function booted(): void

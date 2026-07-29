@@ -5,10 +5,10 @@
                 <flux:subheading>{{ $editingId ? 'Update this amenity.' : 'Create a new amenity.' }}</flux:subheading>
             </div>
 
-            <flux:input wire:model="name" label="Amenity Name" placeholder="Enter amenity name" />
+            <flux:input wire:model="name" label="Amenity Name" placeholder="Enter amenity name" required minlength="2" maxlength="100" />
             @error('name') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
 
-            <flux:textarea wire:model="Description" label="Description" placeholder="Enter amenity description" rows="3" />
+            <flux:textarea wire:model="Description" label="Description" placeholder="Enter amenity description" rows="3" maxlength="1000" />
             @error('Description') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
 
             <div>

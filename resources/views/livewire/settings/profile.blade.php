@@ -39,10 +39,10 @@ new #[Layout('components.layouts.app')] class extends Component {
         $user = Auth::user();
 
         $validated = $this->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'contact_number' => ['nullable', 'regex:/^(09|\+639)\d{9}$/'],
-            'office' => ['nullable', 'string', 'max:255'],
-            'address' => ['nullable', 'string', 'max:500'],
+            'name' => ['required', 'string', 'min:2', 'max:100'],
+            'contact_number' => ['nullable', 'regex:'.User::PH_CONTACT_REGEX],
+            'office' => ['nullable', 'string', 'min:2', 'max:150'],
+            'address' => ['nullable', 'string', 'min:5', 'max:500'],
             'profile_photo' => ['nullable', 'image', 'max:2048'],
             'email' => [
                 'required',
@@ -52,6 +52,8 @@ new #[Layout('components.layouts.app')] class extends Component {
                 'max:255',
                 Rule::unique(User::class)->ignore($user->id)
             ],
+        ], [
+            'contact_number.regex' => 'Enter a valid PH mobile number: 09XXXXXXXXX or +639XXXXXXXXX.',
         ]);
 
         $photo = $validated['profile_photo'] ?? null;
@@ -127,23 +129,23 @@ new #[Layout('components.layouts.app')] class extends Component {
                         type="file"
                         wire:model="profile_photo"
                         accept="image/*"
-                        class="block w-full max-w-sm rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm file:mr-4 file:rounded-md file:border-0 file:bg-[#14532d] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                        class="block w-full max-w-sm rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm file:mr-4 file:rounded-md file:border-0 file:bg-[#009639] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
                     >
                     <div wire:loading wire:target="profile_photo" class="text-sm text-zinc-500">Uploading preview...</div>
                     @error('profile_photo') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
             </div>
 
-            <flux:input wire:model="name" label="{{ __('Name') }}" type="text" name="name" required autofocus autocomplete="name" />    
-            <flux:input wire:model="contact_number" label="Contact Number" type="text" name="contact_number"/>
+            <flux:input wire:model="name" label="{{ __('Name') }}" type="text" name="name" required minlength="2" maxlength="100" autofocus autocomplete="name" />    
+            <flux:input wire:model="contact_number" label="Contact Number" type="tel" name="contact_number" minlength="11" maxlength="13" pattern="(?:09[0-9]{9}|\+639[0-9]{9})" title="Use 09XXXXXXXXX or +639XXXXXXXXX." placeholder="09123456789" autocomplete="tel" />
             @if (auth()->user()->hasrole('user'))
                 <flux:textarea wire:model="address" label="Address" name="address" rows="3" />
             @else
-                <flux:input wire:model="office" label="Office" type="text" name="office"/>
+                <flux:input wire:model="office" label="Office" type="text" name="office" minlength="2" maxlength="150"/>
             @endif
 
             <div>
-                <flux:input wire:model="email" label="{{ __('Email') }}" type="email" name="email" required autocomplete="email" />
+                <flux:input wire:model="email" label="{{ __('Email') }}" type="email" name="email" required maxlength="255" autocomplete="email" />
 
                 @if (auth()->user() instanceof \Illuminate\Contracts\Auth\MustVerifyEmail &&! auth()->user()->hasVerifiedEmail())
                     <div>

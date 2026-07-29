@@ -47,6 +47,9 @@ Route::middleware([
 
         Volt::route('/facility/super-admin', 'facility.super-admin-facility')
             ->name('Facility.SuperAdmin');
+
+        Volt::route('/report-management', 'report.report-management')
+            ->name('ReportManagement');
     });
 
     /*
@@ -69,8 +72,10 @@ Route::middleware([
     Route::middleware('role:super_admin,office_admin')->group(function () {
         Route::prefix('exports')->name('exports.')->controller(ReportExportController::class)->group(function () {
             Route::get('/facilities.csv', 'facilitiesCsv')->name('facilities.csv');
+            Route::get('/facilities.xlsx', 'facilitiesXlsx')->name('facilities.xlsx');
             Route::get('/facilities.pdf', 'facilitiesPdf')->name('facilities.pdf');
             Route::get('/requests.csv', 'requestsCsv')->name('requests.csv');
+            Route::get('/requests.xlsx', 'requestsXlsx')->name('requests.xlsx');
             Route::get('/requests.pdf', 'requestsPdf')->name('requests.pdf');
         });
 

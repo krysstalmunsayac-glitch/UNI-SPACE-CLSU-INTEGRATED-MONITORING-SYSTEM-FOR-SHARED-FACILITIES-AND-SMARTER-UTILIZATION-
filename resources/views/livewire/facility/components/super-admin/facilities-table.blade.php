@@ -3,21 +3,14 @@
         <flux:heading size="lg">Facilities</flux:heading>
 
         <div class="flex w-full flex-wrap gap-2 lg:w-auto lg:justify-end">
-            <a href="{{ route('exports.facilities.csv') }}" download class="inline-flex items-center justify-center rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-800 transition hover:border-emerald-600 hover:bg-emerald-50 hover:text-emerald-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-emerald-400 dark:hover:bg-emerald-500/15">
-                Download CSV
-            </a>
-
-            <a href="{{ route('exports.facilities.pdf') }}" download class="inline-flex items-center justify-center rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-800 transition hover:border-emerald-600 hover:bg-emerald-50 hover:text-emerald-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-emerald-400 dark:hover:bg-emerald-500/15">
-                Download PDF
-            </a>
-
-            <flux:button
-                wire:click="openArchivedFacilities"
-                icon="archive-box"
-                variant="danger"
-            >
-                Archived
-            </flux:button>
+            <flux:dropdown position="bottom" align="end">
+                <flux:button icon="arrow-down-tray" icon:trailing="chevron-down">Download</flux:button>
+                <flux:menu>
+                    <flux:menu.item icon="document-text" href="{{ route('exports.facilities.csv') }}">CSV</flux:menu.item>
+                    <flux:menu.item icon="table-cells" href="{{ route('exports.facilities.xlsx') }}">Excel (.xlsx)</flux:menu.item>
+                    <flux:menu.item icon="document" href="{{ route('exports.facilities.pdf') }}">PDF</flux:menu.item>
+                </flux:menu>
+            </flux:dropdown>
 
             <flux:button
                 wire:click="create"

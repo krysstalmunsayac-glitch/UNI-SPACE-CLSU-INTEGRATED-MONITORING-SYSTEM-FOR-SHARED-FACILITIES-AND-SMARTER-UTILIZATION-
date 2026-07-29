@@ -2,9 +2,6 @@
         <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
             <flux:heading size="lg">Amenities</flux:heading>
             <div class="flex flex-wrap gap-2">
-                <flux:button wire:click="openArchivedRecords" icon="archive-box" variant="danger">
-                    Archived
-                </flux:button>
                 <flux:button wire:click="create" icon="plus" variant="primary">
                     Add Amenity
                 </flux:button>

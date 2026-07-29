@@ -21,10 +21,12 @@ class DashboardController extends Controller
 {
     public function index(HttpRequest $httpRequest): View
     {
+        Requests::markPastRequestsAsEnded();
+
         $requestSort = in_array($httpRequest->query('request_sort'), ['latest', 'oldest'], true)
             ? $httpRequest->query('request_sort')
             : 'latest';
-        $requestStatus = in_array($httpRequest->query('request_status'), ['Pending', 'Approved'], true)
+        $requestStatus = in_array($httpRequest->query('request_status'), ['Pending', 'Approved', 'Ended'], true)
             ? $httpRequest->query('request_status')
             : '';
 
@@ -38,7 +40,9 @@ class DashboardController extends Controller
             ->when($requestStatus, fn (Builder $query) => $query->where('Status', $requestStatus))
             ->orderBy('Created_at', $requestSort === 'oldest' ? 'asc' : 'desc')
             ->orderBy('RID', $requestSort === 'oldest' ? 'asc' : 'desc')
-            ->get();
+            ->paginate(5, ['*'], 'requests_page')
+            ->withQueryString()
+            ->fragment('requests');
 
         return view('dashboards.user', [
             'facilities' => Facilities::query()
@@ -46,9 +50,6 @@ class DashboardController extends Controller
                 ->where('Status', 'Available')
                 ->orderBy('Facility_Name')
                 ->get(),
-            'mapFacilities' => Facilities::query()
-                ->orderBy('Facility_Name')
-                ->get(['FID', 'Facility_Name', 'Location', 'Latitude', 'Longitude', 'Description', 'Status']),
             'events' => Events::query()->where('Status', 'Upcoming')->orderBy('Event_Title')->get(),
             'requests' => $userRequests,
             'requestSort' => $requestSort,
@@ -335,13 +336,15 @@ class DashboardController extends Controller
                 $facilityName = $schedule->request?->facility?->Facility_Name
                     ?? "Request #{$schedule->Request_ID}";
                 $colors = CalendarColor::forValue($facilityName);
+                $isEnded = $schedule->request?->Status === 'Ended';
 
                 return [
                     'id' => $schedule->SID,
                     'title' => $facilityName,
                     'start' => Carbon::parse($schedule->Date)->toDateString().'T'.Carbon::parse($schedule->Start_Time)->format('H:i:s'),
                     'end' => Carbon::parse($schedule->Date)->toDateString().'T'.Carbon::parse($schedule->End_Time)->format('H:i:s'),
-                    ...$colors,
+                    'backgroundColor' => $isEnded ? '#dc2626' : $colors['backgroundColor'],
+                    'borderColor' => $isEnded ? '#991b1b' : $colors['borderColor'],
                 ];
             })
             ->values()

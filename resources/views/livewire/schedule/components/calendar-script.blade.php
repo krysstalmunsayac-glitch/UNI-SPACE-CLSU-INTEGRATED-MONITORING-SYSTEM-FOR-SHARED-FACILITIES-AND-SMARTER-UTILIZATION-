@@ -3,6 +3,8 @@ function scheduleCalendar(initialEvents, livewireView) {
     return {
         calendar: null,
         events: initialEvents,
+        resizeObserver: null,
+        resizeTimer: null,
 
         initCalendar() {
             const el = document.getElementById('fc-calendar');
@@ -50,6 +52,7 @@ function scheduleCalendar(initialEvents, livewireView) {
             });
 
             this.calendar.render();
+            this.observeCalendarWidth(el);
 
             Livewire.on('calendar-refresh', (payload) => {
                 const events = payload.events ?? [];
@@ -60,6 +63,27 @@ function scheduleCalendar(initialEvents, livewireView) {
             });
         },
 
+        observeCalendarWidth(el) {
+            if (typeof ResizeObserver === 'undefined') {
+                window.addEventListener('resize', () => this.resizeCalendar());
+                return;
+            }
+
+            this.resizeObserver = new ResizeObserver(() => this.resizeCalendar());
+            this.resizeObserver.observe(el.parentElement);
+        },
+
+        resizeCalendar() {
+            if (!this.calendar) {
+                return;
+            }
+
+            window.cancelAnimationFrame(this.resizeTimer);
+            this.resizeTimer = window.requestAnimationFrame(() => {
+                this.calendar?.updateSize();
+            });
+        },
+
         switchView(fcViewName) {
             if (!this.calendar) {
                 return;
@@ -67,6 +91,11 @@ function scheduleCalendar(initialEvents, livewireView) {
 
             this.calendar.changeView(fcViewName);
             this.calendar.updateSize();
+        },
+
+        destroy() {
+            this.resizeObserver?.disconnect();
+            window.cancelAnimationFrame(this.resizeTimer);
         },
     };
 }

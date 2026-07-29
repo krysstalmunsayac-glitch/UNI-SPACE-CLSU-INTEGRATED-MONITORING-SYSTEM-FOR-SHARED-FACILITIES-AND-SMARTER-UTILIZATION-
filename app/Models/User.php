@@ -14,6 +14,8 @@ use Illuminate\Support\Str;
 
 class User extends Authenticatable // implements MustVerifyEmail
 {
+    public const PH_CONTACT_REGEX = '/^(?:09\d{9}|\+639\d{9})$/';
+
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, SoftDeletes;
 

@@ -186,6 +186,8 @@
                                         name="Event_Title"
                                         value="{{ old('Event_Title') }}"
                                         required
+                                        minlength="3"
+                                        maxlength="255"
                                     />
                                     @error('Event_Title') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                                 </div>
@@ -196,6 +198,8 @@
                                         name="Description"
                                         rows="4"
                                         required
+                                        minlength="5"
+                                        maxlength="2000"
                                     >{{ old('Description') }}</flux:textarea>
                                     @error('Description') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                                 </div>
@@ -220,6 +224,7 @@
                                             name="Other_Event_Type"
                                             value="{{ old('Other_Event_Type') }}"
                                             placeholder="e.g. Recognition ceremony"
+                                            maxlength="100"
                                             x-bind:required="eventType === 'Other'"
                                         />
                                         @error('Other_Event_Type') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
@@ -252,7 +257,7 @@
                                             <flux:checkbox
                                                 name="Amenity_ID[]"
                                                 value="{{ $amenity->AID }}"
-                                                label="{{ $amenity->name }}"
+                                                label="{{ $amenity->name }}{{ $amenity->reservation_limit ? ' ('.$amenity->reservation_limit.' available)' : '' }}"
                                                 :checked="in_array(
                                                     (string) $amenity->AID,
                                                     old('Amenity_ID', [])
@@ -276,29 +281,37 @@
 
                                 <div class="grid gap-4 sm:grid-cols-2">
                                     <div>
-                                        <flux:input label="Proposed date" name="Proposed_Date" type="date" value="{{ old('Proposed_Date', now()->addDay()->toDateString()) }}" />
+                                        <flux:input
+                                            label="Proposed date"
+                                            name="Proposed_Date"
+                                            type="date"
+                                            min="{{ now()->addDays(3)->toDateString() }}"
+                                            value="{{ old('Proposed_Date', now()->addDays(3)->toDateString()) }}"
+                                            x-bind:required="step === 2"
+                                        />
+                                        <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Book at least 3 days before your event.</p>
                                         @error('Proposed_Date') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                                     </div>
 
                                     <div></div>
 
                                     <div>
-                                        <flux:input label="Start time" name="Proposed_Start_Time" type="time" value="{{ old('Proposed_Start_Time', '09:00') }}" />
+                                        <flux:input label="Start time" name="Proposed_Start_Time" type="time" value="{{ old('Proposed_Start_Time', '09:00') }}" x-bind:required="step === 2" />
                                         @error('Proposed_Start_Time') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                                     </div>
 
                                     <div>
-                                        <flux:input label="End time" name="Proposed_End_Time" type="time" value="{{ old('Proposed_End_Time', '10:00') }}" />
+                                        <flux:input label="End time" name="Proposed_End_Time" type="time" value="{{ old('Proposed_End_Time', '10:00') }}" x-bind:required="step === 2" />
                                         @error('Proposed_End_Time') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                                     </div>
 
                                     <div class="sm:col-span-2">
-                                        <flux:input label="Purpose" name="Purpose" value="{{ old('Purpose') }}" />
+                                        <flux:input label="Purpose" name="Purpose" value="{{ old('Purpose') }}" x-bind:required="step === 2" minlength="5" maxlength="1000" />
                                         @error('Purpose') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                                     </div>
 
                                     <div class="sm:col-span-2">
-                                        <flux:input label="Expected attendees" name="Capacity" type="number" min="1" value="{{ old('Capacity') }}" />
+                                        <flux:input label="Expected attendees" name="Capacity" type="number" min="1" max="{{ $facility->Capacity ?? 100000 }}" value="{{ old('Capacity') }}" />
                                         @error('Capacity') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                                     </div>
 

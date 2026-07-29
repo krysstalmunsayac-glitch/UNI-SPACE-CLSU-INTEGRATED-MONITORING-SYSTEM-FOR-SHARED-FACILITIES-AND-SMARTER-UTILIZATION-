@@ -51,6 +51,17 @@ class ReportExportController extends Controller
         ]);
     }
 
+    public function facilitiesXlsx(Request $request)
+    {
+        $facilities = $this->facilityQuery($request)->orderBy('Facility_Name')->get();
+        $content = $this->exporter->facilitiesXlsx($facilities);
+
+        return response($content, 200, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="facilities-'.now()->format('Y-m-d').'.xlsx"',
+        ]);
+    }
+
     public function requestsCsv(Request $request): StreamedResponse
     {
         $requests = $this->requestQuery($request)->latest('Created_at')->get();
@@ -89,6 +100,17 @@ class ReportExportController extends Controller
         return response($content, 200, [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'attachment; filename="facility-requests-'.now()->format('Y-m-d').'.pdf"',
+        ]);
+    }
+
+    public function requestsXlsx(Request $request)
+    {
+        $requests = $this->requestQuery($request)->latest('Created_at')->get();
+        $content = $this->exporter->requestsXlsx($requests);
+
+        return response($content, 200, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="facility-requests-'.now()->format('Y-m-d').'.xlsx"',
         ]);
     }
 

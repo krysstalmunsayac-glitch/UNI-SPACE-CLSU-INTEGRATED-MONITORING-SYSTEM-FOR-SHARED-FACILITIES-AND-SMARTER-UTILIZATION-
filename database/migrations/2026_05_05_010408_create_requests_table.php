@@ -32,7 +32,7 @@ return new class extends Migration
             $table->date('Proposed_Date');
             $table->time('Proposed_Start_Time');
             $table->time('Proposed_End_Time');
-            $table->enum('Status', ['Pending', 'Approved', 'Rejected', 'Cancelled'])->default('Pending');
+            $table->enum('Status', ['Pending', 'Approved', 'Rejected', 'Cancelled', 'Ended'])->default('Pending');
             $table->text('Cancellation_Reason')->nullable();
             $table->text('Rejection_Reason')->nullable();
             $table->text('Purpose');

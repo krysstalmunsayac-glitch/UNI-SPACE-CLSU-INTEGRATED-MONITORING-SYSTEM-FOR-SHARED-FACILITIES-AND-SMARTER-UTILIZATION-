@@ -45,13 +45,13 @@
 <div>
     <div class="space-y-5">
         <div class="grid gap-4 md:grid-cols-2 2xl:grid-cols-6">
-            <div class="rounded-[1.75rem] border border-emerald-100 bg-emerald-950 p-5 text-white shadow-sm dark:border-emerald-400/20 dark:bg-emerald-500/15">
+            <div class="rounded-[1.75rem] border border-[#e6c200] bg-[#FFD700] p-5 text-emerald-950 shadow-sm dark:border-[#FFD700]/60 dark:bg-[#FFD700]">
                 <div class="flex items-center justify-between">
-                    <span class="text-xs font-semibold uppercase text-emerald-100 dark:text-emerald-200">{{ $capacityMetricLabel }}</span>
-                    <span class="rounded-full bg-white/15 px-2 py-1 text-xs">Analytics</span>
+                    <span class="text-xs font-semibold uppercase text-emerald-950">{{ $capacityMetricLabel }}</span>
+                    <span class="rounded-full bg-emerald-950/10 px-2 py-1 text-xs">Analytics</span>
                 </div>
                 <div class="mt-5 text-4xl font-semibold">{{ $expectedCapacityToday }}</div>
-                <p class="mt-2 text-sm text-emerald-100 dark:text-emerald-200">{{ $capacityMetricNote }}</p>
+                <p class="mt-2 text-sm text-emerald-950/75">{{ $capacityMetricNote }}</p>
             </div>
 
             <div class="rounded-[1.75rem] border border-emerald-100 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
@@ -262,7 +262,7 @@
             window.dashboardAnalyticsLoadAttempts[chartKey] = 0;
 
             if (capacityCtx) {
-                const facilityColors = ['#14532d', '#10b981', '#2563eb', '#f59e0b', '#f43f5e', '#8b5cf6', '#06b6d4', '#84cc16'];
+                const facilityColors = ['#009639', '#10b981', '#2563eb', '#f59e0b', '#f43f5e', '#8b5cf6', '#06b6d4', '#84cc16'];
                 const facilityDatasets = facilityCapacitySeries.map((series, index) => ({
                     label: series.facility,
                     data: series.totals,
@@ -342,7 +342,7 @@
                         labels: facilityTypeData.map(item => item.type),
                         datasets: [{
                             data: facilityTypeData.map(item => item.count),
-                            backgroundColor: ['#14532d', '#10b981', '#2563eb', '#f59e0b', '#f43f5e', '#8b5cf6', '#06b6d4'],
+                            backgroundColor: ['#009639', '#10b981', '#2563eb', '#f59e0b', '#f43f5e', '#8b5cf6', '#06b6d4'],
                             borderWidth: 0,
                             hoverOffset: 6,
                         }],

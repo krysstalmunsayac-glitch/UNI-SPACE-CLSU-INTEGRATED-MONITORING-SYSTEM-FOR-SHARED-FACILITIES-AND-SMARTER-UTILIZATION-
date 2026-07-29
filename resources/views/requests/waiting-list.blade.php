@@ -29,17 +29,18 @@
                     $isCancelled = $status === 'Cancelled';
                     $isRejected = $status === 'Rejected';
                     $isApproved = $status === 'Approved';
+                    $isEnded = $status === 'Ended';
                     $isPending = $status === 'Pending';
 
                     // Step 1 "Submitted" is always complete once a request exists.
                     // Step 2 "Under review" is complete once a decision has been made.
-                    $step2Done = $isApproved || $isRejected;
+                    $step2Done = $isApproved || $isRejected || $isEnded;
                     $step2Current = $isPending;
 
                     // Step 3 is the decision itself.
-                    $step3Done = $isApproved;
+                    $step3Done = $isApproved || $isEnded;
                     $step3Failed = $isRejected;
-                    $step3Label = $isRejected ? 'Rejected' : 'Decision';
+                    $step3Label = $isEnded ? 'Event Ended' : ($isRejected ? 'Rejected' : 'Decision');
 
                     $lineToStep3 = $step2Done ? ($step3Failed ? 'bg-rose-300' : 'bg-emerald-400') : 'bg-zinc-200 dark:bg-zinc-700';
                 @endphp
@@ -124,7 +125,7 @@
                             <div>
                                 <p class="text-sm font-black uppercase tracking-[0.2em] text-yellow-600 dark:text-yellow-300">Request #{{ $request->RID }}</p>
                                 <h2 class="mt-2 text-xl font-black text-emerald-950 dark:text-white">{{ $request->facility?->Facility_Name ?? 'Facility request' }}</h2>
-                                <p class="mt-2 text-sm text-emerald-900/70 dark:text-zinc-300">Status: <span class="font-semibold">{{ $request->Status }}</span></p>
+                                <p class="mt-2 text-sm text-emerald-900/70 dark:text-zinc-300">Status: <span class="font-semibold">{{ $isEnded ? 'Event Ended' : $request->Status }}</span></p>
                             </div>
                             <div class="rounded-2xl border border-emerald-900/10 bg-emerald-50 px-4 py-3 text-sm text-emerald-900/70 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-300">
                                 <p><span class="font-semibold">Event:</span> {{ $request->event?->Event_Title ?? 'No linked event' }}</p>
@@ -156,7 +157,7 @@
                                 </div>
                                 <div>
                                     <label class="mb-2 block text-sm font-medium text-emerald-900 dark:text-zinc-300" for="Proposed_Date_{{ $request->RID }}">Proposed date</label>
-                                    <input id="Proposed_Date_{{ $request->RID }}" name="Proposed_Date" type="date" value="{{ old('Proposed_Date', $request->Proposed_Date?->toDateString()) }}" class="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-sm shadow-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900" />
+                                    <input id="Proposed_Date_{{ $request->RID }}" name="Proposed_Date" type="date" min="{{ now()->addDays(3)->toDateString() }}" value="{{ old('Proposed_Date', $request->Proposed_Date?->toDateString()) }}" class="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-sm shadow-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900" />
                                 </div>
                                 <div>
                                     <label class="mb-2 block text-sm font-medium text-emerald-900 dark:text-zinc-300" for="Proposed_Start_Time_{{ $request->RID }}">Start time</label>

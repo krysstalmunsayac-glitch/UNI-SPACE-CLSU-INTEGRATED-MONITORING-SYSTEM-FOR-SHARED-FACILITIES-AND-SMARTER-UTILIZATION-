@@ -51,11 +51,12 @@
                             'Approved'  => 'green',
                             'Rejected'  => 'red',
                             'Cancelled' => 'amber',
+                            'Ended'     => 'zinc',
                             default     => 'blue',
                         }"
                         inset="top bottom"
                     >
-                        {{ $Status }}
+                        {{ $Status === 'Ended' ? 'Event Ended' : $Status }}
                     </flux:badge>
                 </div>
 
@@ -103,12 +104,12 @@
             </div>
 
             <div class="flex gap-2">
-                @if (! in_array($Status, ['Approved', 'Cancelled'], true) && $viewingId)
+                @if (! in_array($Status, ['Approved', 'Cancelled', 'Ended'], true) && $viewingId)
                     <flux:button wire:click="approve({{ $viewingId }})" wire:confirm="Approve this request?" variant="primary" icon="check" class="flex-1">
                         Approve
                     </flux:button>
                 @endif
-                @if ($Status !== 'Cancelled' && $viewingId)
+                @if (! in_array($Status, ['Cancelled', 'Ended'], true) && $viewingId)
                     <flux:button wire:click="openRejectModal({{ $viewingId }}); $set('showViewModal', false)" variant="danger" icon="x-mark" class="flex-1">
                         Reject
                     </flux:button>

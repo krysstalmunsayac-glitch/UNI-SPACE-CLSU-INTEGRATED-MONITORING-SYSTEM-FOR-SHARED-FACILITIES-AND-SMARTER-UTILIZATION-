@@ -4,6 +4,7 @@ namespace App\Http\Controllers\PublicSite;
 
 use App\Http\Controllers\Controller;
 use App\Models\Facilities;
+use App\Models\Requests;
 use App\Models\Schedule;
 use App\Support\CalendarColor;
 use Carbon\Carbon;
@@ -14,6 +15,8 @@ class HomeController extends Controller
 {
     public function __invoke(): View
     {
+        Requests::markPastRequestsAsEnded();
+
         $schedules = collect();
 
         if (Schema::hasTable('schedules')) {
@@ -29,6 +32,7 @@ class HomeController extends Controller
                         ?? $request?->Purpose
                         ?? 'Reserved facility';
                     $colors = CalendarColor::forValue($facilityName);
+                    $isEnded = $request?->Status === 'Ended';
 
                     return [
                         'id' => $schedule->SID,
@@ -36,10 +40,11 @@ class HomeController extends Controller
                         'facility' => $facilityName,
                         'purpose' => $request?->Purpose,
                         'requester' => $request?->user?->name,
-                        'status' => $schedule->Status,
+                        'status' => $isEnded ? 'Ended' : $schedule->Status,
                         'start' => Carbon::parse($schedule->Date)->toDateString().'T'.Carbon::parse($schedule->Start_Time)->format('H:i:s'),
                         'end' => Carbon::parse($schedule->Date)->toDateString().'T'.Carbon::parse($schedule->End_Time)->format('H:i:s'),
-                        ...$colors,
+                        'backgroundColor' => $isEnded ? '#dc2626' : $colors['backgroundColor'],
+                        'borderColor' => $isEnded ? '#991b1b' : $colors['borderColor'],
                     ];
                 });
         }
@@ -50,9 +55,6 @@ class HomeController extends Controller
                 ->where('Status', 'Available')
                 ->orderBy('Facility_Name')
                 ->get(),
-            'mapFacilities' => Facilities::query()
-                ->orderBy('Facility_Name')
-                ->get(['FID', 'Facility_Name', 'Location', 'Latitude', 'Longitude', 'Description', 'Status']),
             'schedules' => $schedules->values()->all(),
         ]);
     }

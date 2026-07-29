@@ -18,4 +18,11 @@ Artisan::command('requests:archive-approved', function () {
     $this->info("Archived {$archivedCount} approved request(s).");
 })->purpose('Archive approved requests after 10 days');
 
+Artisan::command('requests:mark-ended', function () {
+    $endedCount = Requests::markPastRequestsAsEnded();
+
+    $this->info("Marked {$endedCount} request(s) as ended.");
+})->purpose('Mark requests as ended after their proposed end time');
+
+Schedule::command('requests:mark-ended')->everyMinute();
 Schedule::command('requests:archive-approved')->dailyAt('00:00');

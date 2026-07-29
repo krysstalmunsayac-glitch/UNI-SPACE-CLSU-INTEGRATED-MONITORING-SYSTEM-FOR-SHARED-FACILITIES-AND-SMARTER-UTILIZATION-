@@ -212,6 +212,7 @@ new #[Layout('components.layouts.app')] class extends Component {
 
     public function openArchivedRecords(): void
     {
+        $this->resetPage('archivedSchedulesPage');
         $this->showArchivedModal = true;
     }
 
@@ -277,7 +278,7 @@ new #[Layout('components.layouts.app')] class extends Component {
 
         return $query->with(['request' => fn ($requestQuery) => $requestQuery->withTrashed()->with('facility')])
             ->orderByDesc('deleted_at')
-            ->paginate(10);
+            ->paginate(10, pageName: 'archivedSchedulesPage');
     }
 
     #[Computed]
@@ -342,6 +343,8 @@ new #[Layout('components.layouts.app')] class extends Component {
     #[Computed]
     public function calendarEvents(): array
     {
+        Requests::markPastRequestsAsEnded();
+
         return Schedule::query()
             ->with('request.facility')
             ->when(auth()->user()->isAdmin(), function ($query) {
@@ -379,16 +382,21 @@ new #[Layout('components.layouts.app')] class extends Component {
 
                 $purpose = $schedule->request?->Purpose ?? 'No purpose';
                 $colors = CalendarColor::forValue($facility);
+                $isEnded = $schedule->request?->Status === 'Ended';
 
                 return [
                     'id' => $schedule->SID,
                     'title' => $facility,
                     'start' => "{$date}T{$start}",
                     'end' => "{$date}T{$end}",
-                    'backgroundColor' => $schedule->Status === 'Booked' ? $colors['backgroundColor'] : '#9ca3af',
-                    'borderColor' => $schedule->Status === 'Booked' ? $colors['borderColor'] : '#6b7280',
+                    'backgroundColor' => $isEnded
+                        ? '#dc2626'
+                        : ($schedule->Status === 'Booked' ? $colors['backgroundColor'] : '#9ca3af'),
+                    'borderColor' => $isEnded
+                        ? '#991b1b'
+                        : ($schedule->Status === 'Booked' ? $colors['borderColor'] : '#6b7280'),
                     'extendedProps' => [
-                        'status' => $schedule->Status,
+                        'status' => $isEnded ? 'Ended' : $schedule->Status,
                         'scheduleId' => $schedule->SID,
                         'facility' => $facility,
                         'purpose' => $purpose,
@@ -404,7 +412,7 @@ new #[Layout('components.layouts.app')] class extends Component {
 <div
     x-data="scheduleCalendar(@js($this->calendarEvents), @js($view))"
     x-init="initCalendar()"
-    class="w-full"
+    class="min-w-0 w-full max-w-full"
 >
     @include('schedule.components.calendar-assets')
     @include('schedule.components.page-header')

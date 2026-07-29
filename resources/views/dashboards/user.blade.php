@@ -85,12 +85,14 @@
                     <span class="relative block">
                         <select id="capacity-filter" class="h-14 w-full appearance-none rounded-xl border border-emerald-900/10 bg-white px-4 pr-11 text-base font-semibold text-emerald-950 shadow-sm outline-none transition focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-950 dark:text-white">
                             <option value="all">All capacities</option>
-                            <option value="small">1-50</option>
-                            <option value="medium">51-150</option>
-                            <option value="large">151+</option>
+                            <option value="small">70-150</option>
+                            <option value="medium">151-300</option>
+                            <option value="large">301+</option>
+                            <option value="custom">Other / Specific capacity</option>
                         </select>
                         <span class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-lg leading-none text-emerald-700 dark:text-emerald-300">⌄</span>
                     </span>
+                    <input id="capacity-custom" type="number" min="70" max="2000" placeholder="Enter 70-2,000" class="mt-2 hidden h-12 w-full rounded-xl border border-emerald-900/10 bg-white px-4 text-base font-semibold text-emerald-950 shadow-sm outline-none transition focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-950 dark:text-white">
                 </label>
 
                 <label class="block">
@@ -117,13 +119,14 @@
                 @forelse ($facilities as $facility)
                     @php
                         $capacity = (int) ($facility->Capacity ?? 0);
-                        $capacityGroup = $capacity > 150 ? 'large' : ($capacity > 50 ? 'medium' : 'small');
+                        $capacityGroup = $capacity > 300 ? 'large' : ($capacity > 150 ? 'medium' : 'small');
                         $facilityType = strtolower($facility->facility_type ?? 'other');
                     @endphp
                     <article
-                        class="facility-card group overflow-hidden rounded-2xl border border-emerald-900/10 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-950/10 dark:border-white/10 dark:bg-zinc-900"
+                        class="facility-card group {{ $loop->index >= 6 ? 'hidden' : '' }} overflow-hidden rounded-2xl border border-emerald-900/10 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-950/10 dark:border-white/10 dark:bg-zinc-900"
                         data-name="{{ strtolower($facility->Facility_Name.' '.$facility->Description.' '.$facility->Location) }}"
                         data-capacity="{{ $capacityGroup }}"
+                        data-capacity-value="{{ $capacity }}"
                         data-type="{{ $facilityType }}"
                     >
                         <a href="{{ route('requests.create', $facility) }}" class="relative block aspect-[16/10] overflow-hidden bg-emerald-50 dark:bg-zinc-800">
@@ -158,6 +161,18 @@
                     </div>
                 @endforelse
             </div>
+
+            @if ($facilities->count() > 6)
+                <div class="mt-10 flex justify-center">
+                    <button
+                        id="facility-see-more"
+                        type="button"
+                        class="rounded-xl border-2 border-emerald-600 bg-white px-7 py-3 text-sm font-black text-emerald-700 transition hover:bg-emerald-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2 dark:bg-zinc-900 dark:text-emerald-300"
+                    >
+                        See more
+                    </button>
+                </div>
+            @endif
         </div>
     </section>
 
@@ -207,6 +222,7 @@
                             <option value="" @selected($requestStatus === '')>All statuses</option>
                             <option value="Pending" @selected($requestStatus === 'Pending')>Pending</option>
                             <option value="Approved" @selected($requestStatus === 'Approved')>Approved</option>
+                            <option value="Ended" @selected($requestStatus === 'Ended')>Event Ended</option>
                         </select>
                         <span class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-lg leading-none text-emerald-700 dark:text-emerald-300">⌄</span>
                     </span>
@@ -231,15 +247,17 @@
                         $isApproved = $status === 'Approved';
                         $isRejected = $status === 'Rejected';
                         $isCancelled = $status === 'Cancelled';
+                        $isEnded = $status === 'Ended';
                         $needsRevision = $status === 'Pending' && filled($request->Review_Requested_At);
                         $canCancel = in_array($status, ['Pending', 'Approved'], true);
                         $statusClass = match ($status) {
                             'Approved' => 'bg-emerald-600 text-white',
                             'Rejected' => 'bg-rose-600 text-white',
                             'Cancelled' => 'bg-zinc-600 text-white',
+                            'Ended' => 'bg-slate-700 text-white',
                             default => 'bg-yellow-400 text-emerald-950',
                         };
-                        $statusLabel = $needsRevision ? 'Needs Revision' : $status;
+                        $statusLabel = $needsRevision ? 'Needs Revision' : ($isEnded ? 'Event Ended' : $status);
                     @endphp
 
                     <details class="group overflow-hidden rounded-2xl border border-emerald-900/10 bg-white shadow-sm dark:border-white/10 dark:bg-zinc-950">
@@ -274,10 +292,10 @@
                                     <div class="mt-4 flex items-center gap-2 text-sm font-bold">
                                         <span class="rounded-full bg-emerald-600 px-3 py-1 text-white">Submitted</span>
                                         <span class="h-0.5 flex-1 bg-emerald-300"></span>
-                                        <span class="rounded-full {{ $isApproved || $isRejected ? 'bg-emerald-600 text-white' : 'bg-yellow-400 text-emerald-950' }} px-3 py-1">Review</span>
-                                        <span class="h-0.5 flex-1 {{ $isApproved ? 'bg-emerald-300' : ($isRejected ? 'bg-rose-300' : 'bg-zinc-200') }}"></span>
-                                        <span class="rounded-full {{ $isApproved ? 'bg-emerald-600 text-white' : ($isRejected ? 'bg-rose-600 text-white' : ($isCancelled ? 'bg-zinc-600 text-white' : 'bg-zinc-200 text-zinc-600')) }} px-3 py-1">
-                                            {{ $isRejected ? 'Rejected' : ($isCancelled ? 'Cancelled' : 'Decision') }}
+                                        <span class="rounded-full {{ $isApproved || $isRejected || $isEnded ? 'bg-emerald-600 text-white' : 'bg-yellow-400 text-emerald-950' }} px-3 py-1">Review</span>
+                                        <span class="h-0.5 flex-1 {{ $isApproved || $isEnded ? 'bg-emerald-300' : ($isRejected ? 'bg-rose-300' : 'bg-zinc-200') }}"></span>
+                                        <span class="rounded-full {{ $isApproved ? 'bg-emerald-600 text-white' : ($isEnded ? 'bg-slate-700 text-white' : ($isRejected ? 'bg-rose-600 text-white' : ($isCancelled ? 'bg-zinc-600 text-white' : 'bg-zinc-200 text-zinc-600'))) }} px-3 py-1">
+                                            {{ $isEnded ? 'Event Ended' : ($isRejected ? 'Rejected' : ($isCancelled ? 'Cancelled' : 'Decision')) }}
                                         </span>
                                     </div>
                                 </div>
@@ -312,7 +330,7 @@
                                     @endforeach
                                 </select>
                                 <textarea name="Description" rows="3" placeholder="Description" class="rounded-xl border border-emerald-900/10 bg-white px-4 py-3 text-sm text-emerald-950 outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900 dark:text-white lg:col-span-2">{{ old('Description', $request->event?->Description) }}</textarea>
-                                <input name="Proposed_Date" type="date" value="{{ old('Proposed_Date', $request->Proposed_Date?->toDateString()) }}" class="rounded-xl border border-emerald-900/10 bg-white px-4 py-3 text-sm text-emerald-950 outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900 dark:text-white">
+                                <input name="Proposed_Date" type="date" min="{{ now()->addDays(3)->toDateString() }}" value="{{ old('Proposed_Date', $request->Proposed_Date?->toDateString()) }}" class="rounded-xl border border-emerald-900/10 bg-white px-4 py-3 text-sm text-emerald-950 outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900 dark:text-white">
                                 <input name="Capacity" type="number" min="1" value="{{ old('Capacity', $request->Capacity) }}" placeholder="Expected attendees" class="rounded-xl border border-emerald-900/10 bg-white px-4 py-3 text-sm text-emerald-950 outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900 dark:text-white">
                                 <input name="Proposed_Start_Time" type="time" value="{{ old('Proposed_Start_Time', $request->Proposed_Start_Time?->format('H:i')) }}" class="rounded-xl border border-emerald-900/10 bg-white px-4 py-3 text-sm text-emerald-950 outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900 dark:text-white">
                                 <input name="Proposed_End_Time" type="time" value="{{ old('Proposed_End_Time', $request->Proposed_End_Time?->format('H:i')) }}" class="rounded-xl border border-emerald-900/10 bg-white px-4 py-3 text-sm text-emerald-950 outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900 dark:text-white">
@@ -416,6 +434,12 @@
                         {{ $totalUserRequests > 0 ? 'No requests match the selected filters.' : 'You do not have any submitted requests yet.' }}
                     </div>
                 @endforelse
+
+                @if ($requests->hasPages())
+                    <div class="pt-3">
+                        {{ $requests->links() }}
+                    </div>
+                @endif
             </div>
         </div>
     </section>
@@ -439,7 +463,7 @@
                 <div class="rounded-2xl bg-emerald-800 p-8 text-white">
                     <h2 class="text-4xl font-black">Campus map</h2>
                     <p class="mt-4 text-lg leading-8 text-emerald-50">
-                        Find every registered facility before sending your request. Pins are generated automatically from each facility's saved location.
+                        Explore the CLSU campus map before sending your facility request.
                     </p>
 
                     <div class="mt-8 space-y-3 text-sm font-semibold text-emerald-50">
@@ -488,9 +512,12 @@
             window.initUserDashboard = window.initUserDashboard || function () {
                 const searchInput = document.getElementById('facility-search');
                 const capacityFilter = document.getElementById('capacity-filter');
+                const customCapacity = document.getElementById('capacity-custom');
                 const typeFilter = document.getElementById('type-filter');
                 const cards = [...document.querySelectorAll('.facility-card')];
                 const count = document.getElementById('facility-count');
+                const seeMoreButton = document.getElementById('facility-see-more');
+                let facilitiesExpanded = false;
 
                 if (searchInput && capacityFilter && typeFilter && count && !searchInput.dataset.initialized) {
                     searchInput.dataset.initialized = 'true';
@@ -498,25 +525,50 @@
                     const filterFacilities = () => {
                         const search = searchInput.value.trim().toLowerCase();
                         const capacity = capacityFilter.value;
+                        const requestedCapacity = Math.min(2000, Math.max(70, Number(customCapacity?.value) || 70));
                         const type = typeFilter.value;
-                        let visible = 0;
-
-                        cards.forEach((card) => {
+                        const matchingCards = cards.filter((card) => {
                             const matchesSearch = !search || card.dataset.name.includes(search);
-                            const matchesCapacity = capacity === 'all' || card.dataset.capacity === capacity;
+                            const matchesCapacity = capacity === 'all'
+                                || (capacity === 'custom'
+                                    ? Number(card.dataset.capacityValue) >= requestedCapacity
+                                    : card.dataset.capacity === capacity);
                             const matchesType = type === 'all' || card.dataset.type === type;
-                            const shouldShow = matchesSearch && matchesCapacity && matchesType;
 
-                            card.classList.toggle('hidden', !shouldShow);
-                            if (shouldShow) visible += 1;
+                            return matchesSearch && matchesCapacity && matchesType;
                         });
 
-                        count.textContent = visible;
+                        cards.forEach((card) => card.classList.add('hidden'));
+                        const visibleCards = facilitiesExpanded ? matchingCards : matchingCards.slice(0, 6);
+                        visibleCards.forEach((card) => {
+                            card.classList.remove('hidden');
+                        });
+
+                        count.textContent = visibleCards.length;
+
+                        if (seeMoreButton) {
+                            seeMoreButton.classList.toggle('hidden', matchingCards.length <= 6);
+                            seeMoreButton.textContent = facilitiesExpanded
+                                ? 'Show less'
+                                : `See more (${matchingCards.length - 6})`;
+                        }
                     };
 
-                    searchInput.addEventListener('input', filterFacilities);
-                    capacityFilter.addEventListener('change', filterFacilities);
-                    typeFilter.addEventListener('change', filterFacilities);
+                    const resetAndFilter = () => {
+                        facilitiesExpanded = false;
+                        customCapacity?.classList.toggle('hidden', capacityFilter.value !== 'custom');
+                        filterFacilities();
+                    };
+
+                    searchInput.addEventListener('input', resetAndFilter);
+                    capacityFilter.addEventListener('change', resetAndFilter);
+                    customCapacity?.addEventListener('input', resetAndFilter);
+                    typeFilter.addEventListener('change', resetAndFilter);
+                    seeMoreButton?.addEventListener('click', () => {
+                        facilitiesExpanded = !facilitiesExpanded;
+                        filterFacilities();
+                    });
+                    filterFacilities();
                 }
 
                 const mapElement = document.getElementById('user-campus-map');
@@ -534,7 +586,7 @@
                         attribution: '&copy; OpenStreetMap contributors',
                     }).addTo(map);
 
-                    const facilities = @json($mapFacilities);
+                    const facilities = [];
                     const bounds = L.latLngBounds();
                     const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, character => ({
                         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;',

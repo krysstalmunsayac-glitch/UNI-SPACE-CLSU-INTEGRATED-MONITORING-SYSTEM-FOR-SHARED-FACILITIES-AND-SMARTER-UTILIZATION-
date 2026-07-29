@@ -55,7 +55,7 @@ new #[Layout('components.layouts.app')] class extends Component {
 
         return $query->with(['request' => fn ($requestQuery) => $requestQuery->withTrashed()->with('facility')])
             ->orderByDesc('deleted_at')
-            ->paginate(10);
+            ->paginate(10, pageName: 'archivedSchedulesPage');
     }
 
     #[Computed]
@@ -63,7 +63,8 @@ new #[Layout('components.layouts.app')] class extends Component {
     {
         $query = Events::query()->onlyTrashed();
 
-        return $query->orderByDesc('deleted_at')->paginate(10);
+        return $query->orderByDesc('deleted_at')
+            ->paginate(10, pageName: 'archivedEventsPage');
     }
 
     #[Computed]
@@ -71,7 +72,8 @@ new #[Layout('components.layouts.app')] class extends Component {
     {
         $query = User::query()->onlyTrashed();
 
-        return $query->orderByDesc('deleted_at')->paginate(10);
+        return $query->orderByDesc('deleted_at')
+            ->paginate(10, pageName: 'archivedUsersPage');
     }
 
     public function restoreRequest(int $id): void
@@ -159,6 +161,7 @@ new #[Layout('components.layouts.app')] class extends Component {
                     <p class="text-sm text-gray-500 dark:text-gray-400">No archived requests found.</p>
                 @endforelse
             </div>
+            <div class="mt-4">{{ $this->archivedRequests->links() }}</div>
         </div>
 
         <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
@@ -181,6 +184,7 @@ new #[Layout('components.layouts.app')] class extends Component {
                     <p class="text-sm text-gray-500 dark:text-gray-400">No archived schedules found.</p>
                 @endforelse
             </div>
+            <div class="mt-4">{{ $this->archivedSchedules->links() }}</div>
         </div>
 
         <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
@@ -203,6 +207,7 @@ new #[Layout('components.layouts.app')] class extends Component {
                     <p class="text-sm text-gray-500 dark:text-gray-400">No archived events found.</p>
                 @endforelse
             </div>
+            <div class="mt-4">{{ $this->archivedEvents->links() }}</div>
         </div>
 
         <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
@@ -225,6 +230,7 @@ new #[Layout('components.layouts.app')] class extends Component {
                     <p class="text-sm text-gray-500 dark:text-gray-400">No archived users found.</p>
                 @endforelse
             </div>
+            <div class="mt-4">{{ $this->archivedUsers->links() }}</div>
         </div>
     </div>
 </div>

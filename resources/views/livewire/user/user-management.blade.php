@@ -28,7 +28,7 @@ new #[Layout('components.layouts.app')] class extends Component {
     public string $sortBy = 'created_at';
     public string $sortDirection = 'desc';
 
-    #[Validate('required|string|max:255')]
+    #[Validate('required|string|min:2|max:100')]
     public string $name = '';
 
     #[Validate('required|email|max:255')]
@@ -149,16 +149,16 @@ new #[Layout('components.layouts.app')] class extends Component {
     ): void
     {
         $rules = [
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'min:2', 'max:100'],
             'email' => [
                 'required',
                 'email',
                 'max:255',
                 Rule::unique('users', 'email')->ignore($this->editingId),
             ],
-            'contact_number' => ['nullable', 'string', 'max:20'],
-            'office' => ['nullable', 'string', 'max:255'],
-            'address' => ['nullable', 'string', 'max:255'],
+            'contact_number' => ['nullable', 'string', 'regex:'.User::PH_CONTACT_REGEX],
+            'office' => ['nullable', 'string', 'min:2', 'max:150'],
+            'address' => ['nullable', 'string', 'min:5', 'max:500'],
             'user_type' => ['required', Rule::in(['super_admin', 'admin', 'user'])],
             'is_active' => ['boolean'],
             'password' => $this->editingId
@@ -166,7 +166,9 @@ new #[Layout('components.layouts.app')] class extends Component {
                 : ['required', 'string', 'min:8'],
         ];
 
-        $validated = $this->validate($rules);
+        $validated = $this->validate($rules, [
+            'contact_number.regex' => 'Enter a valid PH mobile number: 09XXXXXXXXX or +639XXXXXXXXX.',
+        ]);
 
         if (
             $this->editingId

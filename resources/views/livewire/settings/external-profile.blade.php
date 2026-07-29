@@ -32,7 +32,7 @@ new #[Layout('components.layouts.home')] class extends Component {
         $user = Auth::user();
 
         $validated = $this->validate([
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'min:2', 'max:100'],
             'email' => [
                 'required',
                 'string',
@@ -41,9 +41,11 @@ new #[Layout('components.layouts.home')] class extends Component {
                 'max:255',
                 Rule::unique(User::class)->ignore($user->id),
             ],
-            'contact_number' => ['nullable', 'regex:/^(09|\+639)\d{9}$/'],
-            'address' => ['nullable', 'string', 'max:500'],
+            'contact_number' => ['nullable', 'regex:'.User::PH_CONTACT_REGEX],
+            'address' => ['nullable', 'string', 'min:5', 'max:500'],
             'profile_photo' => ['nullable', 'image', 'max:2048'],
+        ], [
+            'contact_number.regex' => 'Enter a valid PH mobile number: 09XXXXXXXXX or +639XXXXXXXXX.',
         ]);
 
         $photo = $validated['profile_photo'] ?? null;
@@ -104,15 +106,15 @@ new #[Layout('components.layouts.home')] class extends Component {
 
             <div class="space-y-6 p-6 sm:p-10">
                 <div class="grid gap-6 sm:grid-cols-2">
-                    <flux:input wire:model="name" label="Full name" type="text" required autocomplete="name" />
-                    <flux:input wire:model="contact_number" label="Contact number" type="text" placeholder="09XXXXXXXXX" autocomplete="tel" />
+                    <flux:input wire:model="name" label="Full name" type="text" required minlength="2" maxlength="100" autocomplete="name" />
+                    <flux:input wire:model="contact_number" label="Contact number" type="tel" minlength="11" maxlength="13" pattern="(?:09[0-9]{9}|\+639[0-9]{9})" title="Use 09XXXXXXXXX or +639XXXXXXXXX." placeholder="09XXXXXXXXX" autocomplete="tel" />
                 </div>
 
-                <flux:input wire:model="email" label="Email address" type="email" required autocomplete="email" />
+                <flux:input wire:model="email" label="Email address" type="email" required maxlength="255" autocomplete="email" />
 
                 <div>
                     <label for="external_address" class="mb-2 block text-sm font-medium text-zinc-800 dark:text-zinc-200">Address</label>
-                    <textarea id="external_address" wire:model="address" rows="4" class="w-full resize-y rounded-xl border border-zinc-300 bg-white px-3 py-2 text-zinc-900 shadow-sm outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white" placeholder="Enter your current address"></textarea>
+                    <textarea id="external_address" wire:model="address" rows="4" minlength="5" maxlength="500" class="w-full resize-y rounded-xl border border-zinc-300 bg-white px-3 py-2 text-zinc-900 shadow-sm outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white" placeholder="Enter your current address"></textarea>
                     @error('address') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
 

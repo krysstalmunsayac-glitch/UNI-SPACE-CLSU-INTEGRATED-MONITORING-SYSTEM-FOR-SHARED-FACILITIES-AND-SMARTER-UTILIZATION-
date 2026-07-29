@@ -21,6 +21,9 @@
                     wire:model="name"
                     label="Full Name"
                     placeholder="Juan Dela Cruz"
+                    required
+                    minlength="2"
+                    maxlength="100"
                 />
 
                 @error('name')
@@ -36,6 +39,8 @@
                     type="email"
                     label="Email"
                     placeholder="juan@clsu.edu.ph"
+                    required
+                    maxlength="255"
                 />
 
                 @error('email')
@@ -66,7 +71,12 @@
                 <flux:input
                     wire:model="contact_number"
                     label="Contact Number"
+                    type="tel"
                     placeholder="09XXXXXXXXX"
+                    minlength="11"
+                    maxlength="13"
+                    pattern="(?:09[0-9]{9}|\+639[0-9]{9})"
+                    title="Use 09XXXXXXXXX or +639XXXXXXXXX."
                 />
 
                 @error('contact_number')
@@ -81,6 +91,8 @@
                     wire:model="office"
                     label="Office"
                     placeholder="Enter office/department"
+                    minlength="2"
+                    maxlength="150"
                 />
 
                 @error('office')
@@ -95,6 +107,8 @@
                     wire:model="address"
                     label="Address"
                     placeholder="Enter address"
+                    minlength="5"
+                    maxlength="500"
                 />
 
                 @error('address')

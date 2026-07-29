@@ -15,13 +15,13 @@ new #[Layout('components.layouts.app')] class extends Component {
 
     public function updatingSearch(): void
     {
-        $this->resetPage();
+        $this->resetPage('feedbackPage');
     }
 
     public function applySearch(): void
     {
         $this->search = trim($this->searchInput);
-        $this->resetPage();
+        $this->resetPage('feedbackPage');
     }
 
     public function sort(string $column): void
@@ -72,7 +72,7 @@ new #[Layout('components.layouts.app')] class extends Component {
         }
 
         return $query->orderBy($this->sortBy, $this->sortDirection)
-            ->paginate(10);
+            ->paginate(10, pageName: 'feedbackPage');
     }
 }; ?>
 

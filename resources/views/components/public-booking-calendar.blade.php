@@ -216,7 +216,7 @@
                         const item = document.createElement('div');
                         item.className = 'booking-calendar-event';
                         item.textContent = event.title || 'Reserved';
-                        item.style.backgroundColor = event.backgroundColor || event.color || '#14532d';
+                        item.style.backgroundColor = event.backgroundColor || event.color || '#009639';
                         item.style.color = event.textColor || '#ffffff';
                         addEventTooltip(item, event);
                         list.appendChild(item);
@@ -342,7 +342,7 @@
                                 item.className = 'booking-calendar-event is-time-range';
                                 title.textContent = event.title || 'Reserved';
                                 time.textContent = formatEventTime(event);
-                                item.style.backgroundColor = event.backgroundColor || event.color || '#14532d';
+                                item.style.backgroundColor = event.backgroundColor || event.color || '#009639';
                                 item.style.color = event.textColor || '#ffffff';
                                 item.style.top = `${range.top}px`;
                                 item.style.height = `${range.height}px`;
@@ -494,7 +494,7 @@
                 border-radius: 10px;
                 background: #f6f8fa;
                 padding: 12px 14px;
-                color: #14532d;
+                color: #007a2f;
             }
 
             .booking-weekday,
@@ -543,7 +543,7 @@
                 border-radius: 8px;
                 background: #ffffff;
                 padding: 8px 10px;
-                color: #14532d;
+                color: #007a2f;
                 font-size: 13px;
                 font-weight: 700;
             }
@@ -588,14 +588,14 @@
                 border-radius: 8px;
                 background: #ffffff;
                 padding: 9px 30px 9px 10px;
-                color: #14532d;
+                color: #007a2f;
                 font-size: 13px;
                 font-weight: 700;
                 text-transform: none;
             }
 
             .booking-calendar-title {
-                color: #14532d;
+                color: #007a2f;
                 font-size: 18px;
                 font-weight: 800;
             }
@@ -649,7 +649,7 @@
                 display: inline-block;
                 border-radius: 10px;
                 padding: 8px 10px;
-                color: #14532d;
+                color: #007a2f;
                 font-weight: 800;
             }
 
@@ -700,7 +700,7 @@
                 border-radius: 8px;
                 background: #ffffff;
                 padding: 10px 12px;
-                color: #14532d;
+                color: #007a2f;
                 box-shadow: 0 16px 32px rgba(6, 78, 59, 0.18);
                 font-size: 12px;
                 font-weight: 600;
@@ -767,7 +767,7 @@
                 background: #ffffff;
                 padding: 8px;
                 text-align: center;
-                color: #14532d;
+                color: #007a2f;
                 font-weight: 800;
             }
 

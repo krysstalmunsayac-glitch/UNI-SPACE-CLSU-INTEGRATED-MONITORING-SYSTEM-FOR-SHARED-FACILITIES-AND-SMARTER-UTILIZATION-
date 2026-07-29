@@ -7,7 +7,7 @@
             .auth-card label {
                 font-size: 12px !important;
                 font-weight: 700 !important;
-                color: #14532d !important;
+                color: #007a2f !important;
             }
 
             .auth-card input:not([type="checkbox"]) {
@@ -15,7 +15,7 @@
                 border: 0 !important;
                 border-radius: 0 !important;
                 background: #f1f5f3 !important;
-                color: #14532d !important;
+                color: #007a2f !important;
                 box-shadow: none !important;
             }
 

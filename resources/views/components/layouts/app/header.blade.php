@@ -7,8 +7,7 @@
 <body class="min-h-screen bg-white dark:bg-zinc-800 antialiased">
     <flux:header container class="navigation-typeface sticky top-0 z-50 bg-zinc-50 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-700">
         <flux:sidebar.toggle class="lg:hidden" icon="bars-2" inset="left" />
-        <flux:brand href="#" logo="{{ asset('images/Logo_Black.png') }}" name="Uni Space" class="dark:hidden me-3" />
-        <flux:brand href="#" logo="{{ asset('images/Logo_white.png') }}" name="Uni Space" class="hidden dark:flex me-3" />
+        <flux:brand href="{{ route('home') }}" logo="{{ asset('images/uni-space-logo.png') }}" name="Uni Space" class="me-3" />
         <flux:navbar class="-mb-px max-lg:hidden">
             <flux:navbar.item icon="home" href="{{ route('home') }}">Home</flux:navbar.item>
             <flux:navbar.item icon="document-text" href="#">Facility</flux:navbar.item>
@@ -74,8 +73,7 @@
 
     <flux:sidebar sticky collapsible="mobile" class="navigation-typeface lg:hidden bg-zinc-50 dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-700">
         <flux:sidebar.header>
-            <flux:brand href="#" logo="{{ asset('images/Logo_Black.png') }}" name="Uni Space" class="dark:hidden me-3" />
-            <flux:brand href="#" logo="{{ asset('images/Logo_white.png') }}" name="Uni Space" class="hidden dark:flex me-3" />
+            <flux:brand href="{{ route('home') }}" logo="{{ asset('images/uni-space-logo.png') }}" name="Uni Space" class="me-3" />
             <flux:sidebar.collapse class="in-data-flux-sidebar-on-desktop:not-in-data-flux-sidebar-collapsed-desktop:-mr-2" />
         </flux:sidebar.header>
         <flux:sidebar.nav>
@@ -105,5 +103,6 @@
     @fluxScripts
 
     {{ $slot }}
+    @include('partials.site-auto-refresh')
 </body>
 </html>

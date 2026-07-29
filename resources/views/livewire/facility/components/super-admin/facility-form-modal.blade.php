@@ -10,22 +10,22 @@
         </div>
 
         <div>
-            <flux:input wire:model="Facility_Name" label="Facility Name" placeholder="Enter facility name" />
+            <flux:input wire:model="Facility_Name" label="Facility Name" placeholder="Enter facility name" required minlength="2" maxlength="150" />
             @error('Facility_Name') <span class="text-sm text-red-600">{{ $message }}</span> @enderror
         </div>
 
         <div>
-            <flux:input wire:model="Price" type="number" step="0.01" label="Price" placeholder="0.00" />
+            <flux:input wire:model="Price" type="number" min="0" max="9999999.99" step="0.01" label="Price" placeholder="0.00" required />
             @error('Price') <span class="text-sm text-red-600">{{ $message }}</span> @enderror
         </div>
 
         <div>
-            <flux:input wire:model="Capacity" type="number" label="Capacity" placeholder="Enter capacity" />
+            <flux:input wire:model="Capacity" type="number" min="70" max="100000" label="Capacity" placeholder="Minimum 70" required />
             @error('Capacity') <span class="text-sm text-red-600">{{ $message }}</span> @enderror
         </div>
 
         <div>
-            <flux:input wire:model="Location" label="Location" placeholder="Enter location" />
+            <flux:input wire:model="Location" label="Location" placeholder="Enter location" maxlength="255" />
             @error('Location') <span class="text-sm text-red-600">{{ $message }}</span> @enderror
         </div>
 
@@ -82,19 +82,28 @@
         </div>
 
         <div>
-            <flux:input wire:model="Office" label="Office" placeholder="Enter office" />
+            <flux:input wire:model="Office" label="Office" placeholder="Enter office" minlength="2" maxlength="150" />
             @error('Office') <span class="text-sm text-red-600">{{ $message }}</span> @enderror
         </div>
 
         <div>
             <label class="mb-1 block text-sm font-medium">
-                {{ $editingId ? 'Replace images (maximum of 5)' : 'Images (maximum of 5)' }}
+                Images (maximum of 5)
             </label>
-            @if ($editingId && $existingImages && ! $images)
-                <p class="mb-2 text-xs text-zinc-500">Current images. Choosing new images will replace all of them.</p>
+            @if ($editingId && $existingImages)
+                <p class="mb-2 text-xs text-zinc-500">Remove individual images or upload replacements. Changes are applied when you click Update.</p>
                 <div class="mb-3 grid grid-cols-5 gap-2">
-                    @foreach ($existingImages as $imagePath)
-                        <img src="{{ asset('storage/'.ltrim($imagePath, '/')) }}" class="h-20 w-20 rounded object-cover" alt="Current facility image" />
+                    @foreach ($existingImages as $existingImage)
+                        <div class="group relative" wire:key="existing-facility-image-{{ $existingImage['id'] }}">
+                            <img src="{{ asset('storage/'.ltrim($existingImage['path'], '/')) }}" class="h-20 w-full rounded object-cover" alt="Current facility image" />
+                            <button
+                                type="button"
+                                wire:click="removeExistingImage({{ $existingImage['id'] }})"
+                                class="absolute right-1 top-1 flex size-6 items-center justify-center rounded-full bg-red-600 text-sm font-bold text-white shadow transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-yellow-300"
+                                aria-label="Remove current image"
+                                title="Remove image"
+                            >×</button>
+                        </div>
                     @endforeach
                 </div>
             @endif
@@ -115,15 +124,24 @@
 
             @if ($images)
                 <div class="mt-2 grid grid-cols-5 gap-2">
-                    @foreach ($images as $image)
-                        <img src="{{ $image->temporaryUrl() }}" class="h-20 w-20 rounded object-cover" alt="Preview" />
+                    @foreach ($images as $index => $image)
+                        <div class="group relative" wire:key="new-facility-image-{{ $index }}">
+                            <img src="{{ $image->temporaryUrl() }}" class="h-20 w-full rounded object-cover" alt="New image preview" />
+                            <button
+                                type="button"
+                                wire:click="removeNewImage({{ $index }})"
+                                class="absolute right-1 top-1 flex size-6 items-center justify-center rounded-full bg-red-600 text-sm font-bold text-white shadow transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-yellow-300"
+                                aria-label="Remove new image"
+                                title="Remove image"
+                            >×</button>
+                        </div>
                     @endforeach
                 </div>
             @endif
         </div>
 
         <div>
-            <flux:textarea wire:model="Description" label="Description" placeholder="Enter facility description" rows="3" />
+            <flux:textarea wire:model="Description" label="Description" placeholder="Enter facility description" rows="3" maxlength="2000" />
             @error('Description') <span class="text-sm text-red-600">{{ $message }}</span> @enderror
         </div>
 

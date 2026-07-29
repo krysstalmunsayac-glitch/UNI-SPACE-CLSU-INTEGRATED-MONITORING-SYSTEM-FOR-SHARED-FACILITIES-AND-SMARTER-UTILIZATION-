@@ -25,30 +25,31 @@ new #[Layout('components.layouts.app')] class extends Component {
     public ?int $editingId = null;
     public bool $showModal = false;
 
-    #[Validate('required|string|max:255')]
+    #[Validate('required|string|min:2|max:150')]
     public string $Facility_Name = '';
 
     #[Validate(['images' => 'nullable|array|max:5', 'images.*' => 'image|max:5120'])]
     public array $images = [];
 
     public array $existingImages = [];
+    public array $removedImageIds = [];
 
-    #[Validate('required|numeric|min:0')]
+    #[Validate('required|numeric|min:0|max:9999999.99')]
     public float $Price = 0;
 
     #[Validate('nullable|in:sports,conference,auditorium,classroom,laboratory,other')]
     public ?string $facility_type = null;
 
-    #[Validate('nullable|string|max:255')]
+    #[Validate('nullable|string|min:2|max:150')]
     public ?string $Office = null;
 
-    #[Validate('nullable|string')]
+    #[Validate('nullable|string|max:2000')]
     public ?string $Description = null;
 
     #[Validate('nullable|string|max:255')]
     public ?string $Location = null;
 
-    #[Validate('nullable|integer|min:1')]
+    #[Validate('required|integer|min:70|max:100000')]
     public ?int $Capacity = null;
 
     #[Validate('required|in:Available,Under Maintenance,Unavailable')]
@@ -84,6 +85,7 @@ new #[Layout('components.layouts.app')] class extends Component {
             'facility_type',
             'images',
             'existingImages',
+            'removedImageIds',
             'Price',
             'Office',
             'Description',
@@ -112,7 +114,11 @@ new #[Layout('components.layouts.app')] class extends Component {
         $this->Capacity = $facility->Capacity;
         $this->Status = $facility->Status;
         $this->images = [];
-        $this->existingImages = $facility->images()->pluck('image_path')->all();
+        $this->existingImages = $facility->images()
+            ->get(['id', 'image_path'])
+            ->map(fn ($image) => ['id' => $image->id, 'path' => $image->image_path])
+            ->all();
+        $this->removedImageIds = [];
         $this->selectedAmenityIds = $facility->amenities()->pluck('amenities.AID')->map(fn ($id) => (int) $id)->all();
 
         $this->resetValidation();
@@ -122,6 +128,12 @@ new #[Layout('components.layouts.app')] class extends Component {
     public function save(): void
     {
         $this->validate();
+
+        if (count($this->existingImages) + count($this->images) > 5) {
+            $this->addError('images', 'A facility can have a maximum of 5 images.');
+
+            return;
+        }
 
         $facility = $this->getScopedFacility($this->editingId);
 
@@ -136,9 +148,13 @@ new #[Layout('components.layouts.app')] class extends Component {
             'Status' => $this->Status,
         ]);
 
-        if ($this->images !== []) {
-            Storage::disk('public')->delete($facility->images()->pluck('image_path')->all());
-            $facility->images()->delete();
+        if ($this->removedImageIds !== []) {
+            $imagesToRemove = $facility->images()
+                ->whereIn('id', $this->removedImageIds)
+                ->get();
+
+            Storage::disk('public')->delete($imagesToRemove->pluck('image_path')->all());
+            $facility->images()->whereIn('id', $this->removedImageIds)->delete();
         }
 
         foreach ($this->images as $image) {
@@ -165,6 +181,34 @@ new #[Layout('components.layouts.app')] class extends Component {
         $this->showModal = false;
         $this->resetForm();
         $this->resetPage('assignedFacilitiesPage');
+    }
+
+    public function removeExistingImage(int $imageId): void
+    {
+        $image = collect($this->existingImages)->firstWhere('id', $imageId);
+
+        if (! $image) {
+            return;
+        }
+
+        $this->removedImageIds[] = $imageId;
+        $this->removedImageIds = array_values(array_unique($this->removedImageIds));
+        $this->existingImages = array_values(array_filter(
+            $this->existingImages,
+            fn (array $existingImage) => $existingImage['id'] !== $imageId,
+        ));
+        $this->resetErrorBag('images');
+    }
+
+    public function removeNewImage(int $index): void
+    {
+        if (! array_key_exists($index, $this->images)) {
+            return;
+        }
+
+        unset($this->images[$index]);
+        $this->images = array_values($this->images);
+        $this->resetErrorBag('images');
     }
 
     public function toggleStatus(int $facilityId): void

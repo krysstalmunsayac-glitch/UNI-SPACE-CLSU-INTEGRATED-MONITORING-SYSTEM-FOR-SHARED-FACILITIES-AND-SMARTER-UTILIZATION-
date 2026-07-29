@@ -9,14 +9,6 @@
                 <p class="mt-6 max-w-2xl text-lg leading-8 text-emerald-900/70 dark:text-zinc-300">
                     UNI Space is a facility reservation platform built for Central Luzon State University. It helps students, faculty, and staff browse available spaces, submit requests, and track approvals in one organized place.
                 </p>
-                <div class="mt-8 flex flex-wrap gap-3">
-                    <a href="{{ route('home') }}#facilities" class="inline-flex items-center justify-center rounded-xl bg-emerald-700 px-6 py-3 text-sm font-bold text-white transition hover:bg-emerald-800">
-                        Browse facilities
-                    </a>
-                    <a href="{{ route('home') }}#calendar" class="inline-flex items-center justify-center rounded-xl border border-emerald-700 px-6 py-3 text-sm font-bold text-emerald-800 transition hover:bg-emerald-50 dark:border-emerald-300 dark:text-emerald-200 dark:hover:bg-zinc-900">
-                        View calendar
-                    </a>
-                </div>
             </div>
 
             <div class="grid gap-4 sm:grid-cols-2">
@@ -110,23 +102,23 @@
     <section class="bg-white py-20 dark:bg-zinc-950">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div class="mx-auto max-w-3xl text-center">
-                <p class="text-sm font-black uppercase tracking-[0.2em] text-emerald-700 dark:text-emerald-300">Placeholder team</p>
+                <p class="text-sm font-black uppercase tracking-[0.2em] text-emerald-700 dark:text-emerald-300">Meet the team</p>
                 <h2 class="mt-4 text-4xl font-black tracking-tight text-emerald-950 dark:text-white">People behind the platform</h2>
                 <p class="mt-5 text-lg leading-8 text-emerald-900/70 dark:text-zinc-300">
-                    Replace these sample profiles with the actual project team, office contacts, or system maintainers.
+                    The team responsible for planning, designing, and developing UNI Space.
                 </p>
             </div>
 
-            <div class="mt-12 grid gap-6 md:grid-cols-3">
+            <div class="mx-auto mt-12 grid max-w-4xl gap-6 md:grid-cols-3">
                 @foreach ([
-                    ['name' => 'Juan Dela Cruz', 'role' => 'Project Lead', 'image' => 'https://placehold.co/520x520/dcfce7/14532d?text=Profile+1'],
-                    ['name' => 'Maria Santos', 'role' => 'System Analyst', 'image' => 'https://placehold.co/520x520/e8f5ee/14532d?text=Profile+2'],
-                    ['name' => 'Alex Reyes', 'role' => 'UI Developer', 'image' => 'https://placehold.co/520x520/fef3c7/14532d?text=Profile+3'],
+                    ['name' => 'GenRev Salazar', 'role' => 'Project Leader', 'image' => 'https://placehold.co/320x320/dcfce7/007a2f?text=GS'],
+                    ['name' => 'Krysstal Munsayac', 'role' => 'UI Developer', 'image' => 'https://placehold.co/320x320/e8f5ee/007a2f?text=KM'],
+                    ['name' => 'Mark Patoc', 'role' => 'BackEnd Developer', 'image' => 'https://placehold.co/320x320/fef3c7/007a2f?text=MP'],
                 ] as $member)
-                    <article class="overflow-hidden rounded-xl border border-emerald-900/10 bg-white shadow-sm dark:border-white/10 dark:bg-zinc-900">
-                        <img src="{{ $member['image'] }}" alt="{{ $member['name'] }}" class="aspect-square w-full object-cover">
-                        <div class="p-5">
-                            <h3 class="text-xl font-black text-emerald-950 dark:text-white">{{ $member['name'] }}</h3>
+                    <article class="rounded-2xl border border-emerald-900/10 bg-white p-6 text-center shadow-sm dark:border-white/10 dark:bg-zinc-900">
+                        <img src="{{ $member['image'] }}" alt="{{ $member['name'] }}" class="mx-auto size-36 rounded-full object-cover ring-4 ring-emerald-600/15 sm:size-40">
+                        <div class="pt-5">
+                            <h3 class="text-lg font-black text-emerald-950 dark:text-white">{{ $member['name'] }}</h3>
                             <p class="mt-1 text-sm font-semibold text-emerald-700 dark:text-emerald-300">{{ $member['role'] }}</p>
                         </div>
                     </article>

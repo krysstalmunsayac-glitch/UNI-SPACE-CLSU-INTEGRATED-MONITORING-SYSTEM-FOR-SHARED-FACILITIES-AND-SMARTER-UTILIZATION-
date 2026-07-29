@@ -225,6 +225,7 @@ class DatabaseSeeder extends Seeder
             [
                 'Description' => 'PA sound system for programs and events.',
                 'Status' => 'Available',
+                'reservation_limit' => 5,
             ]
         );
 
