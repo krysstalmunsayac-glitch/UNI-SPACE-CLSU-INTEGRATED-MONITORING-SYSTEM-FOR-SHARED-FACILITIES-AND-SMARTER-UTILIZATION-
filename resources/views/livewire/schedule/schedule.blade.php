@@ -98,6 +98,9 @@ new #[Layout('components.layouts.app')] class extends Component {
     public function save(): void
     {
         $validated = $this->validate();
+        $schedule = $this->editingId
+            ? $this->getScopedSchedule((int) $this->editingId)
+            : null;
 
         // Prevent the same request from being scheduled twice
         $duplicateRequestQuery = Schedule::where('Request_ID', $validated['Request_ID']);
@@ -135,8 +138,8 @@ new #[Layout('components.layouts.app')] class extends Component {
             }
         }
 
-        if ($this->editingId) {
-            Schedule::findOrFail($this->editingId)->update($validated);
+        if ($schedule) {
+            $schedule->update($validated);
 
             $this->dispatch('calendar-refresh', events: $this->calendarEvents);
 
@@ -223,35 +226,29 @@ new #[Layout('components.layouts.app')] class extends Component {
 
     public function restore(int $scheduleId): void
     {
-        Schedule::withTrashed()->findOrFail($scheduleId)->restore();
+        $this->getScopedSchedule($scheduleId, withTrashed: true)->restore();
         Ui::toast(text: 'Schedule restored successfully!', variant: 'success');
         $this->dispatch('$refresh');
     }
 
     public function forceDelete(int $scheduleId): void
     {
-        Schedule::withTrashed()->findOrFail($scheduleId)->forceDelete();
+        $this->getScopedSchedule($scheduleId, withTrashed: true)->forceDelete();
         Ui::toast(text: 'Schedule permanently deleted.', variant: 'danger');
         $this->dispatch('$refresh');
     }
 
-    private function getScopedSchedule(int $scheduleId)
+    private function getScopedSchedule(int $scheduleId, bool $withTrashed = false): Schedule
     {
-        $query = Schedule::query();
+        $query = Schedule::query()
+            ->when($withTrashed, fn ($query) => $query->withTrashed());
 
         if (auth()->user()->isAdmin()) {
-            $query->whereHas('request.facility', function ($facilityQuery) {
-                $facilityQuery->whereHas('assignedAdmins', function ($adminQuery) {
-                    $adminQuery->where('users.id', auth()->id());
-                });
-            });
-        }
-
-        if ($this->search !== '') {
             $query->whereHas('request', function ($requestQuery) {
-                $requestQuery->withTrashed()->where(function ($requestQuery) {
-                    $requestQuery->where('Purpose', 'like', '%'.$this->search.'%')
-                        ->orWhereHas('facility', fn ($facilityQuery) => $facilityQuery->where('Facility_Name', 'like', '%'.$this->search.'%'));
+                $requestQuery->withTrashed()->whereHas('facility', function ($facilityQuery) {
+                    $facilityQuery->whereHas('assignedAdmins', function ($adminQuery) {
+                        $adminQuery->where('users.id', auth()->id());
+                    });
                 });
             });
         }
