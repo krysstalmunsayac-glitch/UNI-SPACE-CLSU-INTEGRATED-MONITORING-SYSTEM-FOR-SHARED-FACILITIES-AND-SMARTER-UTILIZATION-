@@ -2,6 +2,7 @@
 
 use App\Livewire\Actions\Logout;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Session;
 use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
@@ -18,6 +19,16 @@ new #[Layout('components.layouts.auth')] class extends Component {
             return;
         }
 
+        $throttleKey = 'verification-email|'.Auth::id().'|'.request()->ip();
+
+        if (RateLimiter::tooManyAttempts($throttleKey, 3)) {
+            Session::flash('status', 'verification-link-throttled');
+            Session::flash('verification-retry-after', RateLimiter::availableIn($throttleKey));
+
+            return;
+        }
+
+        RateLimiter::hit($throttleKey, 60);
         Auth::user()->sendEmailVerificationNotification();
 
         Session::flash('status', 'verification-link-sent');
@@ -45,10 +56,16 @@ new #[Layout('components.layouts.auth')] class extends Component {
         </div>
     @endif
 
+    @if (session('status') == 'verification-link-throttled')
+        <div class="text-center text-sm font-medium text-amber-700 dark:text-amber-300">
+            {{ __('Please wait :seconds seconds before requesting another verification email.', ['seconds' => session('verification-retry-after')]) }}
+        </div>
+    @endif
+
     <div class="flex flex-col items-center justify-between space-y-3">
-        <flux:button wire:click="sendVerification" variant="primary" class="w-full">
+        <x-ui::button wire:click="sendVerification" variant="primary" class="w-full">
             {{ __('Resend verification email') }}
-        </flux:button>
+        </x-ui::button>
 
         <button
             wire:click="logout"

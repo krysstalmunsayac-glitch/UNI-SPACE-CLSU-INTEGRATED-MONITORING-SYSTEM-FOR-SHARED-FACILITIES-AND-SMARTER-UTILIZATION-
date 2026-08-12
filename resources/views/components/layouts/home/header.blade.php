@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="scroll-smooth">
 <head>
     @include('partials.head')
 </head>
@@ -14,165 +14,209 @@
         $profileRoute = $isEndUser ? route('profile.external') : route('settings.profile');
     @endphp
 
-    <header class="sticky top-0 z-[2000] border-b border-emerald-900/10 bg-white/95 backdrop-blur dark:border-white/10 dark:bg-zinc-950/95">
-        <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-            <a href="{{ route('home') }}" class="flex h-14 w-44 shrink-0 items-center overflow-hidden" aria-label="UNI Space home">
-                <img src="{{ asset('images/uni-space-logo.png') }}" alt="UNI Space" class="h-14 w-44 object-cover object-center">
+    <header
+        x-data="{
+            mobileMenuOpen: false,
+            activeSection: window.location.hash.replace('#', '') || 'home',
+            setActive(section) {
+                this.activeSection = section || 'home';
+            }
+        }"
+        x-init="$nextTick(() => {
+            const sectionIds = ['about', 'facilities', 'calendar', 'map', 'help'];
+            const observer = new IntersectionObserver((entries) => {
+                const visible = entries.filter(entry => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+                if (visible) setActive(visible.target.id);
+            }, { rootMargin: '-20% 0px -65% 0px', threshold: [0.01, 0.25, 0.5] });
+            sectionIds.forEach(id => { const section = document.getElementById(id); if (section) observer.observe(section); });
+            window.addEventListener('scroll', () => { if (window.scrollY < 160) setActive('home'); }, { passive: true });
+            window.addEventListener('hashchange', () => setActive(window.location.hash.replace('#', '') || 'home'));
+        })"
+        x-on:keydown.escape.window="mobileMenuOpen = false"
+        class="sticky top-0 z-[2000] border-b border-emerald-900/10 bg-white/95 backdrop-blur dark:border-white/10 dark:bg-zinc-950/95"
+    >
+        <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:h-20 sm:px-6 lg:px-8">
+            <a href="{{ route('home') }}#home" class="flex h-16 w-12 shrink-0 items-center justify-center overflow-hidden sm:h-20 sm:w-64" aria-label="SIEL SPACE home">
+                <picture class="block size-10 sm:h-full sm:w-full">
+                    <source media="(max-width: 639px)" srcset="{{ asset('images/admin-collapsed-logo.png') }}">
+                    <img src="{{ asset('images/silesyu-space-logo.png') }}" alt="SIEL SPACE" class="h-full w-full object-contain object-center">
+                </picture>
             </a>
 
             <nav class="navigation-typeface hidden items-center gap-6 text-sm font-semibold text-emerald-950 dark:text-zinc-100 lg:flex">
                 @auth
                     @if ($isEndUser)
-                        <a href="{{ route('home') }}" @class([$navLink, $navActive => request()->routeIs('home')])>Home</a>
-                        <a href="{{ route('home') }}#about" class="{{ $navLink }}">About</a>
-                        <a href="{{ route('home') }}#facilities" class="{{ $navLink }}">Facilities</a>
-                        <a href="{{ route('home') }}#calendar" class="{{ $navLink }}">Calendar</a>
-                        <a href="{{ route('home') }}#map" class="{{ $navLink }}">Map</a>
-                        <a href="{{ route('home') }}#help" class="{{ $navLink }}">Help</a>
+                        <a href="{{ route('home') }}#home" class="{{ $navLink }}" x-on:click="setActive('home')" x-bind:class="activeSection === 'home' ? @js($navActive) : ''">Home</a>
+                        <a href="{{ route('home') }}#about" class="{{ $navLink }}" x-on:click="setActive('about')" x-bind:class="activeSection === 'about' ? @js($navActive) : ''">About</a>
+                        <a href="{{ route('home') }}#facilities" class="{{ $navLink }}" x-on:click="setActive('facilities')" x-bind:class="activeSection === 'facilities' ? @js($navActive) : ''">Facilities</a>
+                        <a href="{{ route('home') }}#calendar" class="{{ $navLink }}" x-on:click="setActive('calendar')" x-bind:class="activeSection === 'calendar' ? @js($navActive) : ''">Calendar</a>
+                        <a href="{{ route('home') }}#map" class="{{ $navLink }}" x-on:click="setActive('map')" x-bind:class="activeSection === 'map' ? @js($navActive) : ''">Map</a>
+                        <a href="{{ route('home') }}#help" class="{{ $navLink }}" x-on:click="setActive('help')" x-bind:class="activeSection === 'help' ? @js($navActive) : ''">Help</a>
                     @else
                         <a href="{{ route('dashboard') }}" @class([$navLink, $navActive => request()->routeIs('dashboard*')])>Dashboard</a>
                         <a href="{{ route('settings.profile') }}" @class([$navLink, $navActive => request()->routeIs('settings.*')])>Profile</a>
                     @endif
                 @else
-                    <a href="{{ route('home') }}" @class([$navLink, $navActive => request()->routeIs('home')])>Home</a>
-                    <a href="{{ route('home') }}#about" class="{{ $navLink }}">About</a>
-                    <a href="{{ route('home') }}#facilities" class="{{ $navLink }}">Facilities</a>
-                    <a href="{{ route('home') }}#calendar" class="{{ $navLink }}">Calendar</a>
-                    <a href="{{ route('home') }}#map" class="{{ $navLink }}">Map</a>
-                    <a href="{{ route('home') }}#help" class="{{ $navLink }}">Help</a>
+                    <a href="{{ route('home') }}#home" class="{{ $navLink }}" x-on:click="setActive('home')" x-bind:class="activeSection === 'home' ? @js($navActive) : ''">Home</a>
+                    <a href="{{ route('home') }}#about" class="{{ $navLink }}" x-on:click="setActive('about')" x-bind:class="activeSection === 'about' ? @js($navActive) : ''">About</a>
+                    <a href="{{ route('home') }}#facilities" class="{{ $navLink }}" x-on:click="setActive('facilities')" x-bind:class="activeSection === 'facilities' ? @js($navActive) : ''">Facilities</a>
+                    <a href="{{ route('home') }}#calendar" class="{{ $navLink }}" x-on:click="setActive('calendar')" x-bind:class="activeSection === 'calendar' ? @js($navActive) : ''">Calendar</a>
+                    <a href="{{ route('home') }}#map" class="{{ $navLink }}" x-on:click="setActive('map')" x-bind:class="activeSection === 'map' ? @js($navActive) : ''">Map</a>
+                    <a href="{{ route('home') }}#help" class="{{ $navLink }}" x-on:click="setActive('help')" x-bind:class="activeSection === 'help' ? @js($navActive) : ''">Help</a>
                 @endauth
             </nav>
 
             <div class="flex items-center gap-3">
                 @guest
-                    <a href="{{ route('login') }}" class="rounded-xl border border-emerald-700 px-5 py-2 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-700 hover:text-white dark:border-emerald-300 dark:text-emerald-200 dark:hover:bg-emerald-300 dark:hover:text-emerald-950">
+                    <a href="{{ route('login') }}" class="hidden rounded-xl border border-emerald-700 px-5 py-2 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-700 hover:text-white dark:border-emerald-300 dark:text-emerald-200 dark:hover:bg-emerald-300 dark:hover:text-emerald-950 lg:inline-flex">
                         Sign In
                     </a>
                 @else
-                    <x-notification-button />
-                    <a href="{{ $isEndUser ? route('waiting.list') : route('dashboard') }}" class="rounded-xl bg-emerald-700 px-5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-800 dark:bg-emerald-400 dark:text-emerald-950">
-                        Requests
-                    </a>
-                    <flux:dropdown position="bottom" align="end">
-                        <flux:profile
+                    <div class="hidden items-center gap-3 lg:flex">
+                        <x-notification-button />
+                        <a href="{{ $isEndUser ? route('waiting.list') : route('dashboard') }}" class="rounded-xl bg-emerald-700 px-5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-800 dark:bg-emerald-400 dark:text-emerald-950">
+                            {{ $isEndUser ? 'My Requests' : 'Dashboard' }}
+                        </a>
+                        <x-ui::dropdown position="bottom" align="end">
+                        <x-ui::profile
                             :avatar="auth()->user()->avatar_url"
                             :name="auth()->user()->name"
                             :initials="auth()->user()->initials()"
                             icon-trailing="chevron-down"
                         />
 
-                        <flux:menu class="w-[220px]">
-                            <flux:menu.radio.group>
+                        <x-ui::menu class="w-[310px] rounded-2xl! border-[#dce4df]! p-2.5! shadow-[0_18px_50px_rgba(15,52,35,0.16)]!">
+                            <x-ui::menu.radio.group>
                                 <div class="p-0 text-sm font-normal">
-                                    <div class="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                                        <span class="relative flex h-8 w-8 shrink-0 overflow-hidden rounded-lg">
+                                    <div class="flex items-center gap-3 border-b border-zinc-100 px-2 py-2.5 text-left text-sm dark:border-zinc-700">
+                                        <span class="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full">
                                             @if (auth()->user()->avatar_url)
                                                 <img src="{{ auth()->user()->avatar_url }}" alt="{{ auth()->user()->name }}" class="h-full w-full object-cover">
                                             @else
-                                                <span class="flex h-full w-full items-center justify-center rounded-lg bg-neutral-200 text-black dark:bg-neutral-700 dark:text-white">
+                                                <span class="flex h-full w-full items-center justify-center rounded-full bg-emerald-100 font-bold text-emerald-700 dark:bg-emerald-900 dark:text-emerald-100">
                                                     {{ auth()->user()->initials() }}
                                                 </span>
                                             @endif
                                         </span>
                                         <div class="grid flex-1 text-left text-sm leading-tight">
                                             <span class="truncate font-semibold">{{ auth()->user()->name }}</span>
-                                            <span class="truncate text-xs">{{ auth()->user()->email }}</span>
+                                            <span class="truncate text-xs text-slate-500 dark:text-zinc-400">{{ auth()->user()->email }}</span>
                                         </div>
                                     </div>
                                 </div>
-                            </flux:menu.radio.group>
+                            </x-ui::menu.radio.group>
 
-                            <flux:menu.separator />
-
-                            <flux:menu.radio.group>
-                                <flux:menu.item :href="$profileRoute" icon="cog" wire:navigate>Settings</flux:menu.item>
-                            </flux:menu.radio.group>
-
-                            <flux:menu.separator />
+                            <x-ui::menu.radio.group>
+                                <x-ui::menu.item :href="$profileRoute" icon="profile" class="min-h-12 rounded-xl font-semibold text-slate-700 dark:text-zinc-100" wire:navigate>Profile settings</x-ui::menu.item>
+                            </x-ui::menu.radio.group>
 
                             <form method="POST" action="{{ route('logout') }}" class="w-full">
                                 @csrf
-                                <flux:menu.item as="button" type="submit" icon="arrow-right-start-on-rectangle" class="w-full">
-                                    {{ __('Log Out') }}
-                                </flux:menu.item>
+                                <x-ui::menu.item as="button" type="submit" icon="logout" class="min-h-12 w-full rounded-xl font-semibold text-slate-700 dark:text-zinc-100">
+                                    {{ __('Log out') }}
+                                </x-ui::menu.item>
                             </form>
-                        </flux:menu>
-                    </flux:dropdown>
+                        </x-ui::menu>
+                        </x-ui::dropdown>
+                    </div>
                 @endguest
+
+                <button
+                    type="button"
+                    class="inline-flex size-10 items-center justify-center rounded-xl border border-emerald-900/10 text-emerald-950 transition hover:bg-emerald-50 dark:border-white/10 dark:text-white dark:hover:bg-zinc-800 lg:hidden"
+                    x-on:click="mobileMenuOpen = ! mobileMenuOpen"
+                    x-bind:aria-expanded="mobileMenuOpen"
+                    aria-controls="mobile-navigation"
+                    aria-label="Toggle navigation"
+                >
+                    <svg x-show="! mobileMenuOpen" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                        <path d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                    <svg x-cloak x-show="mobileMenuOpen" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                        <path d="M6 6l12 12M18 6 6 18" />
+                    </svg>
+                </button>
             </div>
         </div>
 
-        <nav class="navigation-typeface flex gap-5 overflow-x-auto border-t border-emerald-900/10 px-4 py-3 text-sm font-semibold text-emerald-950 dark:border-white/10 dark:text-zinc-100 lg:hidden">
+        <nav
+            id="mobile-navigation"
+            x-cloak
+            x-show="mobileMenuOpen"
+            x-transition.opacity.duration.150ms
+            class="navigation-typeface border-t border-emerald-900/10 px-4 py-4 text-sm font-semibold text-emerald-950 shadow-lg dark:border-white/10 dark:text-zinc-100 lg:hidden"
+        >
+            <div class="grid gap-1">
             @auth
                 @if ($isEndUser)
-                    <a href="{{ route('home') }}" @class([$mobileNavLink, $mobileNavActive => request()->routeIs('home')])>Home</a>
-                    <a href="{{ route('home') }}#about" class="{{ $mobileNavLink }}">About</a>
-                    <a href="{{ route('home') }}#facilities" class="{{ $mobileNavLink }}">Facilities</a>
-                    <a href="{{ route('home') }}#calendar" class="{{ $mobileNavLink }}">Calendar</a>
-                    <a href="{{ route('home') }}#map" class="{{ $mobileNavLink }}">Map</a>
-                    <a href="{{ route('home') }}#help" class="{{ $mobileNavLink }}">Help</a>
-                    <a href="{{ route('waiting.list') }}" @class([$mobileNavLink, $mobileNavActive => request()->routeIs('waiting.list')])>Requests</a>
-                    <flux:dropdown position="bottom" align="end">
-                        <flux:profile
-                            :avatar="auth()->user()->avatar_url"
-                            :name="auth()->user()->name"
-                            :initials="auth()->user()->initials()"
-                            icon-trailing="chevron-down"
-                        />
+                    <a href="{{ route('home') }}#home" x-on:click="mobileMenuOpen = false; setActive('home')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'home' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">Home</a>
+                    <a href="{{ route('home') }}#about" x-on:click="mobileMenuOpen = false; setActive('about')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'about' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">About</a>
+                    <a href="{{ route('home') }}#facilities" x-on:click="mobileMenuOpen = false; setActive('facilities')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'facilities' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">Facilities</a>
+                    <a href="{{ route('home') }}#calendar" x-on:click="mobileMenuOpen = false; setActive('calendar')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'calendar' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">Calendar</a>
+                    <a href="{{ route('home') }}#map" x-on:click="mobileMenuOpen = false; setActive('map')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'map' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">Map</a>
+                    <a href="{{ route('home') }}#help" x-on:click="mobileMenuOpen = false; setActive('help')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'help' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">Help</a>
+                    <a href="{{ route('waiting.list') }}" x-on:click="mobileMenuOpen = false" @class(['rounded-lg px-3 py-2.5', $mobileNavLink, 'bg-emerald-50 '.$mobileNavActive => request()->routeIs('waiting.list')])>My Requests / Waiting List</a>
 
-                        <flux:menu class="w-[220px]">
-                            <flux:menu.radio.group>
+                    <div class="mt-2 flex items-center justify-between border-t border-emerald-900/10 pt-3 dark:border-white/10">
+                        <x-notification-button />
+                        <x-ui::dropdown position="bottom" align="end">
+                            <button type="button" class="flex min-w-0 items-center gap-2 rounded-xl px-2 py-1.5 transition hover:bg-emerald-50 dark:hover:bg-zinc-800" aria-label="Open profile menu">
+                                <x-ui::avatar :src="auth()->user()->avatar_url" :name="auth()->user()->name" :initials="auth()->user()->initials()" size="sm" />
+                                <span class="max-w-36 truncate">{{ auth()->user()->name }}</span>
+                            </button>
+
+                            <x-ui::menu class="w-[min(310px,calc(100vw-2rem))] rounded-2xl! border-[#dce4df]! p-2.5! shadow-[0_18px_50px_rgba(15,52,35,0.16)]!">
+                            <x-ui::menu.radio.group>
                                 <div class="p-0 text-sm font-normal">
-                                    <div class="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                                        <span class="relative flex h-8 w-8 shrink-0 overflow-hidden rounded-lg">
+                                    <div class="flex items-center gap-3 border-b border-zinc-100 px-2 py-2.5 text-left text-sm dark:border-zinc-700">
+                                        <span class="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full">
                                             @if (auth()->user()->avatar_url)
                                                 <img src="{{ auth()->user()->avatar_url }}" alt="{{ auth()->user()->name }}" class="h-full w-full object-cover">
                                             @else
-                                                <span class="flex h-full w-full items-center justify-center rounded-lg bg-neutral-200 text-black dark:bg-neutral-700 dark:text-white">
+                                                <span class="flex h-full w-full items-center justify-center rounded-full bg-emerald-100 font-bold text-emerald-700 dark:bg-emerald-900 dark:text-emerald-100">
                                                     {{ auth()->user()->initials() }}
                                                 </span>
                                             @endif
                                         </span>
                                         <div class="grid flex-1 text-left text-sm leading-tight">
                                             <span class="truncate font-semibold">{{ auth()->user()->name }}</span>
-                                            <span class="truncate text-xs">{{ auth()->user()->email }}</span>
+                                            <span class="truncate text-xs text-slate-500 dark:text-zinc-400">{{ auth()->user()->email }}</span>
                                         </div>
                                     </div>
                                 </div>
-                            </flux:menu.radio.group>
+                            </x-ui::menu.radio.group>
 
-                            <flux:menu.separator />
-
-                            <flux:menu.radio.group>
-                                <flux:menu.item :href="$profileRoute" icon="cog" wire:navigate>Settings</flux:menu.item>
-                            </flux:menu.radio.group>
-
-                            <flux:menu.separator />
+                            <x-ui::menu.radio.group>
+                                <x-ui::menu.item :href="$profileRoute" icon="profile" class="min-h-12 rounded-xl font-semibold text-slate-700 dark:text-zinc-100" wire:navigate>Profile settings</x-ui::menu.item>
+                            </x-ui::menu.radio.group>
 
                             <form method="POST" action="{{ route('logout') }}" class="w-full">
                                 @csrf
-                                <flux:menu.item as="button" type="submit" icon="arrow-right-start-on-rectangle" class="w-full">
-                                    {{ __('Log Out') }}
-                                </flux:menu.item>
+                                <x-ui::menu.item as="button" type="submit" icon="logout" class="min-h-12 w-full rounded-xl font-semibold text-slate-700 dark:text-zinc-100">
+                                    {{ __('Log out') }}
+                                </x-ui::menu.item>
                             </form>
-                        </flux:menu>
-                    </flux:dropdown>
+                            </x-ui::menu>
+                        </x-ui::dropdown>
+                    </div>
                 @else
-                    <a href="{{ route('dashboard') }}" @class([$mobileNavLink, $mobileNavActive => request()->routeIs('dashboard*')])>Dashboard</a>
-                    <a href="{{ route('settings.profile') }}" @class([$mobileNavLink, $mobileNavActive => request()->routeIs('settings.*')])>Profile</a>
+                    <a href="{{ route('dashboard') }}" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}">Dashboard</a>
+                    <a href="{{ route('settings.profile') }}" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}">Profile</a>
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
                         <button type="submit" class="font-semibold transition hover:text-emerald-700 dark:hover:text-emerald-300">Logout</button>
                     </form>
                 @endif
             @else
-                <a href="{{ route('home') }}" @class([$mobileNavLink, $mobileNavActive => request()->routeIs('home')])>Home</a>
-                <a href="{{ route('home') }}#about" class="{{ $mobileNavLink }}">About</a>
-                <a href="{{ route('home') }}#facilities" class="{{ $mobileNavLink }}">Facilities</a>
-                <a href="{{ route('home') }}#calendar" class="{{ $mobileNavLink }}">Calendar</a>
-                <a href="{{ route('home') }}#map" class="{{ $mobileNavLink }}">Map</a>
-                <a href="{{ route('home') }}#help" class="{{ $mobileNavLink }}">Help</a>
+                <a href="{{ route('home') }}#home" x-on:click="mobileMenuOpen = false; setActive('home')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'home' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">Home</a>
+                <a href="{{ route('home') }}#about" x-on:click="mobileMenuOpen = false; setActive('about')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'about' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">About</a>
+                <a href="{{ route('home') }}#facilities" x-on:click="mobileMenuOpen = false; setActive('facilities')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'facilities' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">Facilities</a>
+                <a href="{{ route('home') }}#calendar" x-on:click="mobileMenuOpen = false; setActive('calendar')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'calendar' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">Calendar</a>
+                <a href="{{ route('home') }}#map" x-on:click="mobileMenuOpen = false; setActive('map')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'map' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">Map</a>
+                <a href="{{ route('home') }}#help" x-on:click="mobileMenuOpen = false; setActive('help')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'help' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">Help</a>
+                <a href="{{ route('login') }}" class="mt-2 rounded-xl bg-emerald-700 px-4 py-3 text-center font-bold text-white transition hover:bg-emerald-800 dark:bg-emerald-400 dark:text-emerald-950">Sign In</a>
             @endauth
+            </div>
         </nav>
     </header>
 
@@ -182,9 +226,9 @@
 
     <footer class="border-t border-emerald-900/10 bg-white py-8 dark:border-white/10 dark:bg-zinc-950">
         <div class="mx-auto flex max-w-7xl flex-col gap-4 px-4 text-sm text-emerald-900/70 dark:text-zinc-400 sm:flex-row sm:items-center sm:justify-between">
-            <p>© {{ date('Y') }} UNI Space. Central Luzon State University.</p>
+            <p>© {{ date('Y') }} SIEL SPACE. Central Luzon State University.</p>
             <div class="flex flex-wrap items-center gap-4">
-                <a href="{{ route('home') }}" class="hover:text-emerald-700 dark:hover:text-emerald-300">Home</a>
+                <a href="{{ route('home') }}#home" class="hover:text-emerald-700 dark:hover:text-emerald-300">Home</a>
                 <a href="{{ route('home') }}#about" class="hover:text-emerald-700 dark:hover:text-emerald-300">About</a>
                 <a href="{{ route('home') }}#facilities" class="hover:text-emerald-700 dark:hover:text-emerald-300">Facilities</a>
                 <a href="{{ route('home') }}#calendar" class="hover:text-emerald-700 dark:hover:text-emerald-300">Calendar</a>
@@ -192,8 +236,29 @@
         </div>
     </footer>
 
-    @fluxScripts
+    <script>
+        document.addEventListener('click', (event) => {
+            const link = event.target.closest('a[href*="#"]');
+            if (!link) return;
+
+            const url = new URL(link.href, window.location.href);
+            const isCurrentPage = url.origin === window.location.origin
+                && url.pathname === window.location.pathname;
+            const target = url.hash ? document.querySelector(url.hash) : null;
+
+            if (!isCurrentPage || !target) return;
+
+            event.preventDefault();
+            target.scrollIntoView({
+                behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+                block: 'start',
+            });
+            window.history.pushState(null, '', url.hash);
+        });
+    </script>
+
     @stack('scripts')
+    @livewireScripts
     @include('partials.site-auto-refresh')
 </body>
 </html>

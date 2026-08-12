@@ -8,12 +8,13 @@ use App\Models\Facilities;
 use App\Models\Requests;
 use App\Models\Schedule;
 use App\Models\User;
+use App\Models\AuditLog;
 use App\Support\CalendarColor;
 use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Http\Request as HttpRequest;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request as HttpRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
 
@@ -36,7 +37,7 @@ class DashboardController extends Controller
 
         $userRequests = Requests::query()
             ->where('User_ID', Auth::id())
-            ->with(['facility', 'event'])
+            ->with(['facility', 'event', 'feedback'])
             ->when($requestStatus, fn (Builder $query) => $query->where('Status', $requestStatus))
             ->orderBy('Created_at', $requestSort === 'oldest' ? 'asc' : 'desc')
             ->orderBy('RID', $requestSort === 'oldest' ? 'asc' : 'desc')
@@ -50,7 +51,7 @@ class DashboardController extends Controller
                 ->where('Status', 'Available')
                 ->orderBy('Facility_Name')
                 ->get(),
-            'events' => Events::query()->where('Status', 'Upcoming')->orderBy('Event_Title')->get(),
+            'events' => Events::query()->orderBy('Event_Title')->get(),
             'requests' => $userRequests,
             'requestSort' => $requestSort,
             'requestStatus' => $requestStatus,
@@ -174,6 +175,29 @@ class DashboardController extends Controller
             ->values()
             ->all();
 
+        $facilityUsageSeries = (clone $baseQuery)
+            ->with('facility')
+            ->whereBetween($trendDateColumn, [$trendStart->copy()->startOfDay(), $trendEnd->copy()->endOfDay()])
+            ->get()
+            ->groupBy(fn (Requests $request) => $request->facility?->Facility_Name ?? 'Unknown facility')
+            ->map(function ($requests, string $facilityName) use ($capacityDates, $trendDateColumn, $dailyLabels): array {
+                $totals = array_fill(0, count($dailyLabels), 0);
+
+                foreach ($requests as $request) {
+                    $dateKey = Carbon::parse($request->{$trendDateColumn})->toDateString();
+                    $index = $capacityDates->get($dateKey);
+
+                    if ($index !== null) {
+                        $totals[$index]++;
+                    }
+                }
+
+                return ['facility' => $facilityName, 'totals' => $totals];
+            })
+            ->sortByDesc(fn (array $series) => array_sum($series['totals']))
+            ->values()
+            ->all();
+
         $mostUsedFacilityRecord = (clone $baseQuery)
             ->whereNotNull('Facility_ID')
             ->selectRaw('Facility_ID, COUNT(*) as total')
@@ -237,6 +261,73 @@ class DashboardController extends Controller
             ->map(fn (int $count, string $name) => ['name' => $name, 'count' => $count])
             ->first();
 
+        $approvedOutcomeCount = (int) (($requestStatusCounts['Approved'] ?? 0)
+            + (clone $baseQuery)->where('Status', 'Ended')->count());
+        $rejectedOutcomeCount = (int) ($requestStatusCounts['Rejected'] ?? 0);
+        $decidedRequestCount = $approvedOutcomeCount + $rejectedOutcomeCount;
+        $approvalRate = $decidedRequestCount > 0
+            ? round(($approvedOutcomeCount / $decidedRequestCount) * 100, 1)
+            : null;
+
+        $scopedRequests = (clone $baseQuery)
+            ->with('facility')
+            ->get([
+                'RID', 'Facility_ID', 'Proposed_Date', 'Proposed_End_Date',
+                'Proposed_Start_Time', 'Proposed_End_Time', 'Status', 'Created_at',
+            ]);
+
+        $decisionLogs = AuditLog::query()
+            ->where('auditable_type', Requests::class)
+            ->whereIn('auditable_id', $scopedRequests->pluck('RID'))
+            ->whereIn('action', ['request_approved', 'request_rejected'])
+            ->oldest('created_at')
+            ->get(['auditable_id', 'created_at'])
+            ->groupBy('auditable_id')
+            ->map->first();
+        $reviewDurations = $scopedRequests
+            ->filter(fn (Requests $request) => $decisionLogs->has($request->RID) && $request->Created_at)
+            ->map(fn (Requests $request) => Carbon::parse($request->Created_at)
+                ->diffInMinutes(Carbon::parse($decisionLogs->get($request->RID)->created_at)) / 60);
+        $averageReviewHours = $reviewDurations->isNotEmpty() ? round($reviewDurations->average(), 1) : null;
+
+        $dayOrder = collect(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']);
+        $peakBookingDays = $dayOrder->map(fn (string $day) => [
+            'day' => $day,
+            'count' => $scopedRequests->filter(
+                fn (Requests $request) => $request->Proposed_Date?->format('l') === $day
+            )->count(),
+        ])->values()->all();
+        $peakBookingHours = $scopedRequests
+            ->filter(fn (Requests $request) => $request->Proposed_Start_Time)
+            ->groupBy(fn (Requests $request) => $request->Proposed_Start_Time->format('g:00 A'))
+            ->map->count()
+            ->sortDesc();
+        $peakBookingHour = $peakBookingHours->isNotEmpty()
+            ? ['hour' => $peakBookingHours->keys()->first(), 'count' => $peakBookingHours->first()]
+            : null;
+
+        $facilityBookingHours = $scopedRequests
+            ->filter(fn (Requests $request) => in_array($request->Status, ['Approved', 'Ended'], true)
+                && $request->facility
+                && $request->Proposed_Start_Time
+                && $request->Proposed_End_Time)
+            ->groupBy(fn (Requests $request) => $request->facility->Facility_Name)
+            ->map(function ($requests): float {
+                return round($requests->sum(function (Requests $request): float {
+                    $dailyHours = max(0, $request->Proposed_Start_Time->diffInMinutes($request->Proposed_End_Time) / 60);
+                    $days = $request->Proposed_Date->diffInDays($request->Proposed_End_Date ?? $request->Proposed_Date) + 1;
+
+                    return $dailyHours * $days;
+                }), 1);
+            })
+            ->sortDesc();
+        $totalFacilityBookingHours = (float) $facilityBookingHours->sum();
+        $facilityUtilization = $facilityBookingHours->map(fn (float $hours, string $facility) => [
+            'facility' => $facility,
+            'hours' => $hours,
+            'share' => $totalFacilityBookingHours > 0 ? round(($hours / $totalFacilityBookingHours) * 100, 1) : 0,
+        ])->values()->all();
+
         $facilityStatusRecords = (clone $baseQuery)
             ->whereNotNull('Facility_ID')
             ->selectRaw('Facility_ID, Status, COUNT(*) as total')
@@ -280,6 +371,16 @@ class DashboardController extends Controller
             'mostUsedEventType' => $mostUsedEventType,
             'amenityUsage' => $amenityUsage,
             'mostUsedAmenity' => $mostUsedAmenity,
+            'approvalRate' => $approvalRate,
+            'approvalOutcomeCounts' => [
+                'Approved' => $approvedOutcomeCount,
+                'Rejected' => $rejectedOutcomeCount,
+            ],
+            'averageReviewHours' => $averageReviewHours,
+            'reviewedRequestCount' => $reviewDurations->count(),
+            'peakBookingDays' => $peakBookingDays,
+            'peakBookingHour' => $peakBookingHour,
+            'facilityUtilization' => $facilityUtilization,
             'facilityStatusBreakdown' => $facilityStatusBreakdown,
             'rejectedRequestRecords' => (clone $baseQuery)
                 ->with(['user', 'facility'])
@@ -298,6 +399,7 @@ class DashboardController extends Controller
             'dailyCapacityTotals' => $dailyCapacityTotals,
             'dailyRequestTotals' => $dailyRequestTotals,
             'facilityCapacitySeries' => $facilityCapacitySeries,
+            'facilityUsageSeries' => $facilityUsageSeries,
         ];
     }
 

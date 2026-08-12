@@ -1,59 +1,123 @@
-    <flux:card>
+    <x-ui::card>
         <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <flux:heading size="lg">Amenities</flux:heading>
+            <x-ui::heading size="lg">Amenities</x-ui::heading>
             <div class="flex flex-wrap gap-2">
-                <flux:button wire:click="create" icon="plus" variant="primary">
+                <x-ui::button wire:click="create" icon="plus" variant="primary">
                     Add Amenity
-                </flux:button>
+                </x-ui::button>
             </div>
         </div>
 
-        <flux:table :paginate="$this->amenities">
-            <flux:table.columns>
-                <flux:table.column
+        <x-ui::table :paginate="$this->amenities">
+            <x-ui::table.columns>
+                <x-ui::table.column
                     sortable
                     :sorted="$sortBy === 'name'"
                     :direction="$sortDirection"
                     wire:click="sort('name')"
                 >
                     Name
-                </flux:table.column>
+                </x-ui::table.column>
 
-                <flux:table.column>Description</flux:table.column>
+                <x-ui::table.column>Description</x-ui::table.column>
 
-                <flux:table.column
+                <x-ui::table.column>Facilities</x-ui::table.column>
+
+                <x-ui::table.column
+                    sortable
+                    :sorted="$sortBy === 'reservation_limit'"
+                    :direction="$sortDirection"
+                    wire:click="sort('reservation_limit')"
+                >
+                    Usage limit
+                </x-ui::table.column>
+
+                <x-ui::table.column
+                    sortable
+                    :sorted="$sortBy === 'current_usage_count'"
+                    :direction="$sortDirection"
+                    wire:click="sort('current_usage_count')"
+                >
+                    Current usage
+                </x-ui::table.column>
+
+                <x-ui::table.column
                     sortable
                     :sorted="$sortBy === 'Status'"
                     :direction="$sortDirection"
                     wire:click="sort('Status')"
                 >
                     Status
-                </flux:table.column>
+                </x-ui::table.column>
 
-                <flux:table.column></flux:table.column>
-            </flux:table.columns>
+                <x-ui::table.column>Actions</x-ui::table.column>
+            </x-ui::table.columns>
 
-            <flux:table.rows>
+            <x-ui::table.rows>
                 @forelse ($this->amenities as $amenity)
-                    <flux:table.row :key="$amenity->AID">
-                        <flux:table.cell>
+                    <x-ui::table.row :key="$amenity->AID">
+                        <x-ui::table.cell>
                             <div class="font-medium">{{ $amenity->name }}</div>
                             <div class="text-xs text-zinc-500">#{{ $amenity->AID }}</div>
-                        </flux:table.cell>
+                        </x-ui::table.cell>
 
-                        <flux:table.cell>
-                            <div class="truncate max-w-sm">{{ $amenity->Description ?? 'No description' }}</div>
-                        </flux:table.cell>
+                        <x-ui::table.cell>
+                            <div class="max-w-md whitespace-normal leading-5">{{ $amenity->Description ?? '—' }}</div>
+                        </x-ui::table.cell>
 
-                        <flux:table.cell>
+                        <x-ui::table.cell>
+                            <div class="flex max-w-xs flex-wrap gap-1">
+                                @forelse ($amenity->facilities as $facility)
+                                    <x-ui::badge color="blue">{{ $facility->Facility_Name }}</x-ui::badge>
+                                @empty
+                                    <span class="text-sm text-zinc-500">Unassigned</span>
+                                @endforelse
+                            </div>
+                        </x-ui::table.cell>
+
+                        <x-ui::table.cell>
+                            <span class="group/tooltip relative inline-flex" tabindex="0">
+                                <x-ui::badge :color="$amenity->reservation_limit ? 'blue' : 'zinc'">
+                                    {{ $amenity->reservation_limit ? number_format($amenity->reservation_limit).' concurrent' : 'Unlimited' }}
+                                </x-ui::badge>
+                                <span
+                                    role="tooltip"
+                                    class="pointer-events-none absolute bottom-full left-1/2 z-40 mb-2 hidden w-64 -translate-x-1/2 rounded-lg bg-zinc-950 px-3 py-2 text-xs font-normal leading-5 text-white shadow-xl group-hover/tooltip:block group-focus/tooltip:block dark:bg-white dark:text-zinc-900"
+                                >
+                                    Maximum number of overlapping approved or pending reservations that may use this amenity. Unlimited means no concurrency cap.
+                                </span>
+                            </span>
+                        </x-ui::table.cell>
+
+                        <x-ui::table.cell>
+                            @php
+                                $currentUsage = (int) $amenity->current_usage_count;
+                                $atLimit = $amenity->reservation_limit !== null
+                                    && $currentUsage >= $amenity->reservation_limit;
+                            @endphp
+                            <span class="group/tooltip relative inline-flex" tabindex="0">
+                                <x-ui::badge :color="$atLimit ? 'red' : ($currentUsage > 0 ? 'amber' : 'green')">
+                                    {{ number_format($currentUsage) }} / {{ $amenity->reservation_limit ? number_format($amenity->reservation_limit) : '∞' }}
+                                </x-ui::badge>
+                                <span
+                                    role="tooltip"
+                                    class="pointer-events-none absolute bottom-full left-1/2 z-40 mb-2 hidden w-64 -translate-x-1/2 rounded-lg bg-zinc-950 px-3 py-2 text-xs font-normal leading-5 text-white shadow-xl group-hover/tooltip:block group-focus/tooltip:block dark:bg-white dark:text-zinc-900"
+                                >
+                                    Total pending or approved reservations currently assigned to this amenity.
+                                </span>
+                            </span>
+                        </x-ui::table.cell>
+
+                        <x-ui::table.cell>
+                            @if ($this->canManageAmenity($amenity))
                             <button
                                 type="button"
-                                wire:click="toggleStatus({{ $amenity->AID }})"
+                                wire:click="requestToggleStatus({{ $amenity->AID }})"
                                 wire:loading.attr="disabled"
-                                wire:target="toggleStatus({{ $amenity->AID }})"
+                                wire:target="requestToggleStatus({{ $amenity->AID }})"
                                 class="group rounded-full transition hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 disabled:cursor-wait disabled:opacity-60 dark:focus:ring-offset-zinc-900"
                                 aria-label="Change {{ $amenity->name }} status from {{ $amenity->Status }} to {{ $amenity->Status === 'Available' ? 'Unavailable' : 'Available' }}"
-                                title="Click to mark as {{ $amenity->Status === 'Available' ? 'unavailable' : 'available' }}"
+                                title="Click to {{ $amenity->Status === 'Available' ? 'deactivate' : 'activate' }}"
                             >
                                 <span
                                     @class([
@@ -65,36 +129,54 @@
                                     {{ $amenity->Status }}
                                 </span>
                             </button>
-                        </flux:table.cell>
+                            @else
+                                <x-ui::badge :color="$amenity->Status === 'Available' ? 'green' : 'red'">
+                                    {{ $amenity->Status }}
+                                </x-ui::badge>
+                            @endif
+                        </x-ui::table.cell>
 
-                        <flux:table.cell>
-                            <flux:dropdown position="bottom" align="end">
-                                <flux:button variant="ghost" size="sm" icon="ellipsis-horizontal" />
-                                <flux:menu>
-                                    <flux:menu.item icon="pencil" wire:click="edit({{ $amenity->AID }})">Edit</flux:menu.item>
-                                    <flux:menu.item icon="power" wire:click="toggleStatus({{ $amenity->AID }})">
-                                        {{ $amenity->Status === 'Available' ? 'Mark unavailable' : 'Mark available' }}
-                                    </flux:menu.item>
-                                    <flux:menu.separator />
-                                    <flux:menu.item
-                                        icon="trash"
-                                        class="text-red-600"
+                        <x-ui::table.cell>
+                            @if ($this->canManageAmenity($amenity))
+                            <x-ui::dropdown :position="$loop->remaining < 2 ? 'top' : 'bottom'" align="end">
+                                <x-ui::button variant="ghost" size="sm" icon="ellipsis-horizontal" aria-label="Actions for {{ $amenity->name }}" />
+                                <x-ui::menu>
+                                    <x-ui::menu.item icon="eye" wire:click="showDetails({{ $amenity->AID }})">View</x-ui::menu.item>
+                                    <x-ui::menu.item icon="pencil" wire:click="edit({{ $amenity->AID }})">Edit</x-ui::menu.item>
+                                    <x-ui::menu.item icon="power" wire:click="requestToggleStatus({{ $amenity->AID }})">
+                                        {{ $amenity->Status === 'Available' ? 'Deactivate' : 'Activate' }}
+                                    </x-ui::menu.item>
+                                    <x-ui::menu.separator />
+                                    <x-ui::menu.item
+                                        icon="archive-box"
+                                        class="text-amber-700 dark:text-amber-300"
                                         wire:click="delete({{ $amenity->AID }})"
-                                        wire:confirm="Are you sure you want to delete this amenity?"
+                                        data-ui-confirm="Archive this amenity? It can be restored later."
                                     >
-                                        Delete
-                                    </flux:menu.item>
-                                </flux:menu>
-                            </flux:dropdown>
-                        </flux:table.cell>
-                    </flux:table.row>
+                                        Archive
+                                    </x-ui::menu.item>
+                                    <x-ui::menu.item
+                                        icon="trash"
+                                        class="text-red-700 dark:text-red-300"
+                                        wire:click="forceDelete({{ $amenity->AID }})"
+                                        data-ui-confirm="Permanently delete this amenity? This action cannot be undone."
+                                    >
+                                        Delete permanently
+                                    </x-ui::menu.item>
+                                </x-ui::menu>
+                            </x-ui::dropdown>
+                            @else
+                                <x-ui::button variant="ghost" size="sm" icon="eye" wire:click="showDetails({{ $amenity->AID }})">View</x-ui::button>
+                            @endif
+                        </x-ui::table.cell>
+                    </x-ui::table.row>
                 @empty
-                    <flux:table.row>
-                        <flux:table.cell colspan="4" class="text-center py-8">
+                    <x-ui::table.row>
+                        <x-ui::table.cell colspan="7" class="text-center py-8">
                             No amenities found.
-                        </flux:table.cell>
-                    </flux:table.row>
+                        </x-ui::table.cell>
+                    </x-ui::table.row>
                 @endforelse
-            </flux:table.rows>
-        </flux:table>
-    </flux:card>
+            </x-ui::table.rows>
+        </x-ui::table>
+    </x-ui::card>

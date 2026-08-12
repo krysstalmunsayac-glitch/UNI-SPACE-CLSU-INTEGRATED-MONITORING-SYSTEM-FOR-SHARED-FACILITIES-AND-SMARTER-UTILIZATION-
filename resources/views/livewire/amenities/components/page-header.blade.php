@@ -1,7 +1,7 @@
     <div class="mb-6 flex flex-col items-start gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div class="flex items-center gap-3">
             <span class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
-                <flux:icon.rectangle-stack class="size-6" />
+                <x-ui::icon.rectangle-stack class="size-6" />
             </span>
             <div>
                 <h1 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">Amenity Management</h1>
@@ -10,16 +10,12 @@
         </div>
 
         <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-            <flux:input
-                wire:model="searchInput"
-                wire:keydown.enter="applySearch"
+            <x-ui::input
+                wire:model.live.debounce.400ms="searchInput"
                 placeholder="Search by name or description..."
                 icon="magnifying-glass"
                 class="w-full sm:w-[240px]"
             />
 
-            <flux:button wire:click="applySearch" icon="magnifying-glass">
-                Search
-            </flux:button>
         </div>
     </div>

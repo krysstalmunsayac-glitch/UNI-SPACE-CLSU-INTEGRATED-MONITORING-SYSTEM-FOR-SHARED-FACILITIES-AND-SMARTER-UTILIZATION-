@@ -2,12 +2,12 @@
     <section class="border-y border-emerald-900/10 bg-white dark:border-white/10 dark:bg-zinc-950">
         <div class="mx-auto grid min-h-[520px] max-w-7xl items-center gap-10 px-4 py-16 sm:px-6 lg:grid-cols-[0.95fr_1.05fr] lg:px-8">
             <div>
-                <p class="text-sm font-black uppercase tracking-[0.2em] text-emerald-700 dark:text-emerald-300">About UNI Space</p>
+                <p class="text-sm font-black uppercase tracking-[0.2em] text-emerald-700 dark:text-emerald-300">About SIEL SPACE</p>
                 <h2 class="mt-4 text-5xl font-black leading-tight tracking-tight text-emerald-950 dark:text-white sm:text-6xl">
                     A smarter way to manage campus spaces
                 </h2>
                 <p class="mt-6 max-w-2xl text-lg leading-8 text-emerald-900/70 dark:text-zinc-300">
-                    UNI Space is a facility reservation platform built for Central Luzon State University. It helps students, faculty, and staff browse available spaces, submit requests, and track approvals in one organized place.
+                    SIEL SPACE is a facility reservation platform built for Central Luzon State University. It helps students, faculty, and staff browse available spaces, submit requests, and track approvals in one organized place.
                 </p>
             </div>
 
@@ -25,7 +25,7 @@
                 ['value' => '25+', 'label' => 'Facilities listed'],
                 ['value' => '4', 'label' => 'Request statuses'],
                 ['value' => '24/7', 'label' => 'Schedule visibility'],
-                ['value' => '10 days', 'label' => 'Auto archive window'],
+                ['value' => 'Automatic', 'label' => 'Ended-event archiving'],
             ] as $stat)
                 <div class="rounded-xl border border-emerald-900/10 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-zinc-950">
                     <p class="text-4xl font-black text-emerald-800 dark:text-emerald-300">{{ $stat['value'] }}</p>
@@ -67,7 +67,7 @@
                 <p class="text-sm font-black uppercase tracking-[0.2em] text-emerald-100">Who we serve</p>
                 <h2 class="mt-4 text-4xl font-black tracking-tight">For students, faculty, staff, and campus offices</h2>
                 <p class="mt-5 text-lg leading-8 text-emerald-50">
-                    UNI Space keeps facility requests accessible to end users while giving office admins and super admins the tools they need to manage records responsibly.
+                    SIEL SPACE keeps facility requests accessible to end users while giving office admins and super admins the tools they need to manage records responsibly.
                 </p>
                 <div class="mt-8 grid gap-3 sm:grid-cols-2">
                     @foreach (['Student activities', 'Academic events', 'Office meetings', 'Campus programs'] as $useCase)
@@ -83,13 +83,14 @@
             <div class="mx-auto max-w-3xl text-center">
                 <p class="text-sm font-black uppercase tracking-[0.2em] text-emerald-700 dark:text-emerald-300">Meet the team</p>
                 <h2 class="mt-4 text-4xl font-black tracking-tight text-emerald-950 dark:text-white">People behind the platform</h2>
-                <p class="mt-5 text-lg leading-8 text-emerald-900/70 dark:text-zinc-300">The team responsible for planning, designing, and developing UNI Space.</p>
+                <p class="mt-5 text-lg leading-8 text-emerald-900/70 dark:text-zinc-300">The team responsible for planning, designing, and developing SIEL SPACE.</p>
             </div>
-            <div class="mx-auto mt-12 grid max-w-4xl gap-6 md:grid-cols-3">
+            <div class="mx-auto mt-12 grid max-w-6xl gap-6 sm:grid-cols-2 lg:grid-cols-4">
                 @foreach ([
                     ['name' => 'GenRev Salazar', 'role' => 'Project Leader', 'image' => 'https://placehold.co/320x320/dcfce7/007a2f?text=GS'],
                     ['name' => 'Krysstal Munsayac', 'role' => 'UI Developer', 'image' => 'https://placehold.co/320x320/e8f5ee/007a2f?text=KM'],
                     ['name' => 'Mark Patoc', 'role' => 'BackEnd Developer', 'image' => 'https://placehold.co/320x320/fef3c7/007a2f?text=MP'],
+                    ['name' => 'Khavee Agustus Botangen', 'role' => 'Capstone Advisor', 'image' => 'https://placehold.co/320x320/d1fae5/007a2f?text=KAB'],
                 ] as $member)
                     <article class="rounded-2xl border border-emerald-900/10 bg-white p-6 text-center shadow-sm dark:border-white/10 dark:bg-zinc-900">
                         <img src="{{ $member['image'] }}" alt="{{ $member['name'] }}" class="mx-auto size-36 rounded-full object-cover ring-4 ring-emerald-600/15 sm:size-40">

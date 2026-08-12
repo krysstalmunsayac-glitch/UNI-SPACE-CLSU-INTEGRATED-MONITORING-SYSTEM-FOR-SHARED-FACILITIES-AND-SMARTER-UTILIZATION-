@@ -23,6 +23,7 @@ return new class extends Migration
 
             $table->index(['auditable_type', 'auditable_id']);
             $table->index(['actor_id', 'created_at']);
+            $table->index('created_at', 'audit_logs_created_at_index');
         });
     }
 

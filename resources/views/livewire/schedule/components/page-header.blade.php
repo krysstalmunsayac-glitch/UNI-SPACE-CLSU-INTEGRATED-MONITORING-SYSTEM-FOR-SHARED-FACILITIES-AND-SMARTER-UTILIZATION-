@@ -13,7 +13,7 @@
 
                 <div class="flex items-center gap-3">
                     <span class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-white text-emerald-700 shadow-sm dark:bg-zinc-950 dark:text-emerald-300">
-                        <flux:icon.calendar-days class="size-6" />
+                        <x-ui::icon.calendar-days class="size-6" />
                     </span>
                     <div>
                         <h1 class="text-3xl font-bold tracking-tight text-gray-950 dark:text-white">
@@ -27,15 +27,6 @@
                 </div>
             </div>
 
-            <div class="flex flex-col gap-2 sm:flex-row">
-                <flux:button wire:click="create" icon="plus" variant="primary">
-                    Add Schedule
-                </flux:button>
-
-                <flux:button wire:click="openArchivedRecords" icon="archive-box" variant="outline">
-                    Archived
-                </flux:button>
-            </div>
         </div>
     </div>
 
@@ -68,33 +59,29 @@
 
     <div class="flex flex-col gap-3 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
         <div class="grid w-full gap-3 sm:grid-cols-[minmax(180px,260px)_1fr_auto] lg:max-w-3xl">
-            <flux:select
+            <x-ui::select
                 wire:model.live="facilityFilter"
                 placeholder="All facilities"
                 class="w-full"
             >
-                <flux:select.option value="">
+                <x-ui::select.option value="">
                     All facilities
-                </flux:select.option>
+                </x-ui::select.option>
 
                 @foreach ($this->facilitiesList as $facility)
-                    <flux:select.option value="{{ $facility->FID }}">
+                    <x-ui::select.option value="{{ $facility->FID }}">
                         {{ $facility->Facility_Name }}
-                    </flux:select.option>
+                    </x-ui::select.option>
                 @endforeach
-            </flux:select>
+            </x-ui::select>
 
-            <flux:input
-                wire:model="searchInput"
-                wire:keydown.enter="applySearch"
+            <x-ui::input
+                wire:model.live.debounce.400ms="searchInput"
                 placeholder="Search by facility or purpose..."
                 icon="magnifying-glass"
                 class="w-full"
             />
 
-            <flux:button wire:click="applySearch" icon="magnifying-glass">
-                Search
-            </flux:button>
         </div>
 
         <div class="text-sm font-medium text-gray-500 dark:text-zinc-400">

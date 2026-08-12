@@ -1,32 +1,23 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-<title>{{ $title ?? 'Uni Space' }}</title>
+<title>{{ $title ?? 'SIEL SPACE' }}</title>
 
 <link rel="icon" type="image/png" href="{{ asset('images/Logo_Green.png') }}" />
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet/dist/leaflet.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script>
-    try {
-        if (!window.localStorage.getItem('flux.appearance')) {
-            window.localStorage.setItem('flux.appearance', 'light');
-        }
-    } catch (error) {
-        // Light remains the document default when storage is unavailable.
-    }
-</script>
-
+@if (request()->routeIs('home', 'dashboard', 'Facility*'))
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js" defer></script>
+@endif
 <style>
     /* Header */
-    [data-flux-header] {
+    [data-ui-header] {
         background-color: #009639 !important;
         font-family: 'Acumin Pro', 'Acumin Variable Concept', Arial, sans-serif;
     }
 
     /* Navbar Items */
-    [data-flux-navbar-item] {
+    [data-ui-navbar-item] {
         font-family: 'Acumin Pro', 'Acumin Variable Concept', Arial, sans-serif !important;
         font-weight: 800 !important;
         font-size: 15px !important;
@@ -35,28 +26,28 @@
         color: rgba(255, 255, 255, 0.9) !important;
     }
 
-    [data-flux-navbar-item]:hover {
+    [data-ui-navbar-item]:hover {
         color: #ffffff !important;
         background: rgba(255, 255, 255, 0.08);
     }
 
-    [data-flux-navbar-item][aria-current="page"],
-    [data-flux-navbar-item][data-current],
-    [data-flux-navbar-item].current {
+    [data-ui-navbar-item][aria-current="page"],
+    [data-ui-navbar-item][data-current],
+    [data-ui-navbar-item].current {
         color: #007a2f !important;
         background: #facc15 !important;
         box-shadow: inset 0 -3px 0 #007a2f;
     }
 
     /* Mobile Sidebar */
-    [data-flux-sidebar] {
+    [data-ui-sidebar] {
         background-color: #009639 !important;
         border-right-color: rgba(255, 255, 255, 0.12) !important;
     }
 
     /* Sidebar Items */
-    [data-flux-sidebar] [data-flux-sidebar-item],
-    [data-flux-sidebar] [data-flux-navlist-item] {
+    [data-ui-sidebar] [data-ui-sidebar-item],
+    [data-ui-sidebar] [data-ui-navlist-item] {
         font-family: 'Acumin Pro', 'Acumin Variable Concept', Arial, sans-serif !important;
         font-weight: 800 !important;
         font-size: 16px !important;
@@ -66,10 +57,10 @@
         min-height: 44px;
     }
 
-    [data-flux-sidebar] [data-flux-navlist-group] > div:first-child,
-    [data-flux-sidebar] [data-flux-navlist-group] > div:first-child *,
-    [data-flux-sidebar] [data-flux-navlist-group] button,
-    [data-flux-sidebar] [data-flux-navlist-group] button * {
+    [data-ui-sidebar] [data-ui-navlist-group] > div:first-child,
+    [data-ui-sidebar] [data-ui-navlist-group] > div:first-child *,
+    [data-ui-sidebar] [data-ui-navlist-group] button,
+    [data-ui-sidebar] [data-ui-navlist-group] button * {
         color: #ffffff !important;
         font-family: 'Acumin Pro', 'Acumin Variable Concept', Arial, sans-serif !important;
         font-weight: 800 !important;
@@ -78,41 +69,41 @@
         text-transform: uppercase;
     }
 
-    [data-flux-sidebar] [data-flux-sidebar-item]:hover,
-    [data-flux-sidebar] [data-flux-navlist-item]:hover {
+    [data-ui-sidebar] [data-ui-sidebar-item]:hover,
+    [data-ui-sidebar] [data-ui-navlist-item]:hover {
         color: #ffffff !important;
         background: rgba(255, 255, 255, 0.12) !important;
     }
 
-    [data-flux-sidebar] [data-flux-sidebar-item][aria-current="page"],
-    [data-flux-sidebar] [data-flux-sidebar-item][data-current],
-    [data-flux-sidebar] [data-flux-sidebar-item].current,
-    [data-flux-sidebar] [data-flux-navlist-item][aria-current="page"],
-    [data-flux-sidebar] [data-flux-navlist-item][data-current],
-    [data-flux-sidebar] [data-flux-navlist-item].current {
+    [data-ui-sidebar] [data-ui-sidebar-item][aria-current="page"],
+    [data-ui-sidebar] [data-ui-sidebar-item][data-current],
+    [data-ui-sidebar] [data-ui-sidebar-item].current,
+    [data-ui-sidebar] [data-ui-navlist-item][aria-current="page"],
+    [data-ui-sidebar] [data-ui-navlist-item][data-current],
+    [data-ui-sidebar] [data-ui-navlist-item].current {
         color: #007a2f !important;
         background: #facc15 !important;
         border-color: #facc15 !important;
         box-shadow: 0 10px 20px rgba(20, 83, 45, 0.18);
     }
 
-    /* Force all text inside Flux navigation to use the heavier weight */
-    [data-flux-navbar-item] *,
-    [data-flux-sidebar] [data-flux-sidebar-item] *,
-    [data-flux-sidebar] [data-flux-navlist-item] * {
+    /* Force all text inside UI navigation to use the heavier weight */
+    [data-ui-navbar-item] *,
+    [data-ui-sidebar] [data-ui-sidebar-item] *,
+    [data-ui-sidebar] [data-ui-navlist-item] * {
         font-family: 'Acumin Pro', 'Acumin Variable Concept', Arial, sans-serif !important;
         font-weight: 800 !important;
     }
 
-    [data-flux-sidebar] [data-flux-sidebar-item][aria-current="page"] *,
-    [data-flux-sidebar] [data-flux-sidebar-item][data-current] *,
-    [data-flux-sidebar] [data-flux-sidebar-item].current *,
-    [data-flux-sidebar] [data-flux-navlist-item][aria-current="page"] *,
-    [data-flux-sidebar] [data-flux-navlist-item][data-current] *,
-    [data-flux-sidebar] [data-flux-navlist-item].current *,
-    [data-flux-navbar-item][aria-current="page"] *,
-    [data-flux-navbar-item][data-current] *,
-    [data-flux-navbar-item].current * {
+    [data-ui-sidebar] [data-ui-sidebar-item][aria-current="page"] *,
+    [data-ui-sidebar] [data-ui-sidebar-item][data-current] *,
+    [data-ui-sidebar] [data-ui-sidebar-item].current *,
+    [data-ui-sidebar] [data-ui-navlist-item][aria-current="page"] *,
+    [data-ui-sidebar] [data-ui-navlist-item][data-current] *,
+    [data-ui-sidebar] [data-ui-navlist-item].current *,
+    [data-ui-navbar-item][aria-current="page"] *,
+    [data-ui-navbar-item][data-current] *,
+    [data-ui-navbar-item].current * {
         color: #007a2f !important;
     }
 
@@ -124,4 +115,3 @@
 
 @vite(['resources/css/app.css', 'resources/js/app.js'])
 @stack('styles')
-@fluxAppearance

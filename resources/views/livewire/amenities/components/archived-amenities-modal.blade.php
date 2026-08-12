@@ -1,58 +1,75 @@
-    <flux:modal wire:model.self="showArchivedModal" class="w-[95vw] max-w-5xl">
-        <div class="space-y-6">
-            <div>
-                <flux:heading size="lg">Archived Amenities</flux:heading>
-                <flux:subheading>Restore archived amenities or delete them permanently.</flux:subheading>
+    <div class="space-y-6">
+            <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                    <x-ui::heading size="lg">Archived Amenities</x-ui::heading>
+                    <x-ui::subheading>Restore archived amenities or delete them permanently.</x-ui::subheading>
+                </div>
+                <div class="w-full lg:w-auto lg:min-w-[28rem]">
+                    <x-ui::input wire:model.live.debounce.400ms="searchInput" placeholder="Search name or description..." class="w-full" />
+                </div>
             </div>
 
-            <div class="overflow-x-auto">
-                <flux:table :paginate="$this->archivedAmenities">
-                    <flux:table.columns>
-                        <flux:table.column>Name</flux:table.column>
-                        <flux:table.column>Description</flux:table.column>
-                        <flux:table.column>Archived</flux:table.column>
-                        <flux:table.column>Actions</flux:table.column>
-                    </flux:table.columns>
+            <div class="min-h-56 overflow-x-auto">
+                <x-ui::table :paginate="$this->archivedAmenities">
+                    <x-ui::table.columns>
+                        <x-ui::table.column>Name</x-ui::table.column>
+                        <x-ui::table.column>Description</x-ui::table.column>
+                        <x-ui::table.column>Facilities</x-ui::table.column>
+                        <x-ui::table.column>Usage limit</x-ui::table.column>
+                        <x-ui::table.column>Archived</x-ui::table.column>
+                        <x-ui::table.column>Actions</x-ui::table.column>
+                    </x-ui::table.columns>
 
-                    <flux:table.rows>
+                    <x-ui::table.rows>
                         @forelse ($this->archivedAmenities as $amenity)
-                            <flux:table.row :key="'archived-amenity-'.$amenity->AID">
-                                <flux:table.cell>
+                            <x-ui::table.row :key="'archived-amenity-'.$amenity->AID">
+                                <x-ui::table.cell>
                                     <div class="font-medium">{{ $amenity->name }}</div>
                                     <div class="text-xs text-zinc-500">#{{ $amenity->AID }}</div>
-                                </flux:table.cell>
-                                <flux:table.cell>
+                                </x-ui::table.cell>
+                                <x-ui::table.cell>
                                     {{ $amenity->Description ?? 'No description' }}
-                                </flux:table.cell>
-                                <flux:table.cell>
-                                    {{ $amenity->deleted_at?->format('M d, Y') ?? 'N/A' }}
-                                </flux:table.cell>
-                                <flux:table.cell>
-                                    <div class="flex gap-2">
-                                        <flux:button size="sm" variant="ghost" wire:click="restore({{ $amenity->AID }})">
-                                            Restore
-                                        </flux:button>
-                                        <flux:button size="sm" variant="danger" wire:click="forceDelete({{ $amenity->AID }})" wire:confirm="Delete this archived amenity permanently?">
-                                            Delete
-                                        </flux:button>
-                                    </div>
-                                </flux:table.cell>
-                            </flux:table.row>
+                                </x-ui::table.cell>
+                                <x-ui::table.cell>
+                                    {{ $amenity->facilities->pluck('Facility_Name')->join(', ') ?: 'Unassigned' }}
+                                </x-ui::table.cell>
+                                <x-ui::table.cell>
+                                    {{ $amenity->reservation_limit ? number_format($amenity->reservation_limit).' concurrent' : 'Unlimited' }}
+                                </x-ui::table.cell>
+                                <x-ui::table.cell>
+                                    {{ $amenity->deleted_at?->format('M d, Y') ?? '—' }}
+                                </x-ui::table.cell>
+                                <x-ui::table.cell>
+                                    @if ($this->canManageAmenity($amenity))
+                                    <x-ui::dropdown position="bottom" align="end">
+                                        <x-ui::button variant="ghost" size="sm" icon="ellipsis-horizontal" aria-label="Actions for {{ $amenity->name }}" />
+                                        <x-ui::menu>
+                                            <x-ui::menu.item icon="arrow-path" wire:click="restore({{ $amenity->AID }})">Restore</x-ui::menu.item>
+                                            <x-ui::menu.separator />
+                                            <x-ui::menu.item icon="trash" variant="danger" wire:click="forceDelete({{ $amenity->AID }})" data-ui-confirm="Delete this archived amenity permanently?">Delete permanently</x-ui::menu.item>
+                                        </x-ui::menu>
+                                    </x-ui::dropdown>
+                                    @else
+                                        <span class="text-xs text-zinc-500">Read only</span>
+                                    @endif
+                                </x-ui::table.cell>
+                            </x-ui::table.row>
                         @empty
-                            <flux:table.row>
-                                <flux:table.cell colspan="4" class="py-8 text-center">
+                            <x-ui::table.row>
+                                <x-ui::table.cell colspan="6" class="py-8 text-center">
                                     No archived amenities found.
-                                </flux:table.cell>
-                            </flux:table.row>
+                                </x-ui::table.cell>
+                            </x-ui::table.row>
                         @endforelse
-                    </flux:table.rows>
-                </flux:table>
+                    </x-ui::table.rows>
+                </x-ui::table>
             </div>
 
+            @unless ($archiveOnly ?? false)
             <div class="flex justify-end">
-                <flux:button wire:click="$set('showArchivedModal', false)" variant="ghost">
+                <x-ui::button wire:click="$set('showArchivedModal', false)" variant="ghost">
                     Close
-                </flux:button>
+                </x-ui::button>
             </div>
-        </div>
-    </flux:modal>
+            @endunless
+    </div>

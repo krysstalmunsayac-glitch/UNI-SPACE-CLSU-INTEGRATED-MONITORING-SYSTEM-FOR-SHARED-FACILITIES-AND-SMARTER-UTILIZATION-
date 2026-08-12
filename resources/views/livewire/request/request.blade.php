@@ -1,45 +1,74 @@
 <?php
 
-use Livewire\Volt\Component;
-use Livewire\Attributes\Layout;
-use Livewire\Attributes\Computed;
-use Livewire\Attributes\Validate;
-use Livewire\WithPagination;
-use Flux\Flux;
+use App\Models\Facilities;
 use App\Models\Requests;
 use App\Models\Schedule;
 use App\Models\User;
-use App\Notifications\RequestStatusUpdated;
 use App\Notifications\RequestNeedsRevision;
+use App\Notifications\RequestStatusUpdated;
+use App\Support\Ui;
+use Carbon\CarbonPeriod;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
-use Illuminate\Support\Facades\Storage;
+use Livewire\Attributes\Computed;
+use Livewire\Attributes\Layout;
+use Livewire\Attributes\Validate;
+use Livewire\Volt\Component;
+use Livewire\WithPagination;
 
-new #[Layout('components.layouts.app')] class extends Component {
+new #[Layout('components.layouts.app')] class extends Component
+{
     use WithPagination;
 
     public $editingId = null;
+
     public $viewingId = null;
+
     public bool $showModal = false;
+
     public bool $showViewModal = false;
+
+    public bool $viewingArchived = false;
+
     public bool $showArchivedModal = false;
+
+    public bool $archiveOnly = false;
 
     public function mount(): void
     {
-        $this->showArchivedModal = request()->boolean('archive');
+        Requests::markPastRequestsAsEnded();
+        $this->archiveOnly = request()->boolean('archive');
+        $this->showArchivedModal = $this->archiveOnly;
+
+        if (! $this->archiveOnly && request()->integer('request')) {
+            $this->showRequest(request()->integer('request'));
+        }
     }
+
     public bool $showRejectModal = false;
+
     public bool $showReviewModal = false;
+
     public ?int $rejectingId = null;
+
     public ?int $reviewingId = null;
+
     public string $reviewNotes = '';
+
     public array $rejectionReasons = [];
+
     public string $otherRejectionReason = '';
+
     public string $searchInput = '';
+
     public string $search = '';
+
     public $sortBy = 'RID';
+
     public $sortDirection = 'asc';
-    public string $receivedOrder = 'fifo';
+
     public string $statusFilter = '';
+
     public string $archiveStatusFilter = '';
 
     #[Validate('nullable|integer')]
@@ -50,6 +79,9 @@ new #[Layout('components.layouts.app')] class extends Component {
 
     #[Validate('required|date|after:today')]
     public string $Proposed_Date = '';
+
+    #[Validate('required|date|after_or_equal:Proposed_Date')]
+    public string $Proposed_End_Date = '';
 
     #[Validate('required|date_format:H:i')]
     public string $Proposed_Start_Time = '';
@@ -67,37 +99,45 @@ new #[Layout('components.layouts.app')] class extends Component {
     public ?int $Capacity = null;
 
     public ?string $Event_Title = null;
-    public ?string $Event_Type = null;
-    public ?string $Facility_Name = null;
-    public array $Requested_Amenities = [];
-    public ?string $attachmentPath = null;
 
-    public function updatingSearch(): void
-    {
-        $this->resetPage('requestsPage');
-    }
+    public ?string $Event_Type = null;
+
+    public ?string $Facility_Name = null;
+
+    public ?string $Requester_Name = null;
+
+    public ?string $Requester_Email = null;
+
+    public ?string $Requester_Contact = null;
+
+    public ?string $Requester_Office = null;
+
+    public array $Requested_Amenities = [];
+
+    public array $Purpose_Categories = [];
+
+    public ?string $Other_Purpose = null;
+
+    public ?string $Reservation_Frequency = null;
+
+    public ?string $Facility_Importance = null;
+
+    public ?string $Requirements_Fit = null;
+
+    public ?string $Reserve_Again_Intent = null;
+
+    public ?string $attachmentPath = null;
 
     public function applySearch(): void
     {
         $this->search = trim($this->searchInput);
         $this->resetPage('requestsPage');
+        $this->resetPage('archivedRequestsPage');
     }
 
-    public function updatedReceivedOrder(): void
+    public function updatedSearchInput(): void
     {
-        $this->sortBy = 'RID';
-        $this->sortDirection = $this->receivedOrder === 'recent' ? 'desc' : 'asc';
-        $this->resetPage('requestsPage');
-    }
-
-    public function setRequestIdOrder(string $order): void
-    {
-        if (! in_array($order, ['fifo', 'recent'], true)) {
-            return;
-        }
-
-        $this->receivedOrder = $order;
-        $this->updatedReceivedOrder();
+        $this->applySearch();
     }
 
     public function updatedStatusFilter(): void
@@ -112,17 +152,24 @@ new #[Layout('components.layouts.app')] class extends Component {
 
     public function sort($column): void
     {
+        if (! in_array($column, ['RID', 'User_ID', 'Proposed_Date', 'Status'], true)) {
+            return;
+        }
+
         if ($this->sortBy === $column) {
             $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
         } else {
             $this->sortBy = $column;
             $this->sortDirection = 'asc';
         }
+
+        $this->resetPage('requestsPage');
     }
 
     public function resetForm(): void
     {
         $this->Proposed_Date = now()->addDay()->toDateString();
+        $this->Proposed_End_Date = $this->Proposed_Date;
         $this->Proposed_Start_Time = '09:00';
         $this->Proposed_End_Time = '10:00';
         $this->Status = 'Pending';
@@ -133,7 +180,17 @@ new #[Layout('components.layouts.app')] class extends Component {
         $this->Event_Title = null;
         $this->Event_Type = null;
         $this->Facility_Name = null;
+        $this->Requester_Name = null;
+        $this->Requester_Email = null;
+        $this->Requester_Contact = null;
+        $this->Requester_Office = null;
         $this->Requested_Amenities = [];
+        $this->Purpose_Categories = [];
+        $this->Other_Purpose = null;
+        $this->Reservation_Frequency = null;
+        $this->Facility_Importance = null;
+        $this->Requirements_Fit = null;
+        $this->Reserve_Again_Intent = null;
         $this->attachmentPath = null;
         $this->editingId = null;
         $this->viewingId = null;
@@ -145,12 +202,37 @@ new #[Layout('components.layouts.app')] class extends Component {
     public function showRequest(int $requestId): void
     {
         $request = $this->getScopedRequest($requestId)
-            ->load(['user', 'event', 'facility']);
+            ->load(['user', 'event', 'facility.amenities']);
+
+        $this->viewingArchived = false;
+        $this->fillRequestDetails($request);
+        $this->showViewModal = true;
+    }
+
+    public function showArchivedRequest(int $requestId): void
+    {
+        $query = Requests::query()->onlyTrashed();
+
+        if (auth()->user()->isAdmin()) {
+            $query->whereHas('facility.assignedAdmins', fn ($query) => $query->where('users.id', auth()->id()));
+        }
+
+        $request = $query->findOrFail($requestId)
+            ->load(['user', 'event', 'facility.amenities']);
+
+        $this->viewingArchived = true;
+        $this->fillRequestDetails($request);
+        $this->showViewModal = true;
+    }
+
+    private function fillRequestDetails(Requests $request): void
+    {
 
         $this->viewingId = $request->RID;
         $this->Event_ID = $request->Event_ID;
         $this->User_ID = $request->User_ID;
         $this->Proposed_Date = $request->Proposed_Date->toDateString();
+        $this->Proposed_End_Date = ($request->Proposed_End_Date ?? $request->Proposed_Date)->toDateString();
         $this->Proposed_Start_Time = $request->Proposed_Start_Time->format('H:i');
         $this->Proposed_End_Time = $request->Proposed_End_Time->format('H:i');
         $this->Status = $request->Status;
@@ -159,14 +241,23 @@ new #[Layout('components.layouts.app')] class extends Component {
         $this->Event_Title = $request->event?->Event_Title;
         $this->Event_Type = $request->event?->Type_Event;
         $this->Facility_Name = $request->facility?->Facility_Name;
+        $this->Requester_Name = $request->user?->name;
+        $this->Requester_Email = $request->user?->email;
+        $this->Requester_Contact = $request->user?->contact_number;
+        $this->Requester_Office = $request->user?->office;
         $this->attachmentPath = $request->attachment_path;
         $this->Requested_Amenities = $request->facility?->amenities
             ->pluck('name')
             ->filter()
             ->values()
             ->all() ?? [];
+        $this->Purpose_Categories = $request->Purpose_Categories ?? [];
+        $this->Other_Purpose = $request->Other_Purpose;
+        $this->Reservation_Frequency = $request->Reservation_Frequency;
+        $this->Facility_Importance = $request->Facility_Importance;
+        $this->Requirements_Fit = $request->Requirements_Fit;
+        $this->Reserve_Again_Intent = $request->Reserve_Again_Intent;
 
-        $this->showViewModal = true;
     }
 
     public function edit(int $requestId): void
@@ -177,6 +268,7 @@ new #[Layout('components.layouts.app')] class extends Component {
         $this->Event_ID = $request->Event_ID;
         $this->User_ID = $request->User_ID;
         $this->Proposed_Date = $request->Proposed_Date->toDateString();
+        $this->Proposed_End_Date = ($request->Proposed_End_Date ?? $request->Proposed_Date)->toDateString();
         $this->Proposed_Start_Time = $request->Proposed_Start_Time->format('H:i');
         $this->Proposed_End_Time = $request->Proposed_End_Time->format('H:i');
         $this->Status = $request->Status;
@@ -191,38 +283,95 @@ new #[Layout('components.layouts.app')] class extends Component {
         $request = $this->getScopedRequest($requestId)->load(['facility', 'user']);
 
         if (in_array($request->Status, ['Approved', 'Cancelled', 'Ended'], true)) {
-            Flux::toast(text: 'This request cannot be approved from its current status.', variant: 'warning');
+            Ui::toast(text: 'This request cannot be approved from its current status.', variant: 'warning');
+
             return;
         }
 
-        if (
-            $request->Facility_ID
-            && Requests::activeFacilityConflicts(
+        $dailySchedules = $request->Daily_Schedules ?? [[
+            'date' => $request->Proposed_Date->toDateString(),
+            'start' => $request->Proposed_Start_Time->format('H:i'),
+            'end' => $request->Proposed_End_Time->format('H:i'),
+        ]];
+
+        $result = DB::transaction(function () use ($request, $dailySchedules): ?array {
+            if ($request->Facility_ID) {
+                Facilities::query()->whereKey($request->Facility_ID)->lockForUpdate()->firstOrFail();
+            }
+
+            $request = Requests::query()->whereKey($request->RID)->lockForUpdate()->firstOrFail();
+
+            if ($request->Status !== 'Pending') {
+                return null;
+            }
+
+            if ($request->Facility_ID && Requests::hasActiveDailyScheduleConflict(
                 $request->Facility_ID,
-                $request->Proposed_Date->toDateString(),
-                $request->Proposed_Start_Time->format('H:i'),
-                $request->Proposed_End_Time->format('H:i'),
+                $dailySchedules,
                 $request->RID,
-            )->exists()
-        ) {
-            Flux::toast(text: 'This request conflicts with another active booking and cannot be approved.', variant: 'warning');
+                true,
+            )) {
+                return null;
+            }
+
+            $rejectedRequests = $request->Facility_ID
+                ? Requests::dailyScheduleConflicts(
+                    $request->Facility_ID,
+                    $dailySchedules,
+                    $request->RID,
+                    true,
+                    ['Pending'],
+                )
+                : collect();
+
+            $request->update([
+                'Status' => 'Approved',
+                'Rejection_Reason' => null,
+                'Review_Notes' => null,
+                'Review_Requested_At' => null,
+            ]);
+
+            $this->createScheduleFromRequest($request);
+
+            foreach ($rejectedRequests as $conflictingRequest) {
+                $conflictingRequest->schedules()->delete();
+                $conflictingRequest->update([
+                    'Status' => 'Rejected',
+                    'Rejection_Reason' => "Schedule conflict: request #{$request->RID} was approved for the same facility and time.",
+                    'Review_Notes' => null,
+                    'Review_Requested_At' => null,
+                ]);
+            }
+
+            return [
+                'approved' => $request->load(['facility', 'user']),
+                'rejected' => $rejectedRequests->each->load(['facility', 'user']),
+            ];
+        }, 3);
+
+        if ($result === null) {
+            Ui::toast(text: 'This request can no longer be approved or conflicts with an approved booking.', variant: 'warning');
+
             return;
         }
 
-        $previousStatus = $request->Status;
-        $request->update([
-            'Status' => 'Approved',
-            'Rejection_Reason' => null,
-            'Review_Notes' => null,
-            'Review_Requested_At' => null,
-        ]);
-
-        if ($request->user) {
-            Notification::send($request->user, new RequestStatusUpdated($request, $previousStatus));
+        if ($result['approved']->user) {
+            Notification::send($result['approved']->user, new RequestStatusUpdated($result['approved'], 'Pending'));
         }
 
-        $this->createScheduleFromRequest($request);
-        Flux::toast(text: 'Request approved successfully!', variant: 'success');
+        foreach ($result['rejected'] as $rejectedRequest) {
+            if ($rejectedRequest->user) {
+                Notification::send($rejectedRequest->user, new RequestStatusUpdated($rejectedRequest, 'Pending'));
+            }
+        }
+
+        $rejectedCount = $result['rejected']->count();
+        Ui::toast(
+            text: $rejectedCount > 0
+                ? "Request approved; {$rejectedCount} conflicting pending request(s) were automatically rejected and notified."
+                : 'Request approved successfully!',
+            variant: 'success',
+        );
         $this->showViewModal = false;
     }
 
@@ -230,8 +379,9 @@ new #[Layout('components.layouts.app')] class extends Component {
     {
         $request = $this->getScopedRequest($requestId);
 
-        if (in_array($request->Status, ['Cancelled', 'Ended'], true)) {
-            Flux::toast(text: 'This request can no longer be rejected.', variant: 'warning');
+        if (in_array($request->Status, ['Approved', 'Cancelled', 'Ended'], true)) {
+            Ui::toast(text: 'This request can no longer be rejected.', variant: 'warning');
+
             return;
         }
 
@@ -266,7 +416,7 @@ new #[Layout('components.layouts.app')] class extends Component {
         }
 
         $request = $this->getScopedRequest($this->rejectingId);
-        abort_if(in_array($request->Status, ['Cancelled', 'Ended'], true), 409);
+        abort_if(in_array($request->Status, ['Approved', 'Cancelled', 'Ended'], true), 409);
 
         $reasons = collect($this->rejectionReasons)
             ->reject(fn (string $reason) => $reason === 'Other')
@@ -277,7 +427,7 @@ new #[Layout('components.layouts.app')] class extends Component {
             ->implode('; ');
 
         $previousStatus = $request->Status;
-        $request->schedule()->delete();
+        $request->schedules()->delete();
         $request->update([
             'Status' => 'Rejected',
             'Rejection_Reason' => $reasons,
@@ -289,23 +439,49 @@ new #[Layout('components.layouts.app')] class extends Component {
             Notification::send($request->user, new RequestStatusUpdated($request, $previousStatus));
         }
 
-        Flux::toast(text: 'Request rejected successfully.', variant: 'success');
+        Ui::toast(text: 'Request rejected successfully.', variant: 'success');
         $this->showRejectModal = false;
         $this->showViewModal = false;
         $this->rejectingId = null;
     }
 
-    public function openReviewModal(int $requestId): void
+    public function cancel(int $requestId): void
     {
-        $request = $this->getScopedRequest($requestId)
-            ->load(['user', 'event', 'facility']);
+        $request = $this->getScopedRequest($requestId)->load('user');
 
-        if (in_array($request->Status, ['Approved', 'Cancelled', 'Ended'], true)) {
-            Flux::toast(text: 'This request can no longer be returned for revision.', variant: 'warning');
+        if ($request->Status !== 'Approved') {
+            Ui::toast(text: 'Only approved requests can be cancelled.', variant: 'warning');
+
             return;
         }
 
-        $this->showRequest($requestId);
+        $previousStatus = $request->Status;
+        $request->schedules()->delete();
+        $request->update([
+            'Status' => 'Cancelled',
+            'Cancellation_Reason' => 'Cancelled by an administrator.',
+        ]);
+
+        if ($request->user) {
+            Notification::send($request->user, new RequestStatusUpdated($request, $previousStatus));
+        }
+
+        Ui::toast(text: 'Approved request cancelled and its schedule removed.', variant: 'success');
+        $this->showViewModal = false;
+    }
+
+    public function openReviewModal(int $requestId): void
+    {
+        $request = $this->getScopedRequest($requestId)
+            ->load(['user', 'event', 'facility.amenities']);
+
+        if (in_array($request->Status, ['Approved', 'Cancelled', 'Ended'], true)) {
+            Ui::toast(text: 'This request can no longer be returned for revision.', variant: 'warning');
+
+            return;
+        }
+
+        $this->fillRequestDetails($request);
         $this->showViewModal = false;
         $this->reviewingId = $request->RID;
         $this->reviewNotes = $request->Review_Notes ?? '';
@@ -324,7 +500,7 @@ new #[Layout('components.layouts.app')] class extends Component {
 
         abort_if(in_array($request->Status, ['Approved', 'Cancelled'], true), 409);
 
-        $request->schedule()->delete();
+        $request->schedules()->delete();
         $request->update([
             'Status' => 'Pending',
             'Review_Notes' => trim($this->reviewNotes),
@@ -336,7 +512,7 @@ new #[Layout('components.layouts.app')] class extends Component {
             Notification::send($request->user, new RequestNeedsRevision($request));
         }
 
-        Flux::toast(text: 'Review message sent. The user can update the same request.', variant: 'success');
+        Ui::toast(text: 'Review message sent. The user can update the same request.', variant: 'success');
         $this->showReviewModal = false;
         $this->showViewModal = false;
         $this->reviewingId = null;
@@ -356,32 +532,40 @@ new #[Layout('components.layouts.app')] class extends Component {
             $this->Status === 'Approved'
             && $facilityId
             && Requests::activeFacilityConflicts(
-                    $facilityId,
-                    $this->Proposed_Date,
-                    $this->Proposed_Start_Time,
-                    $this->Proposed_End_Time,
-                    $request->RID,
-                )
+                $facilityId,
+                $this->Proposed_Date,
+                $this->Proposed_End_Date,
+                $this->Proposed_Start_Time,
+                $this->Proposed_End_Time,
+                $request->RID,
+            )
                 ->where('RID', '<', $request->RID)
                 ->exists()
         ) {
             $this->Status = 'Rejected';
 
-            Flux::toast(
+            Ui::toast(
                 text: 'This request conflicts with an earlier request for the same facility, date, and time. It was marked as rejected.',
                 variant: 'warning'
             );
         }
 
         $request->update([
-            'Event_ID'            => $this->Event_ID,
-            'User_ID'             => $this->User_ID,
-            'Proposed_Date'       => $this->Proposed_Date,
+            'Event_ID' => $this->Event_ID,
+            'User_ID' => $this->User_ID,
+            'Proposed_Date' => $this->Proposed_Date,
+            'Proposed_End_Date' => $this->Proposed_End_Date,
             'Proposed_Start_Time' => $this->Proposed_Start_Time,
-            'Proposed_End_Time'   => $this->Proposed_End_Time,
-            'Status'              => $this->Status,
-            'Purpose'             => $this->Purpose,
-            'Capacity'            => $this->Capacity,
+            'Proposed_End_Time' => $this->Proposed_End_Time,
+            'Daily_Schedules' => collect(CarbonPeriod::create($this->Proposed_Date, $this->Proposed_End_Date))
+                ->map(fn ($date) => [
+                    'date' => $date->toDateString(),
+                    'start' => $this->Proposed_Start_Time,
+                    'end' => $this->Proposed_End_Time,
+                ])->values()->all(),
+            'Status' => $this->Status,
+            'Purpose' => $this->Purpose,
+            'Capacity' => $this->Capacity,
         ]);
 
         if ($this->Status !== $previousStatus && $request->user) {
@@ -399,7 +583,7 @@ new #[Layout('components.layouts.app')] class extends Component {
             $this->createScheduleFromRequest($request);
         }
 
-        Flux::toast(text: 'Request updated successfully!', variant: 'success');
+        Ui::toast(text: 'Request updated successfully!', variant: 'success');
         $this->dispatch(
             'swal',
             [
@@ -419,54 +603,52 @@ new #[Layout('components.layouts.app')] class extends Component {
      */
     protected function createScheduleFromRequest(Requests $request): void
     {
-        // A request can only ever have one schedule attached to it.
-        if (Schedule::where('Request_ID', $request->RID)->exists()) {
-            return;
-        }
-
         $facilityId = $request->facility?->FID;
+        $request->schedules()->delete();
 
-        if ($facilityId) {
-            $overlaps = Schedule::whereDate('Date', $request->Proposed_Date)
+        $dailySchedules = $request->Daily_Schedules ?: collect(CarbonPeriod::create($request->Proposed_Date, $request->Proposed_End_Date ?? $request->Proposed_Date))
+            ->map(fn ($date) => [
+                'date' => $date->toDateString(),
+                'start' => $request->Proposed_Start_Time->format('H:i'),
+                'end' => $request->Proposed_End_Time->format('H:i'),
+            ])->all();
+
+        foreach ($dailySchedules as $dailySchedule) {
+            $overlaps = $facilityId && Schedule::whereDate('Date', $dailySchedule['date'])
                 ->whereHas('request.facility', fn ($q) => $q->where('FID', $facilityId))
-                ->where(function ($q) use ($request) {
-                    $q->where('Start_Time', '<', $request->Proposed_End_Time->format('H:i'))
-                      ->where('End_Time', '>', $request->Proposed_Start_Time->format('H:i'));
+                ->where(function ($q) use ($dailySchedule) {
+                    $q->where('Start_Time', '<', $dailySchedule['end'])
+                        ->where('End_Time', '>', $dailySchedule['start']);
                 })
                 ->exists();
 
             if ($overlaps) {
-                Flux::toast(
-                    text: 'Request approved, but the facility is already booked at that time — no schedule was created automatically.',
-                    variant: 'warning'
-                );
-                return;
+                continue;
             }
+
+            Schedule::create([
+                'Request_ID' => $request->RID,
+                'Date' => $dailySchedule['date'],
+                'Start_Time' => $dailySchedule['start'],
+                'End_Time' => $dailySchedule['end'],
+                'Status' => 'Booked',
+            ]);
         }
 
-        Schedule::create([
-            'Request_ID' => $request->RID,
-            'Date'       => $request->Proposed_Date->toDateString(),
-            'Start_Time' => $request->Proposed_Start_Time->format('H:i'),
-            'End_Time'   => $request->Proposed_End_Time->format('H:i'),
-            'Status'     => 'Booked',
-        ]);
-
-        Flux::toast(text: 'Schedule automatically created from the approved request!', variant: 'success');
+        Ui::toast(text: 'Schedule automatically created from the approved request!', variant: 'success');
     }
 
     protected function handleCancelledRequest(Requests $request): void
     {
-        $request->schedule()->delete();
-        $request->delete();
+        $request->schedules()->delete();
 
-        Flux::toast(text: 'Request cancelled and moved to archive.', variant: 'success');
+        Ui::toast(text: 'Request cancelled. It will be archived automatically after 10 days.', variant: 'success');
     }
 
     public function delete(int $requestId): void
     {
         $this->getScopedRequest($requestId)->delete();
-        Flux::toast(text: 'Request archived successfully!', variant: 'success');
+        Ui::toast(text: 'Request archived successfully!', variant: 'success');
         $this->dispatch(
             'swal',
             [
@@ -485,35 +667,15 @@ new #[Layout('components.layouts.app')] class extends Component {
     public function restore(int $requestId): void
     {
         Requests::withTrashed()->findOrFail($requestId)->restore();
-        Flux::toast(text: 'Request restored successfully!', variant: 'success');
+        Ui::toast(text: 'Request restored successfully!', variant: 'success');
         $this->dispatch('$refresh');
     }
 
     public function forceDelete(int $requestId): void
     {
         Requests::withTrashed()->findOrFail($requestId)->forceDelete();
-        Flux::toast(text: 'Request permanently deleted.', variant: 'danger');
+        Ui::toast(text: 'Request permanently deleted.', variant: 'danger');
         $this->dispatch('$refresh');
-    }
-
-    /**
-     * Stream the request's attachment back to the browser as a download.
-     */
-    public function downloadAttachment(int $requestId)
-    {
-        $request = $this->getScopedRequest($requestId);
-
-        if (! $request->attachment_path || ! Storage::disk('public')->exists($request->attachment_path)) {
-            Flux::toast(text: 'No attachment found for this request.', variant: 'danger');
-            return;
-        }
-
-        $extension = pathinfo($request->attachment_path, PATHINFO_EXTENSION);
-
-        return Storage::disk('public')->download(
-            $request->attachment_path,
-            "request-{$request->RID}-attachment." . $extension
-        );
     }
 
     private function getScopedRequest(int $requestId): Requests
@@ -521,8 +683,7 @@ new #[Layout('components.layouts.app')] class extends Component {
         $query = Requests::query();
 
         if (auth()->user()->isAdmin()) {
-            $query->whereHas('facility.assignedAdmins', fn ($query) =>
-                $query->where('users.id', auth()->id())
+            $query->whereHas('facility.assignedAdmins', fn ($query) => $query->where('users.id', auth()->id())
             );
         }
 
@@ -535,29 +696,42 @@ new #[Layout('components.layouts.app')] class extends Component {
         $query = Requests::query()->onlyTrashed();
 
         if (auth()->user()->isAdmin()) {
-            $query->whereHas('facility.assignedAdmins', fn ($query) =>
-                $query->where('users.id', auth()->id())
+            $query->whereHas('facility.assignedAdmins', fn ($query) => $query->where('users.id', auth()->id())
             );
         }
 
-        if (in_array($this->archiveStatusFilter, ['Cancelled', 'Approved', 'Rejected'], true)) {
+        if (in_array($this->archiveStatusFilter, ['Cancelled', 'Approved', 'Rejected', 'Ended'], true)) {
             $query->where('Status', $this->archiveStatusFilter);
         }
 
-        return $query->with(['user', 'facility'])
+        if ($this->search !== '') {
+            $term = '%'.$this->search.'%';
+            $query->where(function ($query) use ($term) {
+                $query->where('RID', 'like', $term)
+                    ->orWhere('Purpose', 'like', $term)
+                    ->orWhere('Status', 'like', $term)
+                    ->orWhereHas('user', fn ($userQuery) => $userQuery->where('name', 'like', $term))
+                    ->orWhereHas('facility', fn ($facilityQuery) => $facilityQuery->where('Facility_Name', 'like', $term));
+            });
+        }
+
+        return $query->with([
+            'user:id,name,email',
+            'facility:FID,Facility_Name',
+        ])
             ->orderByDesc('deleted_at')
-            ->paginate(10, pageName: 'archivedRequestsPage');
+            ->paginate(8, pageName: 'archivedRequestsPage');
     }
 
     #[Computed]
     public function requests()
     {
-        Requests::markPastRequestsAsEnded();
-
         return Requests::query()
-            ->with(['user', 'facility', 'event'])
-            ->when(auth()->user()->isAdmin(), fn ($query) => $query->whereHas('facility.assignedAdmins', fn ($facilityQuery) =>
-                $facilityQuery->where('users.id', auth()->id())
+            ->with([
+                'user:id,name,email',
+                'facility:FID,Facility_Name',
+            ])
+            ->when(auth()->user()->isAdmin(), fn ($query) => $query->whereHas('facility.assignedAdmins', fn ($facilityQuery) => $facilityQuery->where('users.id', auth()->id())
             ))
             ->when($this->search, fn ($query) => $query->where(function ($query) {
                 $query->whereHas('user', fn ($q) => $q->where('name', 'like', "%{$this->search}%"))
@@ -573,22 +747,75 @@ new #[Layout('components.layouts.app')] class extends Component {
             )
             ->orderBy($this->sortBy, $this->sortDirection)
             ->orderBy('RID', $this->sortDirection)
-            ->paginate(10, pageName: 'requestsPage');
+            ->paginate(8, pageName: 'requestsPage');
+    }
+
+    #[Computed]
+    public function requestStats(): array
+    {
+        $query = Requests::query()
+            ->when(auth()->user()->isAdmin(), fn ($query) => $query->whereHas(
+                'facility.assignedAdmins',
+                fn ($facilityQuery) => $facilityQuery->where('users.id', auth()->id()),
+            ));
+
+        $stats = $query
+            ->selectRaw('COUNT(*) as total')
+            ->selectRaw("SUM(CASE WHEN Status = 'Pending' AND Review_Requested_At IS NULL THEN 1 ELSE 0 END) as pending")
+            ->selectRaw("SUM(CASE WHEN Status = 'Pending' AND Review_Requested_At IS NOT NULL THEN 1 ELSE 0 END) as revisions")
+            ->selectRaw("SUM(CASE WHEN Status = 'Approved' THEN 1 ELSE 0 END) as approved")
+            ->selectRaw("SUM(CASE WHEN Status = 'Rejected' THEN 1 ELSE 0 END) as rejected")
+            ->first();
+
+        return [
+            'total' => (int) $stats->total,
+            'pending' => (int) $stats->pending,
+            'revisions' => (int) $stats->revisions,
+            'approved' => (int) $stats->approved,
+            'rejected' => (int) $stats->rejected,
+        ];
     }
 
     #[Computed]
     public function users()
     {
-        return User::query()->orderBy('name')->get();
+        if (! $this->showModal) {
+            return collect();
+        }
+
+        return User::query()->orderBy('name')->get(['id', 'name']);
     }
 }; ?>
 
 <div class="w-full">
+    @if ($archiveOnly)
+        <div class="mx-auto max-w-7xl">
+            <x-ui::card>
+                @include('request.components.archived-requests-modal', ['archiveOnly' => true])
+            </x-ui::card>
+        </div>
+        @if ($showViewModal)
+            @include('request.components.request-view-modal')
+        @endif
+    @else
     @include('request.components.page-header')
     @include('request.components.requests-table')
-    @include('request.components.archived-requests-modal')
-    @include('request.components.request-view-modal')
-    @include('request.components.request-review-modal')
-    @include('request.components.request-reject-modal')
-    @include('request.components.request-edit-modal')
+    @if ($showArchivedModal)
+        <x-ui::modal wire:model.self="showArchivedModal" class="w-[95vw] max-w-7xl">
+            @include('request.components.archived-requests-modal')
+        </x-ui::modal>
+    @endif
+    @if ($showViewModal)
+        @include('request.components.request-view-modal')
+    @endif
+    @if ($showReviewModal)
+        @include('request.components.request-review-modal')
+    @endif
+    @if ($showRejectModal)
+        @include('request.components.request-reject-modal')
+    @endif
+    @if ($showModal)
+        @include('request.components.request-edit-modal')
+    @endif
+    @endif
 </div>

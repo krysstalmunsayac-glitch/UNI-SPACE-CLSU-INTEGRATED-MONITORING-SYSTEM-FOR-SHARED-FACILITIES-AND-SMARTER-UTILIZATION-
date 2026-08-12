@@ -24,6 +24,6 @@ Open Request Management
 </x-mail::button>
 
 Thank you,  
-CLSU Uni Space  
+SIEL SPACE  
 Central Luzon State University
 </x-mail::message>

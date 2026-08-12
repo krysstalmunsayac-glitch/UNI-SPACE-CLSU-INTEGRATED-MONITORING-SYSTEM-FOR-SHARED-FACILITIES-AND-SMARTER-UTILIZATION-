@@ -1,7 +1,7 @@
 <div class="mb-6 flex flex-col items-start gap-4 lg:flex-row lg:items-end lg:justify-between">
     <div class="flex items-center gap-3">
         <span class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
-            <flux:icon.building-office class="size-6" />
+            <x-ui::icon.building-office class="size-6" />
         </span>
         <div>
             <h1 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
@@ -14,23 +14,18 @@
     </div>
 
     <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-end">
-        <flux:select wire:model.live="statusFilter" label="Availability" class="w-full sm:w-[190px]">
-            <flux:select.option value="">All facilities</flux:select.option>
-            <flux:select.option value="Available">Available</flux:select.option>
-            <flux:select.option value="Under Maintenance">Under Maintenance</flux:select.option>
-            <flux:select.option value="Unavailable">Unavailable</flux:select.option>
-        </flux:select>
+        <x-ui::select wire:model.live="statusFilter" label="Availability" class="w-full sm:w-[190px]">
+            <x-ui::select.option value="">All facilities</x-ui::select.option>
+            <x-ui::select.option value="Available">Available</x-ui::select.option>
+            <x-ui::select.option value="Unavailable">Unavailable</x-ui::select.option>
+        </x-ui::select>
 
-        <flux:input
-            wire:model="searchInput"
-            wire:keydown.enter="applySearch"
+        <x-ui::input
+            wire:model.live.debounce.400ms="searchInput"
             placeholder="Search by name, location, or office..."
             icon="magnifying-glass"
             class="w-full sm:w-[240px]"
         />
 
-        <flux:button wire:click="applySearch" icon="magnifying-glass">
-            Search
-        </flux:button>
     </div>
 </div>

@@ -20,6 +20,6 @@ View your requests
 Please choose another available facility or contact the facility office if you need assistance.
 
 Thank you,  
-CLSU Uni Space  
+SIEL SPACE  
 Central Luzon State University
 </x-mail::message>

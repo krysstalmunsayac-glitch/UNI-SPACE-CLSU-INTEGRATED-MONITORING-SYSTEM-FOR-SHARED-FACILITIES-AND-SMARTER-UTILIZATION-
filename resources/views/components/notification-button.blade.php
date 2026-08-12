@@ -3,14 +3,10 @@
         $notificationUser = auth()->user();
         $unreadNotificationCount = $notificationUser->unreadNotifications()->count();
         $recentNotifications = $notificationUser->notifications()->latest()->limit(10)->get();
-        $notificationDestination = match ($notificationUser->user_type) {
-            'user' => route('dashboard').'#requests',
-            'admin', 'super_admin' => route('Request'),
-            default => route('dashboard'),
-        };
     @endphp
 
-    <flux:dropdown position="bottom" align="end" x-data="{ unread: {{ $unreadNotificationCount }} }">
+    <div x-data="{ unread: {{ $unreadNotificationCount }} }" class="inline-flex">
+    <x-ui::dropdown position="bottom" align="end">
         <button
             type="button"
             class="relative inline-flex size-10 shrink-0 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-700 transition hover:border-emerald-600! hover:bg-emerald-100! hover:text-emerald-800! dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-emerald-400! dark:hover:bg-emerald-500/25! dark:hover:text-emerald-200!"
@@ -18,7 +14,7 @@
             title="Notifications"
             x-on:click="if (unread > 0) { fetch('{{ route('notifications.read') }}', { method: 'POST', headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' } }).then(() => unread = 0) }"
         >
-            <flux:icon.bell class="size-5" />
+            <x-ui::icon.bell class="size-5" />
 
             <span
                 x-cloak
@@ -28,18 +24,18 @@
             ></span>
         </button>
 
-        <flux:menu class="w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl p-0! shadow-2xl">
+        <x-ui::menu class="w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl p-0! shadow-2xl">
             <div class="flex items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-700">
                 <div>
                     <p class="font-bold text-zinc-950 dark:text-white">Notifications</p>
                     <p class="text-xs text-zinc-500 dark:text-zinc-400"><span x-text="unread"></span> unread</p>
                 </div>
-                <flux:icon.bell class="size-5 text-emerald-600 dark:text-emerald-400" />
+                <x-ui::icon.bell class="size-5 text-emerald-600 dark:text-emerald-400" />
             </div>
 
             <div class="max-h-80 overflow-y-auto overscroll-contain">
                 @forelse ($recentNotifications as $notification)
-                    <a href="{{ $notificationDestination }}" class="group relative block border-b border-zinc-100 px-4 py-3 transition hover:bg-emerald-100! dark:border-zinc-800 dark:hover:bg-emerald-500/25!">
+                    <a href="{{ route('notifications.open', $notification->id) }}" class="group relative block border-b border-zinc-100 px-4 py-3 transition hover:bg-emerald-100! dark:border-zinc-800 dark:hover:bg-emerald-500/25!">
                         @if (is_null($notification->read_at))
                             <span x-show="unread > 0" class="absolute right-3 top-4 size-2 rounded-full bg-emerald-500" aria-label="Unread"></span>
                         @endif
@@ -61,12 +57,13 @@
                     </a>
                 @empty
                     <div class="px-5 py-8 text-center">
-                        <flux:icon.bell-slash class="mx-auto size-7 text-zinc-300 dark:text-zinc-600" />
+                        <x-ui::icon.bell-slash class="mx-auto size-7 text-zinc-300 dark:text-zinc-600" />
                         <p class="mt-2 text-sm text-zinc-500 dark:text-zinc-400">No notifications yet.</p>
                     </div>
                 @endforelse
             </div>
 
-        </flux:menu>
-    </flux:dropdown>
+        </x-ui::menu>
+    </x-ui::dropdown>
+    </div>
 @endauth

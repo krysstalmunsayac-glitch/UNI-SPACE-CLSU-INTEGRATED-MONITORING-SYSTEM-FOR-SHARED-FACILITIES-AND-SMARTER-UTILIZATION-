@@ -1,0 +1,65 @@
+/* ==========================================================================
+   03. Shared UI controls
+   ========================================================================== */
+
+[data-ui-field] {
+    @apply grid gap-2;
+}
+
+[data-ui-label] {
+    @apply  !mb-0 !leading-tight;
+}
+
+input:focus[data-ui-control],
+textarea:focus[data-ui-control],
+select:focus[data-ui-control] {
+    @apply outline-hidden ring-2 ring-accent ring-offset-2 ring-offset-accent-foreground;
+}
+
+.ui-table-scroll {
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-gutter: stable;
+    border-radius: 0.75rem;
+}
+
+.ui-table-scroll th,
+.ui-table-scroll td {
+    overflow-wrap: anywhere;
+}
+
+.ui-table-scroll th {
+    white-space: nowrap;
+}
+
+.request-data-table table {
+    min-width: 62rem;
+}
+
+.ui-table-scroll td:last-child,
+.ui-table-scroll th:last-child {
+    position: relative;
+    white-space: nowrap;
+}
+
+.ui-table-scroll [x-cloak][x-show] {
+    z-index: 120;
+}
+
+[data-ui-dropdown][data-align='start'] .ui-dropdown-menu {
+    right: auto;
+    left: 0;
+}
+
+[data-ui-dropdown][data-align='end'] .ui-dropdown-menu {
+    right: 0;
+    left: auto;
+}
+
+[data-ui-dropdown][data-position='top'] .ui-dropdown-menu {
+    top: auto;
+    bottom: 100%;
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+}

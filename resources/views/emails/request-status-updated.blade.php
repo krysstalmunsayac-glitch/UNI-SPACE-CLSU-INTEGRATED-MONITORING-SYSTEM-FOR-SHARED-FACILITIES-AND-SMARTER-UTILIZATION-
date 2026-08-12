@@ -24,6 +24,6 @@ View request
 If you did not submit this request, please contact the facility office.
 
 Thank you,  
-CLSU Uni Space  
+SIEL SPACE  
 Central Luzon State University
 </x-mail::message>

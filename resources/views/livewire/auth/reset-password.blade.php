@@ -10,11 +10,15 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
 use Livewire\Volt\Component;
 
-new #[Layout('components.layouts.auth')] class extends Component {
+new #[Layout('components.layouts.auth')] class extends Component
+{
     #[Locked]
     public string $token = '';
+
     public string $email = '';
+
     public string $password = '';
+
     public string $password_confirmation = '';
 
     /**
@@ -35,7 +39,12 @@ new #[Layout('components.layouts.auth')] class extends Component {
         $this->validate([
             'token' => ['required'],
             'email' => ['required', 'string', 'email'],
-            'password' => ['required', 'string', 'confirmed', Rules\Password::defaults()],
+            'password' => [
+                'required',
+                'string',
+                'confirmed',
+                Rules\Password::min(8)->mixedCase()->numbers()->symbols(),
+            ],
         ]);
 
         // Here we will attempt to reset the user's password. If it is successful we
@@ -77,26 +86,32 @@ new #[Layout('components.layouts.auth')] class extends Component {
     <form wire:submit="resetPassword" class="flex flex-col gap-6">
         <!-- Email Address -->
         <div class="grid gap-2">
-            <flux:input wire:model="email" id="email" label="{{ __('Email') }}" type="email" name="email" required autocomplete="email" />
+            <x-ui::input wire:model="email" id="email" label="{{ __('Email') }}" type="email" name="email" required autocomplete="email" />
         </div>
 
         <!-- Password -->
         <div class="grid gap-2">
-            <flux:input
+            <x-ui::input
                 wire:model="password"
                 id="password"
                 label="{{ __('Password') }}"
                 type="password"
                 name="password"
                 required
+                minlength="8"
+                pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^a-zA-Z0-9]).{8,}"
+                title="Use at least 8 characters with uppercase, lowercase, number, and special character."
                 autocomplete="new-password"
                 placeholder="Password"
             />
+            <p class="text-xs font-semibold text-emerald-900/60 dark:text-zinc-400">
+                Use at least 8 characters with uppercase, lowercase, a number, and a special character (such as !, @, #, or $).
+            </p>
         </div>
 
         <!-- Confirm Password -->
         <div class="grid gap-2">
-            <flux:input
+            <x-ui::input
                 wire:model="password_confirmation"
                 id="password_confirmation"
                 label="{{ __('Confirm password') }}"
@@ -109,9 +124,9 @@ new #[Layout('components.layouts.auth')] class extends Component {
         </div>
 
         <div class="flex items-center justify-end">
-            <flux:button type="submit" variant="primary" class="w-full">
+            <x-ui::button type="submit" variant="primary" class="w-full">
                 {{ __('Reset password') }}
-            </flux:button>
+            </x-ui::button>
         </div>
     </form>
 </div>

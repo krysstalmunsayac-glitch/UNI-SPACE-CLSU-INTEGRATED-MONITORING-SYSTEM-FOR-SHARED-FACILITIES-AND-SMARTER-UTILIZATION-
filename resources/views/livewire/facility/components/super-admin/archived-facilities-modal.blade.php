@@ -1,32 +1,34 @@
-<flux:modal wire:model.self="showArchivedModal" class="w-[95vw] max-w-7xl">
-    <div class="space-y-6">
-        <div>
-            <flux:heading size="lg">Archived Facilities</flux:heading>
-            <flux:subheading>
-                Restore archived facilities or delete them permanently.
-            </flux:subheading>
+<div class="space-y-6">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+                <x-ui::heading size="lg">Archived Facilities</x-ui::heading>
+                <x-ui::subheading>Restore archived facilities or delete them permanently.</x-ui::subheading>
+            </div>
+            <div class="w-full lg:w-auto lg:min-w-[28rem]">
+                <x-ui::input wire:model.live.debounce.400ms="searchInput" placeholder="Search facility, location, or office..." class="w-full" />
+            </div>
         </div>
 
-        <div class="overflow-x-auto">
-            <flux:table :paginate="$this->archivedFacilities">
-                <flux:table.columns>
-                    <flux:table.column>Facility</flux:table.column>
-                    <flux:table.column>Location</flux:table.column>
-                    <flux:table.column>Office</flux:table.column>
-                    <flux:table.column>Status</flux:table.column>
-                    <flux:table.column>Archived</flux:table.column>
-                    <flux:table.column>Actions</flux:table.column>
-                </flux:table.columns>
+        <div class="min-h-56 overflow-x-auto">
+            <x-ui::table :paginate="$this->archivedFacilities">
+                <x-ui::table.columns>
+                    <x-ui::table.column>Facility</x-ui::table.column>
+                    <x-ui::table.column>Location</x-ui::table.column>
+                    <x-ui::table.column>Office</x-ui::table.column>
+                    <x-ui::table.column>Status</x-ui::table.column>
+                    <x-ui::table.column>Archived</x-ui::table.column>
+                    <x-ui::table.column>Actions</x-ui::table.column>
+                </x-ui::table.columns>
 
-                <flux:table.rows>
+                <x-ui::table.rows>
                     @forelse ($this->archivedFacilities as $facility)
-                        <flux:table.row :key="'archived-facility-'.$facility->FID">
-                            <flux:table.cell>
+                        <x-ui::table.row :key="'archived-facility-'.$facility->FID">
+                            <x-ui::table.cell>
                                 <div class="flex items-center gap-3">
                                     @if ($facility->images->isNotEmpty())
-                                        <flux:avatar size="sm" src="{{ asset('storage/'.$facility->images->first()->image_path) }}" />
+                                        <x-ui::avatar size="sm" src="{{ asset('storage/'.$facility->images->first()->image_path) }}" />
                                     @else
-                                        <flux:avatar size="sm" :name="$facility->Facility_Name" />
+                                        <x-ui::avatar size="sm" :name="$facility->Facility_Name" />
                                     @endif
 
                                     <div>
@@ -34,72 +36,61 @@
                                         <div class="text-xs text-zinc-500">#{{ $facility->FID }}</div>
                                     </div>
                                 </div>
-                            </flux:table.cell>
+                            </x-ui::table.cell>
 
-                            <flux:table.cell>{{ $facility->Location ?? 'N/A' }}</flux:table.cell>
-                            <flux:table.cell>{{ $facility->Office ?? 'N/A' }}</flux:table.cell>
+                            <x-ui::table.cell>{{ $facility->Location ?? '—' }}</x-ui::table.cell>
+                            <x-ui::table.cell>{{ $facility->Office ?? '—' }}</x-ui::table.cell>
 
-                            <flux:table.cell>
-                                <flux:badge
+                            <x-ui::table.cell>
+                                <x-ui::badge
                                     size="sm"
                                     :color="match ($facility->Status) {
                                         'Available' => 'green',
-                                        'Under Maintenance' => 'amber',
                                         default => 'red',
                                     }"
                                 >
                                     {{ $facility->Status }}
-                                </flux:badge>
-                            </flux:table.cell>
+                                </x-ui::badge>
+                            </x-ui::table.cell>
 
-                            <flux:table.cell>
-                                <div>{{ $facility->deleted_at?->format('M d, Y') ?? 'N/A' }}</div>
+                            <x-ui::table.cell>
+                                <div>{{ $facility->deleted_at?->format('M d, Y') ?? '—' }}</div>
                                 @if ($facility->deleted_at)
                                     <div class="text-xs text-zinc-500">
                                         {{ $facility->deleted_at->diffForHumans() }}
                                     </div>
                                 @endif
-                            </flux:table.cell>
+                            </x-ui::table.cell>
 
-                            <flux:table.cell>
-                                <div class="flex flex-wrap justify-end gap-2">
-                                    <flux:button
-                                        size="sm"
-                                        variant="ghost"
-                                        icon="arrow-uturn-left"
-                                        wire:click="restoreFacility({{ $facility->FID }})"
-                                        wire:confirm="Restore this facility?"
-                                    >
-                                        Restore
-                                    </flux:button>
-
-                                    <flux:button
-                                        size="sm"
-                                        variant="danger"
-                                        icon="trash"
-                                        wire:click="forceDeleteFacility({{ $facility->FID }})"
-                                        wire:confirm="This action cannot be undone. Permanently delete this facility?"
-                                    >
-                                        Delete
-                                    </flux:button>
+                            <x-ui::table.cell>
+                                <div class="flex justify-end">
+                                    <x-ui::dropdown position="bottom" align="end">
+                                        <x-ui::button variant="ghost" size="sm" icon="ellipsis-horizontal" aria-label="Actions for {{ $facility->Facility_Name }}" />
+                                        <x-ui::menu>
+                                            <x-ui::menu.item icon="arrow-path" wire:click="restoreFacility({{ $facility->FID }})" data-ui-confirm="Restore this facility?">Restore</x-ui::menu.item>
+                                            <x-ui::menu.separator />
+                                            <x-ui::menu.item icon="trash" variant="danger" wire:click="forceDeleteFacility({{ $facility->FID }})" data-ui-confirm="This action cannot be undone. Permanently delete this facility?">Delete permanently</x-ui::menu.item>
+                                        </x-ui::menu>
+                                    </x-ui::dropdown>
                                 </div>
-                            </flux:table.cell>
-                        </flux:table.row>
+                            </x-ui::table.cell>
+                        </x-ui::table.row>
                     @empty
-                        <flux:table.row>
-                            <flux:table.cell colspan="6" class="py-10 text-center">
+                        <x-ui::table.row>
+                            <x-ui::table.cell colspan="6" class="py-10 text-center">
                                 No archived facilities found.
-                            </flux:table.cell>
-                        </flux:table.row>
+                            </x-ui::table.cell>
+                        </x-ui::table.row>
                     @endforelse
-                </flux:table.rows>
-            </flux:table>
+                </x-ui::table.rows>
+            </x-ui::table>
         </div>
 
+        @unless ($archiveOnly ?? false)
         <div class="flex justify-end">
-            <flux:button wire:click="$set('showArchivedModal', false)" variant="ghost">
+            <x-ui::button wire:click="$set('showArchivedModal', false)" variant="ghost">
                 Close
-            </flux:button>
+            </x-ui::button>
         </div>
-    </div>
-</flux:modal>
+        @endunless
+</div>

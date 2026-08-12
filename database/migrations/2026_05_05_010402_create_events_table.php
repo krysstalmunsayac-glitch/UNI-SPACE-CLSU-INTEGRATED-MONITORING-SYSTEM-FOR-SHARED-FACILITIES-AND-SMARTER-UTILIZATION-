@@ -20,7 +20,6 @@ return new class extends Migration
             $table->string('Event_Title', 255);
             $table->text('Description')->nullable();
             $table->string('Type_Event', 100)->nullable();
-            $table->enum('Status', ['Upcoming', 'Ongoing', 'Completed', 'Cancelled'])->nullable();
             $table->timestamp('Created_at')->nullable()->useCurrent();
             $table->softDeletes();
         });

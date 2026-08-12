@@ -2,8 +2,9 @@
 use Livewire\Volt\Component;
 use Livewire\Attributes\Layout;
 use Livewire\WithPagination;
-use Flux\Flux;
+use App\Support\Ui;
 use App\Models\Feedbacks;
+use Livewire\Attributes\Computed;
 
 new #[Layout('components.layouts.app')] class extends Component {
     use WithPagination;
@@ -13,25 +14,31 @@ new #[Layout('components.layouts.app')] class extends Component {
     public string $sortBy = 'Created_at';
     public string $sortDirection = 'desc';
 
-    public function updatingSearch(): void
-    {
-        $this->resetPage('feedbackPage');
-    }
-
     public function applySearch(): void
     {
         $this->search = trim($this->searchInput);
         $this->resetPage('feedbackPage');
     }
 
+    public function updatedSearchInput(): void
+    {
+        $this->applySearch();
+    }
+
     public function sort(string $column): void
     {
+        if (! in_array($column, ['User_ID', 'Comment', 'Created_at'], true)) {
+            return;
+        }
+
         if ($this->sortBy === $column) {
             $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
         } else {
             $this->sortBy = $column;
             $this->sortDirection = 'asc';
         }
+
+        $this->resetPage('feedbackPage');
     }
 
     public function delete(int $feedbackId): void
@@ -39,7 +46,7 @@ new #[Layout('components.layouts.app')] class extends Component {
         $feedback = Feedbacks::findOrFail($feedbackId);
         $feedback->delete();
 
-        Flux::toast(text: 'Feedback archived successfully!', variant: 'success');
+        Ui::toast(text: 'Feedback archived successfully!', variant: 'success');
         $this->dispatch(
             'swal',
             [
@@ -50,9 +57,10 @@ new #[Layout('components.layouts.app')] class extends Component {
         );
     }
 
+    #[Computed]
     public function feedbacks()
     {
-        $query = Feedbacks::query()->with('user');
+        $query = Feedbacks::query()->with(['user:id,name', 'facility:FID,Facility_Name']);
 
         if (auth()->user()->isAdmin()) {
             $query->whereHas('facility', fn ($facilityQuery) =>
@@ -72,7 +80,7 @@ new #[Layout('components.layouts.app')] class extends Component {
         }
 
         return $query->orderBy($this->sortBy, $this->sortDirection)
-            ->paginate(10, pageName: 'feedbackPage');
+            ->paginate(8, pageName: 'feedbackPage');
     }
 }; ?>
 

@@ -1,9 +1,8 @@
 <?php
 
-use App\Models\Amenities;
 use App\Models\Facilities;
 use App\Services\FacilityAvailabilityService;
-use Flux\Flux;
+use App\Support\Ui;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -24,6 +23,12 @@ new #[Layout('components.layouts.app')] class extends Component {
 
     public ?int $editingId = null;
     public bool $showModal = false;
+    public bool $showStatusConfirmation = false;
+    public ?int $pendingStatusId = null;
+    public string $pendingStatusName = '';
+    public bool $pendingStatusWillActivate = false;
+    public string $deactivationConfirmation = '';
+    public bool $viewMode = false;
 
     #[Validate('required|string|min:2|max:150')]
     public string $Facility_Name = '';
@@ -34,43 +39,36 @@ new #[Layout('components.layouts.app')] class extends Component {
     public array $existingImages = [];
     public array $removedImageIds = [];
 
-    #[Validate('required|numeric|min:0|max:9999999.99')]
-    public float $Price = 0;
+    #[Validate('nullable|numeric|min:0|max:9999999.99')]
+    public ?float $Price = null;
 
-    #[Validate('nullable|in:sports,conference,auditorium,classroom,laboratory,other')]
+    #[Validate('required|in:sports,conference,auditorium,classroom,laboratory,other')]
     public ?string $facility_type = null;
 
-    #[Validate('nullable|string|min:2|max:150')]
+    #[Validate('required|string|min:2|max:150')]
     public ?string $Office = null;
 
-    #[Validate('nullable|string|max:2000')]
+    #[Validate('required|string|min:5|max:2000')]
     public ?string $Description = null;
 
-    #[Validate('nullable|string|max:255')]
+    #[Validate('required|string|min:2|max:255')]
     public ?string $Location = null;
 
     #[Validate('required|integer|min:70|max:100000')]
     public ?int $Capacity = null;
 
-    #[Validate('required|in:Available,Under Maintenance,Unavailable')]
+    #[Validate('required|in:Available,Unavailable')]
     public string $Status = 'Available';
-
-    #[Validate('nullable|array')]
-    public array $selectedAmenityIds = [];
-
-    #[Computed]
-    public function amenities()
-    {
-        return Amenities::query()
-            ->where('Status', 'Available')
-            ->orderBy('name')
-            ->get();
-    }
 
     public function applySearch(): void
     {
         $this->search = trim($this->searchInput);
         $this->resetPage('assignedFacilitiesPage');
+    }
+
+    public function updatedSearchInput(): void
+    {
+        $this->applySearch();
     }
 
     public function updatedStatusFilter(): void
@@ -91,12 +89,11 @@ new #[Layout('components.layouts.app')] class extends Component {
             'Description',
             'Location',
             'Capacity',
-            'selectedAmenityIds',
         ]);
 
         $this->editingId = null;
+        $this->viewMode = false;
         $this->Status = 'Available';
-        $this->selectedAmenityIds = [];
         $this->resetValidation();
     }
 
@@ -104,10 +101,11 @@ new #[Layout('components.layouts.app')] class extends Component {
     {
         $facility = $this->getScopedFacility($facilityId);
 
+        $this->viewMode = false;
         $this->editingId = $facility->FID;
         $this->Facility_Name = $facility->Facility_Name;
         $this->facility_type = $facility->facility_type;
-        $this->Price = (float) $facility->Price;
+        $this->Price = $facility->Price === null ? null : (float) $facility->Price;
         $this->Office = $facility->Office;
         $this->Description = $facility->Description;
         $this->Location = $facility->Location;
@@ -119,8 +117,6 @@ new #[Layout('components.layouts.app')] class extends Component {
             ->map(fn ($image) => ['id' => $image->id, 'path' => $image->image_path])
             ->all();
         $this->removedImageIds = [];
-        $this->selectedAmenityIds = $facility->amenities()->pluck('amenities.AID')->map(fn ($id) => (int) $id)->all();
-
         $this->resetValidation();
         $this->showModal = true;
     }
@@ -165,9 +161,7 @@ new #[Layout('components.layouts.app')] class extends Component {
             ]);
         }
 
-        $facility->amenities()->sync($this->selectedAmenityIds);
-
-        Flux::toast(
+        Ui::toast(
             text: 'Facility updated successfully!',
             variant: 'success'
         );
@@ -211,30 +205,55 @@ new #[Layout('components.layouts.app')] class extends Component {
         $this->resetErrorBag('images');
     }
 
-    public function toggleStatus(int $facilityId): void
+    public function requestToggleStatus(int $facilityId): void
     {
         $facility = $this->getScopedFacility($facilityId);
+        $this->pendingStatusId = $facility->FID;
+        $this->pendingStatusName = $facility->Facility_Name;
+        $this->pendingStatusWillActivate = $facility->Status === 'Unavailable';
+        $this->deactivationConfirmation = '';
+        $this->resetValidation('deactivationConfirmation');
+        $this->showStatusConfirmation = true;
+    }
+
+    public function confirmToggleStatus(): void
+    {
+        $facility = $this->getScopedFacility($this->pendingStatusId);
+
+        if ($facility->Status !== 'Unavailable') {
+            $this->validate([
+                'deactivationConfirmation' => ['required', 'in:DEACTIVATE'],
+            ], [
+                'deactivationConfirmation.required' => 'Type DEACTIVATE to confirm.',
+                'deactivationConfirmation.in' => 'Type DEACTIVATE exactly to confirm.',
+            ]);
+        }
+
         $cancelledCount = app(FacilityAvailabilityService::class)->toggle($facility);
         $facility->refresh();
 
-        Flux::toast(
+        Ui::toast(
             text: $facility->Status === 'Available'
                 ? 'Facility reactivated successfully!'
                 : "Facility deactivated. {$cancelledCount} active request(s) cancelled.",
             variant: 'success'
         );
+
+        $this->showStatusConfirmation = false;
+        $this->pendingStatusId = null;
+        $this->deactivationConfirmation = '';
     }
 
     #[Computed]
     public function facilities()
     {
         return Facilities::query()
-            ->with('images')
+            ->with(['images' => fn ($query) => $query->oldest('id')->limit(1)])
             ->whereHas('assignedAdmins', function ($adminQuery) {
                 $adminQuery->where('users.id', auth()->id());
             })
             ->when(
-                in_array($this->statusFilter, ['Available', 'Under Maintenance', 'Unavailable'], true),
+                in_array($this->statusFilter, ['Available', 'Unavailable'], true),
                 fn ($query) => $query->where('Status', $this->statusFilter)
             )
             ->when($this->search !== '', function ($query) {
@@ -250,7 +269,7 @@ new #[Layout('components.layouts.app')] class extends Component {
             })
             ->orderBy($this->sortBy, $this->sortDirection)
             ->paginate(
-                perPage: 10,
+                perPage: 8,
                 pageName: 'assignedFacilitiesPage'
             );
     }
@@ -268,5 +287,8 @@ new #[Layout('components.layouts.app')] class extends Component {
 <div class="w-full">
     @include('facility.components.office-admin.page-header')
     @include('facility.components.office-admin.facilities-grid')
-    @include('facility.components.super-admin.facility-form-modal')
+    @if ($showModal)
+        @include('facility.components.super-admin.facility-form-modal')
+    @endif
+    @include('facility.components.status-confirmation-modal')
 </div>

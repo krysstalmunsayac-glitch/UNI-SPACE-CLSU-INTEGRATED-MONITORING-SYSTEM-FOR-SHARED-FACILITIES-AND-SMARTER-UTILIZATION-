@@ -5,8 +5,8 @@
             <p class="text-sm text-gray-500 dark:text-zinc-400">Weekly planning and monthly availability overview</p>
         </div>
 
-        <flux:button.group>
-            <flux:button
+        <x-ui::button.group>
+            <x-ui::button
                 variant="{{ $view === 'weekly' ? 'primary' : 'outline' }}"
                 x-on:click="
                     switchView('timeGridWeek');
@@ -14,9 +14,9 @@
                 "
             >
                 Weekly
-            </flux:button>
+            </x-ui::button>
 
-            <flux:button
+            <x-ui::button
                 variant="{{ $view === 'monthly' ? 'primary' : 'outline' }}"
                 x-on:click="
                     switchView('dayGridMonth');
@@ -24,6 +24,6 @@
                 "
             >
                 Monthly
-            </flux:button>
-        </flux:button.group>
+            </x-ui::button>
+        </x-ui::button.group>
     </div>

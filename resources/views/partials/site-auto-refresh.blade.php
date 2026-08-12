@@ -37,6 +37,10 @@
             }
         };
 
-        window.setInterval(checkForAdminChanges, 3000);
+        window.setInterval(() => {
+            if (document.visibilityState === 'visible') {
+                checkForAdminChanges();
+            }
+        }, 30000);
     })();
 </script>

@@ -1,5 +1,5 @@
 <x-layouts.home.header>
-    <flux:main class="py-12 px-4 sm:px-6 lg:px-8">
+    <x-ui::main class="py-12 px-4 sm:px-6 lg:px-8">
         <div class="mx-auto max-w-6xl space-y-6">
             <div class="rounded-2xl bg-white/90 p-6 shadow-lg shadow-emerald-950/5 ring-1 ring-emerald-900/10 backdrop-blur dark:bg-zinc-950/90 dark:ring-white/5">
                 <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
@@ -129,8 +129,19 @@
                             </div>
                             <div class="rounded-2xl border border-emerald-900/10 bg-emerald-50 px-4 py-3 text-sm text-emerald-900/70 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-300">
                                 <p><span class="font-semibold">Event:</span> {{ $request->event?->Event_Title ?? 'No linked event' }}</p>
-                                <p><span class="font-semibold">Date:</span> {{ $request->Proposed_Date?->format('F j, Y') }}</p>
-                                <p><span class="font-semibold">Time:</span> {{ $request->Proposed_Start_Time?->format('H:i') }} - {{ $request->Proposed_End_Time?->format('H:i') }}</p>
+                                <p><span class="font-semibold">Dates:</span> {{ $request->Proposed_Date?->format('F j, Y') }}@if($request->Proposed_End_Date && ! $request->Proposed_End_Date->isSameDay($request->Proposed_Date)) – {{ $request->Proposed_End_Date->format('F j, Y') }}@endif</p>
+                                @if (count($request->Daily_Schedules ?? []) > 1)
+                                    <div>
+                                        <span class="font-semibold">Daily times:</span>
+                                        <ul class="mt-1 space-y-1 pl-4">
+                                            @foreach ($request->Daily_Schedules as $dailySchedule)
+                                                <li>{{ \Carbon\Carbon::parse($dailySchedule['date'])->format('M j, Y') }}: {{ $dailySchedule['start'] }}–{{ $dailySchedule['end'] }}</li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
+                                @else
+                                    <p><span class="font-semibold">Time:</span> {{ $request->Proposed_Start_Time?->format('H:i') }} - {{ $request->Proposed_End_Time?->format('H:i') }}</p>
+                                @endif
                                 <p><span class="font-semibold">Expected attendees:</span> {{ $request->Capacity ?? 'N/A' }}</p>
                             </div>
                         </div>
@@ -160,6 +171,10 @@
                                     <input id="Proposed_Date_{{ $request->RID }}" name="Proposed_Date" type="date" min="{{ now()->addDays(3)->toDateString() }}" value="{{ old('Proposed_Date', $request->Proposed_Date?->toDateString()) }}" class="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-sm shadow-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900" />
                                 </div>
                                 <div>
+                                    <label class="mb-2 block text-sm font-medium text-emerald-900 dark:text-zinc-300" for="Proposed_End_Date_{{ $request->RID }}">Last event day</label>
+                                    <input id="Proposed_End_Date_{{ $request->RID }}" name="Proposed_End_Date" type="date" min="{{ now()->addDays(3)->toDateString() }}" value="{{ old('Proposed_End_Date', $request->Proposed_End_Date?->toDateString() ?? $request->Proposed_Date?->toDateString()) }}" class="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-sm shadow-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900" />
+                                </div>
+                                <div>
                                     <label class="mb-2 block text-sm font-medium text-emerald-900 dark:text-zinc-300" for="Proposed_Start_Time_{{ $request->RID }}">Start time</label>
                                     <input id="Proposed_Start_Time_{{ $request->RID }}" name="Proposed_Start_Time" type="time" value="{{ old('Proposed_Start_Time', $request->Proposed_Start_Time?->format('H:i')) }}" class="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-sm shadow-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900" />
                                 </div>
@@ -176,14 +191,6 @@
                                     <input id="Capacity_{{ $request->RID }}" name="Capacity" type="number" min="1" value="{{ old('Capacity', $request->Capacity) }}" class="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-sm shadow-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900" />
                                     @error('Capacity') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                                 </div>
-                                <div>
-                                    <label class="mb-2 block text-sm font-medium text-emerald-900 dark:text-zinc-300" for="Event_Status_{{ $request->RID }}">Event status</label>
-                                    <select id="Event_Status_{{ $request->RID }}" name="Event_Status" class="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-sm shadow-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900">
-                                        @foreach (['Upcoming', 'Ongoing', 'Completed', 'Cancelled'] as $eventStatus)
-                                            <option value="{{ $eventStatus }}" {{ old('Event_Status', $request->event?->Status) == $eventStatus ? 'selected' : '' }}>{{ $eventStatus }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
                             </div>
 
                             <div class="flex justify-end">
@@ -198,6 +205,6 @@
                 </div>
             @endforelse
         </div>
-    </flux:main>
+    </x-ui::main>
 </x-layouts.home.header>
 

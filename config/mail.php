@@ -110,7 +110,7 @@ return [
 
     'from' => [
         'address' => env('MAIL_FROM_ADDRESS', 'no-reply@clsu.edu.ph'),
-        'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'CLSU Uni Space')),
+        'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'SIEL SPACE')),
     ],
 
 ];

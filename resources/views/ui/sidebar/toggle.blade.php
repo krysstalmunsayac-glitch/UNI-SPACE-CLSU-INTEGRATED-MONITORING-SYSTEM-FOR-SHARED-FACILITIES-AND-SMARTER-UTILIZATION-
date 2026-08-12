@@ -1,0 +1,1 @@
+<button type="button" aria-label="Toggle navigation" {{ $attributes->class('rounded-lg p-2 hover:bg-zinc-100 dark:hover:bg-zinc-700') }} x-on:click="document.documentElement.classList.toggle('ui-sidebar-open')">☰</button>

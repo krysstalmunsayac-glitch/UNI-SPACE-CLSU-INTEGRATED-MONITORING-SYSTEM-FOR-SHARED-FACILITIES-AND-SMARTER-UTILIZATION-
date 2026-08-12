@@ -17,6 +17,7 @@ return new class extends Migration
             $table->integer('facility_id');
             $table->foreign('facility_id')->references('FID')->on('facilities')->cascadeOnDelete();
             $table->timestamps();
+            $table->unique('facility_id', 'facility_user_facility_unique');
         });
     }
 

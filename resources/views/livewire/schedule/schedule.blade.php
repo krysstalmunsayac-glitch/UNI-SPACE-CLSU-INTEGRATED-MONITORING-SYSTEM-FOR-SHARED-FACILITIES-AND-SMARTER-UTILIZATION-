@@ -5,7 +5,8 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Validate;
 use Livewire\Attributes\Url;
-use Flux\Flux;
+use Livewire\WithPagination;
+use App\Support\Ui;
 use App\Models\Facilities;
 use App\Models\Schedule;
 use App\Models\Requests;
@@ -13,6 +14,8 @@ use App\Support\CalendarColor;
 use Carbon\Carbon;
 
 new #[Layout('components.layouts.app')] class extends Component {
+
+    use WithPagination;
 
     // ---- View state ----
     #[Url]
@@ -47,6 +50,7 @@ new #[Layout('components.layouts.app')] class extends Component {
 
     public function mount(): void
     {
+        Requests::markPastRequestsAsEnded();
         $this->Date = Carbon::now()->toDateString();
     }
 
@@ -63,12 +67,13 @@ new #[Layout('components.layouts.app')] class extends Component {
     public function applySearch(): void
     {
         $this->search = trim($this->searchInput);
+        $this->resetPage('archivedSchedulesPage');
         $this->dispatch('calendar-refresh', events: $this->calendarEvents);
     }
 
-    public function updatedSearch(): void
+    public function updatedSearchInput(): void
     {
-        $this->dispatch('calendar-refresh', events: $this->calendarEvents);
+        $this->applySearch();
     }
 
     // ---- CRUD ----
@@ -135,7 +140,7 @@ new #[Layout('components.layouts.app')] class extends Component {
 
             $this->dispatch('calendar-refresh', events: $this->calendarEvents);
 
-            Flux::toast(
+            Ui::toast(
                 text: 'Schedule updated successfully!',
                 variant: 'success'
             );
@@ -150,7 +155,7 @@ new #[Layout('components.layouts.app')] class extends Component {
 
             $this->dispatch('calendar-refresh', events: $this->calendarEvents);
 
-            Flux::toast(
+            Ui::toast(
                 text: 'Schedule created successfully!',
                 variant: 'success'
             );
@@ -196,7 +201,7 @@ new #[Layout('components.layouts.app')] class extends Component {
 
         $this->dispatch('calendar-refresh', events: $this->calendarEvents);
 
-        Flux::toast(
+        Ui::toast(
             text: 'Schedule archived successfully!',
             variant: 'success'
         );
@@ -219,26 +224,34 @@ new #[Layout('components.layouts.app')] class extends Component {
     public function restore(int $scheduleId): void
     {
         Schedule::withTrashed()->findOrFail($scheduleId)->restore();
-        Flux::toast(text: 'Schedule restored successfully!', variant: 'success');
+        Ui::toast(text: 'Schedule restored successfully!', variant: 'success');
         $this->dispatch('$refresh');
     }
 
     public function forceDelete(int $scheduleId): void
     {
         Schedule::withTrashed()->findOrFail($scheduleId)->forceDelete();
-        Flux::toast(text: 'Schedule permanently deleted.', variant: 'danger');
+        Ui::toast(text: 'Schedule permanently deleted.', variant: 'danger');
         $this->dispatch('$refresh');
     }
 
     private function getScopedSchedule(int $scheduleId)
     {
-        $query = Schedule::query()
-            ->with('request.facility');
+        $query = Schedule::query();
 
         if (auth()->user()->isAdmin()) {
             $query->whereHas('request.facility', function ($facilityQuery) {
                 $facilityQuery->whereHas('assignedAdmins', function ($adminQuery) {
                     $adminQuery->where('users.id', auth()->id());
+                });
+            });
+        }
+
+        if ($this->search !== '') {
+            $query->whereHas('request', function ($requestQuery) {
+                $requestQuery->withTrashed()->where(function ($requestQuery) {
+                    $requestQuery->where('Purpose', 'like', '%'.$this->search.'%')
+                        ->orWhereHas('facility', fn ($facilityQuery) => $facilityQuery->where('Facility_Name', 'like', '%'.$this->search.'%'));
                 });
             });
         }
@@ -249,7 +262,7 @@ new #[Layout('components.layouts.app')] class extends Component {
     private function getScopedRequest(int $requestId): Requests
     {
         $query = Requests::query()
-            ->with('facility');
+            ->with('facility:FID,Facility_Name');
 
         if (auth()->user()->isAdmin()) {
             $query->whereHas('facility', function ($facilityQuery) {
@@ -276,9 +289,14 @@ new #[Layout('components.layouts.app')] class extends Component {
             });
         }
 
-        return $query->with(['request' => fn ($requestQuery) => $requestQuery->withTrashed()->with('facility')])
+        return $query->with([
+            'request' => fn ($requestQuery) => $requestQuery
+                ->withTrashed()
+                ->select(['RID', 'Facility_ID', 'Purpose'])
+                ->with('facility:FID,Facility_Name'),
+        ])
             ->orderByDesc('deleted_at')
-            ->paginate(10, pageName: 'archivedSchedulesPage');
+            ->paginate(8, pageName: 'archivedSchedulesPage');
     }
 
     #[Computed]
@@ -291,13 +309,18 @@ new #[Layout('components.layouts.app')] class extends Component {
                 });
             })
             ->orderBy('Facility_Name')
-            ->get();
+            ->get(['FID', 'Facility_Name']);
     }
 
     #[Computed]
     public function requestsList()
     {
-        $query = Requests::with('facility')
+        if (! $this->showModal) {
+            return collect();
+        }
+
+        $query = Requests::with('facility:FID,Facility_Name')
+            ->select(['RID', 'Facility_ID', 'Purpose'])
             ->when(auth()->user()->isAdmin(), function ($query) {
                 $query->whereHas('facility', function ($facilityQuery) {
                     $facilityQuery->whereHas('assignedAdmins', function ($adminQuery) {
@@ -309,14 +332,14 @@ new #[Layout('components.layouts.app')] class extends Component {
 
         if ($this->editingId) {
             $query->where(function ($query) {
-                $query->whereDoesntHave('schedule');
+                $query->whereDoesntHave('schedules');
 
                 if ($this->Request_ID) {
                     $query->orWhere('RID', $this->Request_ID);
                 }
             });
         } else {
-            $query->whereDoesntHave('schedule');
+            $query->whereDoesntHave('schedules');
         }
 
         return $query->get();
@@ -343,10 +366,11 @@ new #[Layout('components.layouts.app')] class extends Component {
     #[Computed]
     public function calendarEvents(): array
     {
-        Requests::markPastRequestsAsEnded();
-
         return Schedule::query()
-            ->with('request.facility')
+            ->with([
+                'request:RID,Facility_ID,Purpose,Status',
+                'request.facility:FID,Facility_Name',
+            ])
             ->when(auth()->user()->isAdmin(), function ($query) {
                 $query->whereHas('request.facility', function ($facilityQuery) {
                     $facilityQuery->whereHas('assignedAdmins', function ($adminQuery) {
@@ -410,16 +434,19 @@ new #[Layout('components.layouts.app')] class extends Component {
 ?>
 
 <div
-    x-data="scheduleCalendar(@js($this->calendarEvents), @js($view))"
+    x-data="scheduleCalendar(@js($this->calendarEvents), @js($view), $wire)"
     x-init="initCalendar()"
     class="min-w-0 w-full max-w-full"
 >
     @include('schedule.components.calendar-assets')
     @include('schedule.components.page-header')
     @include('schedule.components.calendar')
-    @include('schedule.components.archived-schedules-modal')
-    @include('schedule.components.schedule-form-modal')
+    @if ($showArchivedModal)
+        @include('schedule.components.archived-schedules-modal')
+    @endif
+    @if ($showModal)
+        @include('schedule.components.schedule-form-modal')
+    @endif
 </div>
 
-@include('schedule.components.calendar-script')
 @include('schedule.components.calendar-styles')

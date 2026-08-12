@@ -17,11 +17,15 @@ return new class extends Migration
             $table->integer('FID')->autoIncrement();
             $table->unsignedBigInteger('User_ID')->nullable();
             $table->foreign('User_ID')->references('id')->on('users')->onDelete('cascade');
+            $table->integer('Request_ID')->nullable();
+            $table->unique('Request_ID', 'feedbacks_request_unique');
             $table->integer('Facility_ID')->nullable();
             $table->foreign('Facility_ID')->references('FID')->on('facilities')->nullOnDelete();
+            $table->unsignedTinyInteger('Rating')->nullable();
             $table->text('Comment')->nullable();
             $table->timestamp('Created_at')->nullable()->useCurrent();
             $table->softDeletes();
+            $table->index(['deleted_at', 'Created_at'], 'feedbacks_listing_index');
         });
 
         Schema::enableForeignKeyConstraints();

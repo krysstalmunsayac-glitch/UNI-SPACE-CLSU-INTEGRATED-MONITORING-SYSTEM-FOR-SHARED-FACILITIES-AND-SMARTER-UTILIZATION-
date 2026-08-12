@@ -12,7 +12,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 
-class User extends Authenticatable // implements MustVerifyEmail
+class User extends Authenticatable implements MustVerifyEmail
 {
     public const PH_CONTACT_REGEX = '/^(?:09\d{9}|\+639\d{9})$/';
 
@@ -101,6 +101,11 @@ class User extends Authenticatable // implements MustVerifyEmail
     public function feedbacks(): HasMany
     {
         return $this->hasMany(Feedbacks::class, 'User_ID');
+    }
+
+    public function createdAmenities(): HasMany
+    {
+        return $this->hasMany(Amenities::class, 'created_by');
     }
 
     public function facilities(): BelongsToMany

@@ -1,5 +1,5 @@
 <x-layouts.home.header>
-    <flux:main class="py-12 px-4 sm:px-6 lg:px-8">
+    <x-ui::main class="py-12 px-4 sm:px-6 lg:px-8">
         <div class="mx-auto max-w-7xl space-y-8">
             <div class="rounded-2xl bg-white/90 p-6 shadow-lg shadow-emerald-950/5 ring-1 ring-emerald-900/10 backdrop-blur dark:bg-zinc-950/90 dark:ring-white/5">
                 <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -26,7 +26,12 @@
             <div
                 class="grid items-start gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(22rem,0.85fr)]"
                 x-data="{
-                    step: {{ $errors->has('Event_Title') || $errors->has('Description') || $errors->has('Type_Event') || $errors->has('Other_Event_Type') || $errors->has('Status') ? 1 : (old('_step', 1)) }},
+                    step: {{ $errors->hasAny(['Amenity_ID', 'Amenity_ID.*', 'Proposed_Date', 'Proposed_End_Date', 'Daily_Schedules', 'Daily_Schedules.*', 'Purpose_Categories', 'Purpose_Categories.*', 'Other_Purpose', 'Reservation_Frequency', 'Facility_Importance', 'Requirements_Fit', 'Reserve_Again_Intent', 'Capacity', 'attachment']) ? 2 : 1 }},
+                    submitting: false,
+                    dailySchedules: @js(old('Daily_Schedules', [])),
+                    sharedStartTime: @js(data_get(old('Daily_Schedules', []), '0.start', '09:00')),
+                    sharedEndTime: @js(data_get(old('Daily_Schedules', []), '0.end', '10:00')),
+                    customizeDailyTimes: @js(collect(old('Daily_Schedules', []))->map(fn ($schedule) => ($schedule['start'] ?? '').'|'.($schedule['end'] ?? ''))->unique()->count() > 1),
                     eventType: @js(old('Type_Event', '')),
                     photos: @js($facility->images->map(fn ($image) => asset('storage/'.ltrim($image->image_path, '/')))->values()),
                     activePhoto: null,
@@ -43,8 +48,49 @@
                     },
                     nextPhoto() {
                         this.activePhoto = (this.activePhoto + 1) % this.photos.length;
+                    },
+                    syncDailySchedules() {
+                        const startValue = this.$refs.startDate?.value;
+                        let endValue = this.$refs.endDate?.value;
+                        if (!startValue || !endValue) return;
+                        if (endValue < startValue) {
+                            endValue = startValue;
+                            this.$refs.endDate.value = startValue;
+                        }
+
+                        const previous = new Map(this.dailySchedules.map(schedule => [schedule.date, schedule]));
+                        const current = new Date(`${startValue}T12:00:00`);
+                        const last = new Date(`${endValue}T12:00:00`);
+                        const schedules = [];
+                        const formatDate = date => {
+                            const year = date.getFullYear();
+                            const month = String(date.getMonth() + 1).padStart(2, '0');
+                            const day = String(date.getDate()).padStart(2, '0');
+                            return `${year}-${month}-${day}`;
+                        };
+
+                        while (current <= last && schedules.length < 31) {
+                            const date = formatDate(current);
+                            schedules.push(previous.get(date) ?? { date, start: this.sharedStartTime, end: this.sharedEndTime });
+                            current.setDate(current.getDate() + 1);
+                        }
+
+                        this.dailySchedules = schedules;
+                        if (!this.customizeDailyTimes) this.applySharedTime();
+                    },
+                    applySharedTime() {
+                        this.dailySchedules = this.dailySchedules.map(schedule => ({
+                            ...schedule,
+                            start: this.sharedStartTime,
+                            end: this.sharedEndTime,
+                        }));
+                    },
+                    useOneTimeForAllDays() {
+                        this.customizeDailyTimes = false;
+                        this.applySharedTime();
                     }
                 }"
+                x-init="$nextTick(() => syncDailySchedules())"
                 x-on:keydown.escape.window="if (activePhoto !== null) closePhoto()"
                 x-on:keydown.left.window="if (activePhoto !== null && photos.length > 1) previousPhoto()"
                 x-on:keydown.right.window="if (activePhoto !== null && photos.length > 1) nextPhoto()"
@@ -64,11 +110,14 @@
                         @endif
                     </div>
 
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         @forelse ($facility->images as $image)
                             <button
                                 type="button"
-                                class="group relative aspect-[4/3] overflow-hidden rounded-2xl bg-emerald-50 text-left shadow-lg shadow-emerald-950/5 ring-1 ring-emerald-900/10 transition hover:ring-2 hover:ring-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600 dark:bg-zinc-900 dark:ring-white/10"
+                                @class([
+                                    'group relative aspect-[4/3] overflow-hidden rounded-2xl bg-emerald-50 text-left shadow-lg shadow-emerald-950/5 ring-1 ring-emerald-900/10 transition hover:ring-2 hover:ring-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600 dark:bg-zinc-900 dark:ring-white/10',
+                                    'sm:col-span-2' => $facility->images->count() === 1,
+                                ])
                                 x-on:click="openPhoto({{ $loop->index }})"
                                 aria-label="Expand facility photo {{ $loop->iteration }}"
                             >
@@ -146,8 +195,8 @@
                     </div>
                 </template>
 
-                <div class="space-y-6 lg:sticky lg:top-6">
-                    <flux:card>
+                <div class="space-y-6 lg:sticky lg:top-24">
+                    <x-ui::card>
                         <div class="mb-6 flex items-center gap-3">
                             <div class="flex items-center gap-2">
                                 <span
@@ -166,22 +215,30 @@
                             </div>
                         </div>
 
+                        @error('submission')
+                            <div role="alert" class="mb-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-800 dark:border-red-500/30 dark:bg-red-950/30 dark:text-red-200">
+                                {{ $message }}
+                            </div>
+                        @enderror
+
                         <form
                             x-ref="requestForm"
                             action="{{ route('requests.store', $facility) }}"
                             method="POST"
                             enctype="multipart/form-data"
+                            x-on:submit="submitting = true"
                             class="space-y-4"
                         >
                             @csrf
+                            <input type="hidden" name="_step" value="2">
 
                             {{-- STEP 1: Event details --}}
                             <div x-show="step === 1" x-cloak class="space-y-4">
-                                <flux:heading size="lg">Event details</flux:heading>
+                                <x-ui::heading size="lg">Event details</x-ui::heading>
                                 <p class="text-sm text-emerald-900/70 dark:text-zinc-300">Tell us about the event this request is for.</p>
 
                                 <div>
-                                    <flux:input
+                                    <x-ui::input
                                         label="Event title"
                                         name="Event_Title"
                                         value="{{ old('Event_Title') }}"
@@ -193,33 +250,33 @@
                                 </div>
 
                                 <div>
-                                    <flux:textarea
+                                    <x-ui::textarea
                                         label="Description"
                                         name="Description"
                                         rows="4"
                                         required
                                         minlength="5"
                                         maxlength="2000"
-                                    >{{ old('Description') }}</flux:textarea>
+                                    >{{ old('Description') }}</x-ui::textarea>
                                     @error('Description') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                                 </div>
 
                                 <div class="grid gap-4 sm:grid-cols-2">
                                     <div>
-                                        <flux:select label="Event type" name="Type_Event" x-model="eventType" required>
-                                            <flux:select.option value="">Select a type</flux:select.option>
+                                        <x-ui::select label="Event type" name="Type_Event" x-model="eventType" required>
+                                            <x-ui::select.option value="">Select a type</x-ui::select.option>
                                             {{-- Adjust these to match your Type_Event enum/values --}}
-                                            <flux:select.option value="Meeting" :selected="old('Type_Event') == 'Meeting'">Meeting</flux:select.option>
-                                            <flux:select.option value="Seminar" :selected="old('Type_Event') == 'Seminar'">Seminar</flux:select.option>
-                                            <flux:select.option value="Workshop" :selected="old('Type_Event') == 'Workshop'">Workshop</flux:select.option>
-                                            <flux:select.option value="Conference" :selected="old('Type_Event') == 'Conference'">Conference</flux:select.option>
-                                            <flux:select.option value="Other" :selected="old('Type_Event') == 'Other'">Other</flux:select.option>
-                                        </flux:select>
+                                            <x-ui::select.option value="Meeting" :selected="old('Type_Event') == 'Meeting'">Meeting</x-ui::select.option>
+                                            <x-ui::select.option value="Seminar" :selected="old('Type_Event') == 'Seminar'">Seminar</x-ui::select.option>
+                                            <x-ui::select.option value="Workshop" :selected="old('Type_Event') == 'Workshop'">Workshop</x-ui::select.option>
+                                            <x-ui::select.option value="Conference" :selected="old('Type_Event') == 'Conference'">Conference</x-ui::select.option>
+                                            <x-ui::select.option value="Other" :selected="old('Type_Event') == 'Other'">Other</x-ui::select.option>
+                                        </x-ui::select>
                                         @error('Type_Event') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                                     </div>
 
                                     <div x-cloak x-show="eventType === 'Other'" x-transition>
-                                        <flux:input
+                                        <x-ui::input
                                             label="Specify event type"
                                             name="Other_Event_Type"
                                             value="{{ old('Other_Event_Type') }}"
@@ -249,15 +306,15 @@
 
                             {{-- STEP 2: Facility request details --}}
                             <div x-show="step === 2" x-cloak class="space-y-4">
-                                <flux:heading size="lg">Request details</flux:heading>
+                                <x-ui::heading size="lg">Request details</x-ui::heading>
 
                                 <div>
-                                    <flux:checkbox.group label="Amenities">
-                                        @forelse ($facility->amenities->where('Status', 'Available') as $amenity)
-                                            <flux:checkbox
+                                    <x-ui::checkbox.group label="Amenities">
+                                        @forelse ($availableAmenities as $amenity)
+                                            <x-ui::checkbox
                                                 name="Amenity_ID[]"
                                                 value="{{ $amenity->AID }}"
-                                                label="{{ $amenity->name }}{{ $amenity->reservation_limit ? ' ('.$amenity->reservation_limit.' available)' : '' }}"
+                                                label="{{ $amenity->name }}{{ $amenity->reservation_limit ? ' (limit: '.$amenity->reservation_limit.' concurrent reservations)' : ' (unlimited)' }}"
                                                 :checked="in_array(
                                                     (string) $amenity->AID,
                                                     old('Amenity_ID', [])
@@ -265,10 +322,10 @@
                                             />
                                         @empty
                                             <p class="text-sm text-emerald-900/70 dark:text-zinc-300">
-                                                No amenities are currently attached to this facility.
+                                                No amenities are currently available for this facility.
                                             </p>
                                         @endforelse
-                                    </flux:checkbox.group>
+                                    </x-ui::checkbox.group>
 
                                     @error('Amenity_ID')
                                         <span class="text-red-600 text-sm">{{ $message }}</span>
@@ -281,42 +338,102 @@
 
                                 <div class="grid gap-4 sm:grid-cols-2">
                                     <div>
-                                        <flux:input
-                                            label="Proposed date"
+                                        <x-ui::input
+                                            label="First event day"
                                             name="Proposed_Date"
                                             type="date"
+                                            x-ref="startDate"
+                                            x-on:change="syncDailySchedules()"
                                             min="{{ now()->addDays(3)->toDateString() }}"
                                             value="{{ old('Proposed_Date', now()->addDays(3)->toDateString()) }}"
                                             x-bind:required="step === 2"
                                         />
                                         <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Book at least 3 days before your event.</p>
-                                        @error('Proposed_Date') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
-                                    </div>
-
-                                    <div></div>
-
-                                    <div>
-                                        <flux:input label="Start time" name="Proposed_Start_Time" type="time" value="{{ old('Proposed_Start_Time', '09:00') }}" x-bind:required="step === 2" />
-                                        @error('Proposed_Start_Time') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                                     </div>
 
                                     <div>
-                                        <flux:input label="End time" name="Proposed_End_Time" type="time" value="{{ old('Proposed_End_Time', '10:00') }}" x-bind:required="step === 2" />
-                                        @error('Proposed_End_Time') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
+                                        <x-ui::input
+                                            label="Last event day"
+                                            name="Proposed_End_Date"
+                                            type="date"
+                                            x-ref="endDate"
+                                            x-on:change="syncDailySchedules()"
+                                            x-bind:min="$refs.startDate?.value || '{{ now()->addDays(3)->toDateString() }}'"
+                                            min="{{ now()->addDays(3)->toDateString() }}"
+                                            value="{{ old('Proposed_End_Date', old('Proposed_Date', now()->addDays(3)->toDateString())) }}"
+                                            x-bind:required="step === 2"
+                                        />
+                                        <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Use the same date for a one-day event.</p>
                                     </div>
 
-                                    <div class="sm:col-span-2">
-                                        <flux:input label="Purpose" name="Purpose" value="{{ old('Purpose') }}" x-bind:required="step === 2" minlength="5" maxlength="1000" />
-                                        @error('Purpose') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
+                                    <div class="space-y-3 sm:col-span-2">
+                                        <div class="flex flex-wrap items-start justify-between gap-3">
+                                            <div>
+                                                <h3 class="text-sm font-bold text-emerald-950 dark:text-white">Event time</h3>
+                                                <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400" x-text="dailySchedules.length <= 1 ? 'Choose the start and end time.' : customizeDailyTimes ? 'Set a time for each event day.' : `This time will apply to all ${dailySchedules.length} event days.`"></p>
+                                            </div>
+                                            <button
+                                                x-show="dailySchedules.length > 1"
+                                                type="button"
+                                                x-on:click="customizeDailyTimes ? useOneTimeForAllDays() : customizeDailyTimes = true"
+                                                class="inline-flex h-9 items-center justify-center rounded-lg border border-emerald-600 bg-white px-3 text-xs font-bold text-emerald-700 shadow-sm transition hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 dark:border-emerald-500 dark:bg-zinc-950 dark:text-emerald-300 dark:hover:bg-emerald-950/30"
+                                                x-text="customizeDailyTimes ? 'Use one time for all days' : 'Customize each day'"
+                                            ></button>
+                                        </div>
+
+                                        <div x-show="!customizeDailyTimes" class="grid gap-3 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 dark:border-emerald-900/50 dark:bg-emerald-950/20 sm:grid-cols-[1.2fr_1fr_1fr] sm:items-end">
+                                            <div>
+                                                <span class="block text-xs font-bold uppercase tracking-wide text-emerald-800 dark:text-emerald-300" x-text="dailySchedules.length === 1 ? 'Booking day' : 'Booking period'"></span>
+                                                <span class="mt-2 block font-semibold text-emerald-950 dark:text-white" x-text="dailySchedules.length === 1 ? new Date(`${dailySchedules[0]?.date}T12:00:00`).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) : `${dailySchedules.length} consecutive days`"></span>
+                                            </div>
+                                            <label class="block">
+                                                <span class="mb-2 block text-sm font-medium text-emerald-900 dark:text-zinc-300">Start time</span>
+                                                <input type="time" x-model="sharedStartTime" x-on:input="applySharedTime()" x-bind:required="!customizeDailyTimes" class="h-11 w-full rounded-xl border border-emerald-900/10 bg-white px-3 text-sm text-emerald-950 shadow-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-950 dark:text-white">
+                                            </label>
+                                            <label class="block">
+                                                <span class="mb-2 block text-sm font-medium text-emerald-900 dark:text-zinc-300">End time</span>
+                                                <input type="time" x-model="sharedEndTime" x-on:input="applySharedTime()" x-bind:min="sharedStartTime" x-bind:required="!customizeDailyTimes" class="h-11 w-full rounded-xl border border-emerald-900/10 bg-white px-3 text-sm text-emerald-950 shadow-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-950 dark:text-white">
+                                            </label>
+                                        </div>
+
+                                        <template x-for="(schedule, index) in dailySchedules" :key="schedule.date">
+                                            <div>
+                                                <input type="hidden" x-bind:name="`Daily_Schedules[${index}][date]`" x-bind:value="schedule.date">
+                                                <input type="hidden" x-bind:name="!customizeDailyTimes ? `Daily_Schedules[${index}][start]` : null" x-bind:value="schedule.start">
+                                                <input type="hidden" x-bind:name="!customizeDailyTimes ? `Daily_Schedules[${index}][end]` : null" x-bind:value="schedule.end">
+
+                                                <div x-show="customizeDailyTimes" class="grid gap-3 rounded-xl border border-emerald-900/10 bg-emerald-50/60 p-4 dark:border-white/10 dark:bg-zinc-900 sm:grid-cols-[1.2fr_1fr_1fr] sm:items-end">
+                                                    <div>
+                                                        <span class="block text-xs font-bold uppercase tracking-wide text-emerald-800 dark:text-emerald-300">Booking day</span>
+                                                        <span class="mt-2 block font-semibold text-emerald-950 dark:text-white" x-text="new Date(`${schedule.date}T12:00:00`).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })"></span>
+                                                    </div>
+                                                    <label class="block">
+                                                        <span class="mb-2 block text-sm font-medium text-emerald-900 dark:text-zinc-300">Start time</span>
+                                                        <input type="time" x-bind:name="customizeDailyTimes ? `Daily_Schedules[${index}][start]` : null" x-model="schedule.start" x-bind:required="customizeDailyTimes" class="h-11 w-full rounded-xl border border-emerald-900/10 bg-white px-3 text-sm text-emerald-950 shadow-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-950 dark:text-white">
+                                                    </label>
+                                                    <label class="block">
+                                                        <span class="mb-2 block text-sm font-medium text-emerald-900 dark:text-zinc-300">End time</span>
+                                                        <input type="time" x-bind:name="customizeDailyTimes ? `Daily_Schedules[${index}][end]` : null" x-model="schedule.end" x-bind:min="schedule.start" x-bind:required="customizeDailyTimes" class="h-11 w-full rounded-xl border border-emerald-900/10 bg-white px-3 text-sm text-emerald-950 shadow-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-950 dark:text-white">
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </template>
+
+                                        @error('Daily_Schedules') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
+                                        @error('Daily_Schedules.*.date') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
+                                        @error('Daily_Schedules.*.start') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
+                                        @error('Daily_Schedules.*.end') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                                     </div>
 
+                                    @include('requests.partials.purpose-questionnaire')
+
                                     <div class="sm:col-span-2">
-                                        <flux:input label="Expected attendees" name="Capacity" type="number" min="1" max="{{ $facility->Capacity ?? 100000 }}" value="{{ old('Capacity') }}" />
+                                        <x-ui::input label="Expected attendees" name="Capacity" type="number" min="1" max="{{ $facility->Capacity ?? 100000 }}" value="{{ old('Capacity') }}" />
                                         @error('Capacity') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                                     </div>
 
                                     <div class="sm:col-span-2">
-                                        <flux:input
+                                        <x-ui::input
                                             type="file"
                                             name="attachment"
                                             label="Request letter"
@@ -335,14 +452,26 @@
                                     >
                                         Back
                                     </button>
-                                    <flux:button type="submit" class="w-full sm:w-auto">Send request</flux:button>
+                                    <x-ui::button
+                                        type="submit"
+                                        class="w-full sm:w-auto"
+                                        data-ui-confirm="Are you sure you want to submit this reservation request? Please review the selected facility, date, time, and amenities before continuing."
+                                        data-ui-confirm-title="Confirm request submission"
+                                        data-ui-confirm-label="Submit request"
+                                        x-bind:disabled="submitting"
+                                        x-bind:aria-busy="submitting"
+                                    >
+                                        <span x-show="!submitting">Send request</span>
+                                        <span x-cloak x-show="submitting">Submitting…</span>
+                                    </x-ui::button>
                                     <a href="{{ route('home') }}" class="inline-flex items-center justify-center rounded-xl border border-emerald-900/10 px-4 py-2 text-sm font-medium text-emerald-900 transition hover:border-emerald-700 hover:bg-emerald-50 dark:border-white/10 dark:text-zinc-200 dark:hover:bg-zinc-800">Back to home</a>
                                 </div>
                             </div>
                         </form>
-                    </flux:card>
+                    </x-ui::card>
                 </div>
             </div>
         </div>
-    </flux:main>
+    </x-ui::main>
+    @include('partials.confirmation-dialog')
 </x-layouts.home.header>

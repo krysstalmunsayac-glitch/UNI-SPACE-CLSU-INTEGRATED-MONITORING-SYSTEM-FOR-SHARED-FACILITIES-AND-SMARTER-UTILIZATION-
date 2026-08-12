@@ -9,7 +9,7 @@
                     Welcome back, {{ auth()->user()->name }}
                 </h1>
                 <p class="mt-8 max-w-xl text-xl leading-8 text-emerald-900/75 dark:text-emerald-100/80">
-                    Browse available campus spaces, check the booking calendar, and send your reservation request from one familiar UNI Space dashboard.
+                    Browse available campus spaces, check the booking calendar, and send your reservation request from one familiar SIEL SPACE dashboard.
                 </p>
                 <div class="mt-10 flex flex-col gap-4 sm:flex-row">
                     <a href="#facilities" class="group inline-flex items-center justify-center rounded-xl bg-emerald-700 px-7 py-4 text-base font-bold text-white shadow-lg shadow-emerald-900/15 transition hover:bg-emerald-800">
@@ -61,6 +61,8 @@
             </div>
         </div>
     </section>
+
+    @include('pages.partials.about-content')
 
     <section id="facilities" class="border-t border-emerald-900/10 bg-white py-20 dark:border-white/10 dark:bg-zinc-950">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -260,7 +262,11 @@
                         $statusLabel = $needsRevision ? 'Needs Revision' : ($isEnded ? 'Event Ended' : $status);
                     @endphp
 
-                    <details class="group overflow-hidden rounded-2xl border border-emerald-900/10 bg-white shadow-sm dark:border-white/10 dark:bg-zinc-950">
+                    <details
+                        id="request-{{ $request->RID }}"
+                        @if (request()->integer('request') === $request->RID) open @endif
+                        class="group scroll-mt-24 overflow-hidden rounded-2xl border border-emerald-900/10 bg-white shadow-sm dark:border-white/10 dark:bg-zinc-950"
+                    >
                         <summary class="flex cursor-pointer list-none flex-col gap-5 p-6 lg:flex-row lg:items-center lg:justify-between">
                             <div>
                                 <div class="flex flex-wrap items-center gap-3">
@@ -278,7 +284,7 @@
                                     Requested {{ $request->Created_at?->format('M j, Y g:i A') ?? 'Date unavailable' }}
                                 </p>
                                 <div class="grid gap-2 text-sm font-semibold text-emerald-900/75 dark:text-zinc-300 sm:grid-cols-3 lg:text-right">
-                                    <span>{{ $request->Proposed_Date?->format('M j, Y') ?? 'No date' }}</span>
+                                    <span>{{ $request->Proposed_Date?->format('M j, Y') ?? 'No date' }}@if($request->Proposed_End_Date && ! $request->Proposed_End_Date->isSameDay($request->Proposed_Date)) – {{ $request->Proposed_End_Date->format('M j, Y') }}@endif</span>
                                     <span>{{ $request->Proposed_Start_Time?->format('H:i') ?? '--:--' }} - {{ $request->Proposed_End_Time?->format('H:i') ?? '--:--' }}</span>
                                     <span>{{ $request->Capacity ?? 'N/A' }} attendees</span>
                                 </div>
@@ -331,15 +337,11 @@
                                 </select>
                                 <textarea name="Description" rows="3" placeholder="Description" class="rounded-xl border border-emerald-900/10 bg-white px-4 py-3 text-sm text-emerald-950 outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900 dark:text-white lg:col-span-2">{{ old('Description', $request->event?->Description) }}</textarea>
                                 <input name="Proposed_Date" type="date" min="{{ now()->addDays(3)->toDateString() }}" value="{{ old('Proposed_Date', $request->Proposed_Date?->toDateString()) }}" class="rounded-xl border border-emerald-900/10 bg-white px-4 py-3 text-sm text-emerald-950 outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900 dark:text-white">
+                                <input name="Proposed_End_Date" type="date" min="{{ now()->addDays(3)->toDateString() }}" value="{{ old('Proposed_End_Date', $request->Proposed_End_Date?->toDateString() ?? $request->Proposed_Date?->toDateString()) }}" class="rounded-xl border border-emerald-900/10 bg-white px-4 py-3 text-sm text-emerald-950 outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900 dark:text-white">
                                 <input name="Capacity" type="number" min="1" value="{{ old('Capacity', $request->Capacity) }}" placeholder="Expected attendees" class="rounded-xl border border-emerald-900/10 bg-white px-4 py-3 text-sm text-emerald-950 outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900 dark:text-white">
                                 <input name="Proposed_Start_Time" type="time" value="{{ old('Proposed_Start_Time', $request->Proposed_Start_Time?->format('H:i')) }}" class="rounded-xl border border-emerald-900/10 bg-white px-4 py-3 text-sm text-emerald-950 outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900 dark:text-white">
                                 <input name="Proposed_End_Time" type="time" value="{{ old('Proposed_End_Time', $request->Proposed_End_Time?->format('H:i')) }}" class="rounded-xl border border-emerald-900/10 bg-white px-4 py-3 text-sm text-emerald-950 outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900 dark:text-white">
                                 <input name="Purpose" value="{{ old('Purpose', $request->Purpose) }}" placeholder="Purpose" class="rounded-xl border border-emerald-900/10 bg-white px-4 py-3 text-sm text-emerald-950 outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900 dark:text-white">
-                                <select name="Event_Status" class="rounded-xl border border-emerald-900/10 bg-white px-4 py-3 text-sm text-emerald-950 outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900 dark:text-white">
-                                    @foreach (['Upcoming', 'Ongoing', 'Completed', 'Cancelled'] as $eventStatus)
-                                        <option value="{{ $eventStatus }}" {{ old('Event_Status', $request->event?->Status) === $eventStatus ? 'selected' : '' }}>{{ $eventStatus }}</option>
-                                    @endforeach
-                                </select>
                                 <div class="lg:col-span-2">
                                     <label class="mb-2 block text-xs font-black uppercase tracking-wide text-emerald-700 dark:text-emerald-300" for="attachment-{{ $request->RID }}">
                                         Request letter
@@ -354,6 +356,14 @@
                                     <p class="mt-1 text-xs text-emerald-900/60 dark:text-zinc-400">
                                         {{ $request->attachment_path ? 'Upload a PDF only if you need to replace the current request letter.' : 'PDF — max 5 MB.' }}
                                     </p>
+                                    @if ($request->attachment_path)
+                                        <a
+                                            href="{{ route('requests.attachment.download', $request) }}"
+                                            class="mt-2 inline-flex items-center text-xs font-black text-emerald-700 underline underline-offset-2 hover:text-emerald-900 dark:text-emerald-300"
+                                        >
+                                            Download current request letter
+                                        </a>
+                                    @endif
                                     @error('attachment') <p class="mt-1 text-xs font-semibold text-red-600">{{ $message }}</p> @enderror
                                 </div>
                                 @if ($canCancel)
@@ -383,7 +393,10 @@
                                             type="submit"
                                             form="cancel-request-{{ $request->RID }}"
                                             class="rounded-xl border border-rose-200 bg-white px-5 py-3 text-sm font-black text-rose-700 transition hover:bg-rose-50 dark:border-rose-500/30 dark:bg-zinc-950 dark:text-rose-300 dark:hover:bg-rose-500/10"
-                                            onclick="return confirm('Cancel this facility request?')"
+                                            data-ui-confirm="Cancel this facility request? The request will be moved to your archived records."
+                                            data-ui-confirm-title="Confirm cancellation"
+                                            data-ui-confirm-label="Cancel request"
+                                            data-ui-confirm-variant="danger"
                                         >
                                             Cancel request
                                         </button>
@@ -394,33 +407,6 @@
                                     </button>
                                 </div>
                             </form>
-
-                            @if ($request->Facility_ID)
-                                <form action="{{ route('facility-feedback.store', $request) }}" method="POST" class="mt-6 rounded-xl border border-emerald-900/10 bg-emerald-50 p-4 dark:border-white/10 dark:bg-zinc-900">
-                                    @csrf
-                                    <label class="block" for="feedback-{{ $request->RID }}">
-                                        <span class="text-xs font-black uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Facility feedback</span>
-                                        <textarea
-                                            id="feedback-{{ $request->RID }}"
-                                            name="Comment"
-                                            rows="3"
-                                            required
-                                            minlength="5"
-                                            maxlength="1000"
-                                            placeholder="Share your experience or comments about this facility..."
-                                            class="mt-2 w-full rounded-xl border border-emerald-900/10 bg-white px-4 py-3 text-sm text-emerald-950 outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-950 dark:text-white"
-                                        >{{ old('Comment') }}</textarea>
-                                    </label>
-                                    @error('Comment')
-                                        <p class="mt-2 text-xs font-semibold text-red-600">{{ $message }}</p>
-                                    @enderror
-                                    <div class="mt-3 flex justify-end">
-                                        <button type="submit" class="rounded-xl bg-emerald-700 px-5 py-3 text-sm font-black text-white transition hover:bg-emerald-800">
-                                            Submit feedback
-                                        </button>
-                                    </div>
-                                </form>
-                            @endif
 
                             @if ($canCancel)
                                 <form id="cancel-request-{{ $request->RID }}" action="{{ route('waiting.list.cancel', $request) }}" method="POST" class="hidden">
@@ -485,14 +471,14 @@
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div class="mx-auto max-w-3xl text-center">
                 <h2 class="text-5xl font-black tracking-tight text-emerald-950 dark:text-white">How can we help?</h2>
-                <p class="mt-5 text-xl text-emerald-900/70 dark:text-zinc-300">Find answers to common questions and learn how to make the most of UNI Space.</p>
+                <p class="mt-5 text-xl text-emerald-900/70 dark:text-zinc-300">Find answers to common questions and learn how to make the most of SIEL SPACE.</p>
             </div>
 
             <div class="mt-14 space-y-5">
                 @foreach ([
                     'How do I reserve a facility?' => 'Choose an available facility, click Reserve, then complete the request form.',
                     'Can I check existing reservations first?' => 'Yes. Use the booking calendar on this dashboard to review scheduled reservations.',
-                    'How will I know if my request is approved?' => 'UNI Space will notify you when your request status changes.',
+                    'How will I know if my request is approved?' => 'SIEL SPACE will notify you when your request status changes.',
                     'How far in advance should I book?' => 'Submit your request as early as possible. Requests are handled first-come, first-served.',
                 ] as $question => $answer)
                     <details class="group rounded-xl border border-emerald-900/10 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-zinc-900">

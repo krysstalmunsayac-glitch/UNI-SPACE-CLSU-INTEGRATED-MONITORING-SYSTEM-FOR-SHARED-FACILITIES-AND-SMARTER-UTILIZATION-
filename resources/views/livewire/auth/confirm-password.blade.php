@@ -44,7 +44,7 @@ new #[Layout('components.layouts.auth')] class extends Component {
     <form wire:submit="confirmPassword" class="flex flex-col gap-6">
         <!-- Password -->
         <div class="grid gap-2">
-            <flux:input
+            <x-ui::input
                 wire:model="password"
                 id="password"
                 label="{{ __('Password') }}"
@@ -56,6 +56,6 @@ new #[Layout('components.layouts.auth')] class extends Component {
             />
         </div>
 
-        <flux:button variant="primary" type="submit" class="w-full">{{ __('Confirm') }}</flux:button>
+        <x-ui::button variant="primary" type="submit" class="w-full">{{ __('Confirm') }}</x-ui::button>
     </form>
 </div>

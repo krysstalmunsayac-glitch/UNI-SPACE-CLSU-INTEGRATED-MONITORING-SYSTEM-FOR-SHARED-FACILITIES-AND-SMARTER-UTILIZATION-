@@ -1,5 +1,5 @@
 <x-layouts.home.header>
-    <section class="bg-gradient-to-b from-white to-emerald-50/40 dark:from-zinc-950 dark:to-emerald-950/10">
+    <section id="home" class="scroll-mt-20 bg-gradient-to-b from-white to-emerald-50/40 dark:from-zinc-950 dark:to-emerald-950/10">
         <div class="mx-auto grid min-h-[520px] max-w-7xl items-center gap-10 px-4 py-20 sm:px-6 lg:grid-cols-[0.95fr_1.05fr] lg:px-8">
             <div class="mx-auto max-w-2xl lg:mx-0">
                 <h1 class="text-5xl font-black leading-[0.95] tracking-tight text-emerald-950 dark:text-white sm:text-6xl lg:text-7xl">
@@ -220,13 +220,13 @@
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div class="mx-auto max-w-3xl text-center">
                 <h2 class="text-5xl font-black tracking-tight text-emerald-950 dark:text-white">How can we help?</h2>
-                <p class="mt-5 text-xl text-emerald-900/70 dark:text-zinc-300">Find answers to common questions and learn how to make the most of UNI Space.</p>
+                <p class="mt-5 text-xl text-emerald-900/70 dark:text-zinc-300">Find answers to common questions and learn how to make the most of SIEL SPACE.</p>
             </div>
 
             <div class="mt-14 space-y-5">
                 @foreach ([
-                    'How do I create an account?' => 'Use the Sign In button, then choose create an account if you are new to UNI Space.',
-                    'Who can use UNI Space?' => 'Students, faculty, and authorized staff can browse available facilities and submit requests.',
+                    'How do I create an account?' => 'Use the Sign In button, then choose create an account if you are new to SIEL SPACE.',
+                    'Who can use SIEL SPACE?' => 'Students, faculty, and authorized staff can browse available facilities and submit requests.',
                     'Is there a cost to book facilities?' => 'Some facilities may have a listed rate or office approval requirement.',
                     'How far in advance can I book a facility?' => 'Submit your request as early as possible. Requests are handled first-come, first-served.',
                 ] as $question => $answer)
@@ -317,7 +317,14 @@
                         attribution: '&copy; OpenStreetMap contributors',
                     }).addTo(map);
 
-                    const facilities = [];
+                    const facilities = @js($facilities->map(fn ($facility) => [
+                        'FID' => $facility->FID,
+                        'Facility_Name' => $facility->Facility_Name,
+                        'Location' => $facility->Location,
+                        'Status' => $facility->Status,
+                        'Latitude' => $facility->Latitude,
+                        'Longitude' => $facility->Longitude,
+                    ])->values());
                     const bounds = L.latLngBounds();
                     const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, character => ({
                         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;',

@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Events extends Model
 {
     use SoftDeletes;
+
     protected $table = 'events';
 
     protected $primaryKey = 'EID';
@@ -21,7 +22,6 @@ class Events extends Model
         'Event_Title',
         'Description',
         'Type_Event',
-        'Status',
     ];
 
     public function requests(): HasMany

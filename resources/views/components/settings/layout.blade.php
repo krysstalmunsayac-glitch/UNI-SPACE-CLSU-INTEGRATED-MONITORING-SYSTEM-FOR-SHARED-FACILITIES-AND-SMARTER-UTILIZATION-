@@ -1,20 +1,26 @@
-<div class="flex items-start max-md:flex-col">
-    <div class="mr-10 w-full pb-4 md:w-[220px]">
-        <flux:navlist class="settings-section-nav">
-            <flux:navlist.item href="{{ route('settings.profile') }}" :current="request()->routeIs('settings.profile')" wire:navigate>Profile</flux:navlist.item>
-            <flux:navlist.item href="{{ route('settings.password') }}" :current="request()->routeIs('settings.password')" wire:navigate>Password</flux:navlist.item>
-            <flux:navlist.item href="{{ route('settings.appearance') }}" :current="request()->routeIs('settings.appearance')" wire:navigate>Appearance</flux:navlist.item>
-        </flux:navlist>
+<div class="settings-workspace">
+    <div
+        data-settings-navigation
+        wire:ignore
+        data-active="{{ request()->routeIs('settings.password') ? 'password' : 'profile' }}"
+        data-profile-url="{{ request()->routeIs('profile.external') ? route('profile.external') : route('settings.profile') }}"
+        data-password-url="{{ route('settings.password') }}"
+    >
+        <nav class="settings-nav-fallback" aria-label="Settings navigation">
+            <a href="{{ request()->routeIs('profile.external') ? route('profile.external') : route('settings.profile') }}">Profile</a>
+            <a href="{{ route('settings.password') }}">Password</a>
+        </nav>
     </div>
 
-    <flux:separator class="md:hidden" />
+    <article class="settings-panel">
+        <div class="settings-panel-heading">
+            <span class="settings-eyebrow">Account settings</span>
+            <x-ui::heading>{{ $heading ?? '' }}</x-ui::heading>
+            <x-ui::subheading>{{ $subheading ?? '' }}</x-ui::subheading>
+        </div>
 
-    <div class="flex-1 self-stretch max-md:pt-6">
-        <flux:heading>{{ $heading ?? '' }}</flux:heading>
-        <flux:subheading>{{ $subheading ?? '' }}</flux:subheading>
-
-        <div class="mt-5 w-full max-w-lg">
+        <div class="settings-form-area">
             {{ $slot }}
         </div>
-    </div>
+    </article>
 </div>

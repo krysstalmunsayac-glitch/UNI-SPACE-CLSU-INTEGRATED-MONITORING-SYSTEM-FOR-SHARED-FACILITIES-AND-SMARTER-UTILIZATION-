@@ -1,0 +1,1 @@
+<svg {{ $attributes->class('size-5 shrink-0') }} viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm7-1a3 3 0 1 0 0-6M2 21v-3c0-3 3-5 7-5s7 2 7 5v3m1-8c3 0 5 2 5 5v3"/></svg>

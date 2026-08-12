@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Middleware\CheckRole;
+use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\PreventBackHistory;
+use App\Http\Middleware\RedirectAdminsFromUserPages;
 use App\Http\Middleware\RoleDashboard;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -14,8 +16,13 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->web(append: [
+            EnsureUserIsActive::class,
+        ]);
+
         $middleware->alias([
             'prevent.back.history' => PreventBackHistory::class,
+            'user.pages' => RedirectAdminsFromUserPages::class,
             'role' => CheckRole::class,
             'role.dashboard' => RoleDashboard::class,
         ]);

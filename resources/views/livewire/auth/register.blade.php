@@ -1,28 +1,42 @@
 <?php
 
 use App\Models\User;
-use Illuminate\Auth\Events\Registered;
-use Illuminate\Support\Facades\Auth;
+use App\Notifications\VerifyPendingRegistration;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\Rules;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
 
-new #[Layout('components.layouts.auth')] class extends Component {
+new #[Layout('components.layouts.auth')] class extends Component
+{
     public string $name = '';
+
     public string $email = '';
+
     public string $password = '';
+
     public string $password_confirmation = '';
+
     public string $contact_number = '';
+
     public string $address = '';
+
     public bool $terms = false;
+
+    public string $website = '';
+
     public int $step = 1;
 
     public function nextStep(): void
     {
         $this->validate([
             'name' => ['required', 'string', 'min:2', 'max:100'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'contact_number' => ['required', 'string', 'regex:'.User::PH_CONTACT_REGEX],
             'address' => ['required', 'string', 'min:5', 'max:500'],
         ], [
@@ -42,36 +56,54 @@ new #[Layout('components.layouts.auth')] class extends Component {
      */
     public function register(): void
     {
+        $throttleKey = 'register|'.request()->ip();
+
+        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+            $seconds = RateLimiter::availableIn($throttleKey);
+
+            throw ValidationException::withMessages([
+                'email' => "Too many registration attempts. Please try again in {$seconds} seconds.",
+            ]);
+        }
+
+        RateLimiter::hit($throttleKey, 60);
+
         $validated = $this->validate([
             'name' => ['required', 'string', 'min:2', 'max:100'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => [
                 'required',
                 'string',
                 'confirmed',
-                Rules\Password::min(8)->numbers(),
-                'regex:/[A-Z]/',
+                Rules\Password::min(8)->mixedCase()->numbers()->symbols(),
             ],
             'contact_number' => ['required', 'string', 'regex:'.User::PH_CONTACT_REGEX],
             'address' => ['required', 'string', 'min:5', 'max:500'],
             'terms' => ['accepted'],
+            'website' => ['prohibited'],
         ], [
-            'password.regex' => 'The password must contain at least one capital letter.',
             'contact_number.regex' => 'Enter a valid PH mobile number: 09XXXXXXXXX or +639XXXXXXXXX.',
         ]);
 
         unset($validated['terms']);
+        unset($validated['website']);
         $validated['password'] = Hash::make($validated['password']);
 
-        event(new Registered(($user = User::create($validated))));
+        $verificationUrl = URL::temporarySignedRoute(
+            'registration.verify',
+            now()->addMinutes(60),
+            ['payload' => Crypt::encryptString(json_encode($validated, JSON_THROW_ON_ERROR))],
+        );
 
-        $user->update([
-            'email_verified_at' => now(),
-        ]);
+        Notification::route('mail', $validated['email'])
+            ->notify(new VerifyPendingRegistration($verificationUrl));
 
-        Auth::login($user);
+        session()->flash(
+            'status',
+            'We sent you a verification email. Your account will only be created after you verify your email address.',
+        );
 
-        $this->redirect(route('dashboard', absolute: false), navigate: true);
+        $this->redirect(route('login', absolute: false), navigate: true);
     }
 }; ?>
 
@@ -82,6 +114,10 @@ new #[Layout('components.layouts.auth')] class extends Component {
     <x-auth-session-status class="text-center" :status="session('status')" />
 
     <form wire:submit="register" class="flex flex-col gap-4">
+        <div class="pointer-events-none absolute -left-[10000px] top-auto h-px w-px overflow-hidden" aria-hidden="true">
+            <label for="website">Website</label>
+            <input wire:model="website" id="website" name="website" type="text" tabindex="-1" autocomplete="off">
+        </div>
         <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
             <div class="flex flex-col items-center gap-2 text-center">
                 <span @class([
@@ -114,27 +150,27 @@ new #[Layout('components.layouts.auth')] class extends Component {
 
         @if ($step === 1)
             <div class="grid gap-2">
-                <flux:input wire:model="name" id="name" label="{{ __('Name') }}" type="text" name="name" required minlength="2" maxlength="100" autofocus autocomplete="name" placeholder="Full name" />
+                <x-ui::input wire:model="name" id="name" label="{{ __('Name') }}" type="text" name="name" required minlength="2" maxlength="100" autofocus autocomplete="name" placeholder="Full name" />
             </div>
 
             <div class="grid gap-2">
-                <flux:input wire:model="email" id="email" label="{{ __('Email address') }}" type="email" name="email" required maxlength="255" autocomplete="email" placeholder="email@example.com" />
+                <x-ui::input wire:model="email" id="email" label="{{ __('Email address') }}" type="email" name="email" required maxlength="255" autocomplete="email" placeholder="email@example.com" />
             </div>
 
             <div class="grid gap-2">
-                <flux:input wire:model="contact_number" id="contact_number" label="{{ __('Contact Number') }}" type="tel" name="contact_number" required minlength="11" maxlength="13" pattern="(?:09[0-9]{9}|\+639[0-9]{9})" title="Use 09XXXXXXXXX or +639XXXXXXXXX." autocomplete="tel" placeholder="09123456789" />
+                <x-ui::input wire:model="contact_number" id="contact_number" label="{{ __('Contact Number') }}" type="tel" name="contact_number" required minlength="11" maxlength="13" pattern="(?:09[0-9]{9}|\+639[0-9]{9})" title="Use 09XXXXXXXXX or +639XXXXXXXXX." autocomplete="tel" placeholder="09123456789" />
             </div>
 
             <div class="grid gap-2">
-                <flux:input wire:model="address" id="address" label="{{ __('Address') }}" type="text" name="address" required minlength="5" maxlength="500" autocomplete="street-address" placeholder="123 Main St, City" />
+                <x-ui::input wire:model="address" id="address" label="{{ __('Address') }}" type="text" name="address" required minlength="5" maxlength="500" autocomplete="street-address" placeholder="123 Main St, City" />
             </div>
 
-            <flux:button type="button" variant="primary" wire:click="nextStep" class="mx-auto w-36 rounded-full bg-emerald-700 py-3 text-xs font-black uppercase tracking-wide text-white hover:bg-emerald-800">
+            <x-ui::button type="button" variant="primary" wire:click="nextStep" class="mx-auto w-36 rounded-full bg-emerald-700 py-3 text-xs font-black uppercase tracking-wide text-white hover:bg-emerald-800">
                 Next
-            </flux:button>
+            </x-ui::button>
         @else
             <div class="grid gap-2">
-                <flux:input
+                <x-ui::input
                     wire:model="password"
                     id="password"
                     label="{{ __('Password') }}"
@@ -142,18 +178,18 @@ new #[Layout('components.layouts.auth')] class extends Component {
                     name="password"
                     required
                     minlength="8"
-                    pattern="(?=.*[A-Z])(?=.*[0-9]).{8,}"
-                    title="Use at least 8 characters, including a number and one capital letter."
+                    pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^a-zA-Z0-9]).{8,}"
+                    title="Use at least 8 characters with uppercase, lowercase, number, and special character."
                     autocomplete="new-password"
                     placeholder="Password"
                 />
                 <p class="text-xs font-semibold text-emerald-900/60 dark:text-zinc-400">
-                    Use at least 8 characters, including a number and one capital letter.
+                    Use at least 8 characters with uppercase, lowercase, a number, and a special character (such as !, @, #, or $).
                 </p>
             </div>
 
             <div class="grid gap-2">
-                <flux:input
+                <x-ui::input
                     wire:model="password_confirmation"
                     id="password_confirmation"
                     label="{{ __('Confirm password') }}"
@@ -185,18 +221,23 @@ new #[Layout('components.layouts.auth')] class extends Component {
             </div>
 
             <div class="flex items-center justify-center gap-3">
-                <flux:button type="button" variant="ghost" wire:click="previousStep" class="w-36 rounded-full border border-emerald-700 py-3 text-xs font-black uppercase tracking-wide text-emerald-800 transition hover:bg-emerald-50 dark:border-emerald-300 dark:text-emerald-200 dark:hover:bg-zinc-800">
+                <x-ui::button type="button" variant="ghost" wire:click="previousStep" class="w-36 rounded-full border border-emerald-700 py-3 text-xs font-black uppercase tracking-wide text-emerald-800 transition hover:bg-emerald-50 dark:border-emerald-300 dark:text-emerald-200 dark:hover:bg-zinc-800">
                     Back
-                </flux:button>
-                <flux:button type="submit" variant="primary" class="w-36 rounded-full bg-emerald-700 py-3 text-xs font-black uppercase tracking-wide text-white hover:bg-emerald-800">
+                </x-ui::button>
+                <x-ui::button type="submit" variant="primary" class="w-36 rounded-full bg-emerald-700 py-3 text-xs font-black uppercase tracking-wide text-white hover:bg-emerald-800">
                     {{ __('Sign up') }}
-                </flux:button>
+                </x-ui::button>
             </div>
         @endif
     </form>
 
-    <div class="space-x-1 text-center text-sm text-zinc-600 dark:text-zinc-400">
-        Already have an account?
-        <x-text-link href="{{ route('login') }}">Log in</x-text-link>
-    </div>
+    <a
+        href="{{ route('login') }}"
+        data-auth-switch="login"
+        class="mx-auto inline-flex items-center gap-2 rounded-full border border-emerald-700 px-5 py-2 text-sm font-black text-emerald-700 transition hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 dark:border-emerald-400 dark:text-emerald-400 dark:hover:bg-zinc-800 dark:focus:ring-offset-zinc-900 lg:hidden"
+    >
+        <span aria-hidden="true">&larr;</span>
+        {{ __('Back to Sign In') }}
+    </a>
+
 </div>

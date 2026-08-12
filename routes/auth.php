@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\VerifyEmailController;
+use App\Http\Controllers\Auth\VerifyPendingRegistrationController;
 use App\Http\Middleware\PreventBackHistory;
 use App\Livewire\Actions\Logout;
 use Illuminate\Support\Facades\Route;
@@ -35,3 +36,7 @@ Route::middleware(['auth'])->group(function () {
 
 Route::post('logout', Logout::class)
     ->name('logout');
+
+Route::get('verify-registration', VerifyPendingRegistrationController::class)
+    ->middleware(['signed', 'throttle:6,1'])
+    ->name('registration.verify');

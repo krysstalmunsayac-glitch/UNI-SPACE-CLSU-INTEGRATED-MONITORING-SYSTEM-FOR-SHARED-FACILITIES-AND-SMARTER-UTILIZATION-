@@ -1,38 +1,35 @@
-<flux:modal wire:model.self="showModal" class="md:w-[28rem]">
+<x-ui::modal wire:model.self="showModal" class="w-[95vw] max-w-5xl">
     <div class="space-y-6">
         <div>
-            <flux:heading size="lg">
-                {{ $editingId ? 'Edit Facility' : 'Add Facility' }}
-            </flux:heading>
-            <flux:subheading>
-                {{ $editingId ? 'Update this facility\'s details.' : 'Create a new facility.' }}
-            </flux:subheading>
+            <x-ui::heading size="lg">
+                {{ $viewMode ? 'View Facility' : ($editingId ? 'Edit Facility' : 'Add Facility') }}
+            </x-ui::heading>
+            <x-ui::subheading>
+                {{ $viewMode ? 'Review this facility\'s complete details.' : ($editingId ? 'Update this facility\'s details.' : 'Create a new facility.') }}
+            </x-ui::subheading>
+        </div>
+
+        <fieldset @disabled($viewMode) class="grid gap-6 md:grid-cols-2">
+        <div>
+            <x-ui::input wire:model="Facility_Name" label="Facility Name" placeholder="Enter facility name" required minlength="2" maxlength="150" />
         </div>
 
         <div>
-            <flux:input wire:model="Facility_Name" label="Facility Name" placeholder="Enter facility name" required minlength="2" maxlength="150" />
-            @error('Facility_Name') <span class="text-sm text-red-600">{{ $message }}</span> @enderror
+            <x-ui::input wire:model="Price" type="number" min="0" max="9999999.99" step="0.01" label="Price (optional)" placeholder="Leave empty if not applicable" />
         </div>
 
         <div>
-            <flux:input wire:model="Price" type="number" min="0" max="9999999.99" step="0.01" label="Price" placeholder="0.00" required />
-            @error('Price') <span class="text-sm text-red-600">{{ $message }}</span> @enderror
+            <x-ui::input wire:model="Capacity" type="number" min="70" max="100000" label="Capacity" placeholder="Minimum 70" required />
         </div>
 
         <div>
-            <flux:input wire:model="Capacity" type="number" min="70" max="100000" label="Capacity" placeholder="Minimum 70" required />
-            @error('Capacity') <span class="text-sm text-red-600">{{ $message }}</span> @enderror
-        </div>
-
-        <div>
-            <flux:input wire:model="Location" label="Location" placeholder="Enter location" maxlength="255" />
-            @error('Location') <span class="text-sm text-red-600">{{ $message }}</span> @enderror
+            <x-ui::input wire:model="Location" label="Location" placeholder="Enter location" required minlength="2" maxlength="255" />
         </div>
 
         @if (auth()->user()?->isSuperAdmin())
             <div
                 x-data="facilityLocationPicker($wire)"
-                x-effect="$wire.showModal && openPicker()"
+                x-effect="$wire.showModal ? openPicker() : closePicker()"
                 class="space-y-3"
             >
             <div class="flex items-end justify-between gap-3">
@@ -69,21 +66,19 @@
         @endif
 
         <div>
-            <flux:select wire:model="facility_type" label="Facility type">
-                <flux:select.option value="">Select type</flux:select.option>
-                <flux:select.option value="sports">Sports</flux:select.option>
-                <flux:select.option value="conference">Conference</flux:select.option>
-                <flux:select.option value="auditorium">Auditorium</flux:select.option>
-                <flux:select.option value="classroom">Classroom</flux:select.option>
-                <flux:select.option value="laboratory">Laboratory</flux:select.option>
-                <flux:select.option value="other">Other</flux:select.option>
-            </flux:select>
-            @error('facility_type') <span class="text-sm text-red-600">{{ $message }}</span> @enderror
+            <x-ui::select wire:model="facility_type" label="Facility type" required>
+                <x-ui::select.option value="">Select type</x-ui::select.option>
+                <x-ui::select.option value="sports">Sports</x-ui::select.option>
+                <x-ui::select.option value="conference">Conference</x-ui::select.option>
+                <x-ui::select.option value="auditorium">Auditorium</x-ui::select.option>
+                <x-ui::select.option value="classroom">Classroom</x-ui::select.option>
+                <x-ui::select.option value="laboratory">Laboratory</x-ui::select.option>
+                <x-ui::select.option value="other">Other</x-ui::select.option>
+            </x-ui::select>
         </div>
 
         <div>
-            <flux:input wire:model="Office" label="Office" placeholder="Enter office" minlength="2" maxlength="150" />
-            @error('Office') <span class="text-sm text-red-600">{{ $message }}</span> @enderror
+            <x-ui::input wire:model="Office" label="Office" placeholder="Enter office" required minlength="2" maxlength="150" />
         </div>
 
         <div>
@@ -141,42 +136,28 @@
         </div>
 
         <div>
-            <flux:textarea wire:model="Description" label="Description" placeholder="Enter facility description" rows="3" maxlength="2000" />
-            @error('Description') <span class="text-sm text-red-600">{{ $message }}</span> @enderror
+            <x-ui::textarea wire:model="Description" label="Description" placeholder="Enter facility description" rows="3" required minlength="5" maxlength="2000" />
         </div>
 
         <div>
-            <flux:select wire:model="Status" label="Status">
-                <flux:select.option value="Available">Available</flux:select.option>
-                <flux:select.option value="Under Maintenance">Under Maintenance</flux:select.option>
-                <flux:select.option value="Unavailable">Unavailable</flux:select.option>
-            </flux:select>
-            @error('Status') <span class="text-sm text-red-600">{{ $message }}</span> @enderror
+            <x-ui::select wire:model="Status" label="Status" required>
+                <x-ui::select.option value="Available">Available</x-ui::select.option>
+                <x-ui::select.option value="Unavailable">Unavailable</x-ui::select.option>
+            </x-ui::select>
         </div>
 
-        <div>
-            <flux:checkbox.group label="Available amenities">
-                @forelse ($this->amenities as $amenity)
-                    <flux:checkbox
-                        wire:model="selectedAmenityIds"
-                        value="{{ $amenity->AID }}"
-                        label="{{ $amenity->name }}"
-                    />
-                @empty
-                    <p class="text-sm text-slate-500 dark:text-slate-400">No available amenities found.</p>
-                @endforelse
-            </flux:checkbox.group>
-            @error('selectedAmenityIds') <span class="text-sm text-red-600">{{ $message }}</span> @enderror
-        </div>
+        </fieldset>
 
         <div class="flex gap-2">
-            <flux:button wire:click="save" variant="primary" class="flex-1">
+            @if (! $viewMode)
+            <x-ui::button wire:click="save" variant="primary" class="flex-1">
                 {{ $editingId ? 'Update' : 'Create' }}
-            </flux:button>
+            </x-ui::button>
+            @endif
 
-            <flux:button wire:click="$set('showModal', false)" variant="ghost" class="flex-1">
-                Cancel
-            </flux:button>
+            <x-ui::button wire:click="$set('showModal', false)" variant="ghost" class="flex-1">
+                {{ $viewMode ? 'Close' : 'Cancel' }}
+            </x-ui::button>
         </div>
     </div>
-</flux:modal>
+</x-ui::modal>

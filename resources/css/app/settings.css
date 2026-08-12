@@ -1,0 +1,324 @@
+/* ==========================================================================
+   08. Settings pages
+   ========================================================================== */
+
+.settings-page-heading {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 28px 32px 24px;
+    border-bottom: 1px solid #e4e4e7;
+    background: linear-gradient(135deg, #ffffff 55%, #f0fdf4 100%);
+}
+
+.settings-page-heading h1 {
+    color: #123524;
+    font-size: clamp(1.75rem, 3vw, 2.25rem);
+    line-height: 1.1;
+}
+
+.settings-page-heading p {
+    margin-top: 5px;
+    color: #64748b;
+}
+
+.settings-heading-icon {
+    display: grid;
+    width: 52px;
+    height: 52px;
+    flex: 0 0 auto;
+    place-items: center;
+    border: 1px solid rgb(0 150 57 / 0.16);
+    border-radius: 16px;
+    background: #dcfce7;
+    color: #008a35;
+}
+
+.settings-heading-icon svg {
+    width: 27px;
+    height: 27px;
+}
+
+.settings-workspace {
+    display: grid;
+    grid-template-columns: minmax(250px, 300px) minmax(0, 760px);
+    gap: 28px;
+    align-items: start;
+    padding: 28px 32px 48px;
+    background: #f8faf9;
+}
+
+.settings-nav-card,
+.settings-panel {
+    border: 1px solid #e2e8e5;
+    border-radius: 20px;
+    background: #ffffff;
+    box-shadow: 0 12px 32px rgb(15 52 35 / 0.06);
+}
+
+.settings-nav-card {
+    overflow: hidden;
+    padding: 10px;
+}
+
+.settings-nav-intro {
+    margin: -10px -10px 10px;
+    padding: 24px;
+    background: linear-gradient(140deg, #006b2b, #009639);
+    color: white;
+}
+
+.settings-nav-intro span,
+.settings-eyebrow {
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+}
+
+.settings-nav-intro span {
+    color: #fde047;
+}
+
+.settings-nav-intro h2 {
+    margin-top: 8px;
+    font-size: 1.35rem;
+}
+
+.settings-nav-intro p {
+    margin-top: 5px;
+    color: rgb(255 255 255 / 0.78);
+    font-size: 0.84rem;
+    line-height: 1.5;
+}
+
+.settings-react-link {
+    display: grid;
+    grid-template-columns: 42px 1fr auto;
+    gap: 12px;
+    align-items: center;
+    margin: 4px 0;
+    padding: 11px 12px;
+    border: 1px solid transparent;
+    border-radius: 13px;
+    color: #334155;
+    text-decoration: none;
+    transition: 160ms ease;
+}
+
+.settings-react-link:hover {
+    border-color: #bbf7d0;
+    background: #f0fdf4;
+    transform: translateX(2px);
+}
+
+.settings-react-link.is-active {
+    border-color: #86efac;
+    background: #ecfdf3;
+    color: #006b2b;
+    box-shadow: inset 3px 0 0 #009639;
+}
+
+.settings-react-icon {
+    display: grid;
+    width: 42px;
+    height: 42px;
+    place-items: center;
+    border-radius: 12px;
+    background: #f1f5f3;
+    color: #52705f;
+}
+
+.settings-react-link.is-active .settings-react-icon {
+    background: #009639;
+    color: white;
+}
+
+.settings-react-icon svg {
+    width: 21px;
+    height: 21px;
+}
+
+.settings-react-link strong,
+.settings-react-link small {
+    display: block;
+}
+
+.settings-react-link strong {
+    font-size: 0.92rem;
+}
+
+.settings-react-link small {
+    margin-top: 2px;
+    color: #94a3b8;
+    font-size: 0.73rem;
+}
+
+.settings-link-arrow {
+    color: #94a3b8;
+    font-size: 1.5rem;
+}
+
+.settings-security-note {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin: 14px 4px 4px;
+    padding: 13px;
+    border-radius: 12px;
+    background: #f8faf9;
+    color: #64748b;
+    font-size: 0.72rem;
+}
+
+.settings-security-note > span {
+    display: grid;
+    width: 28px;
+    height: 28px;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: 50%;
+    background: #dcfce7;
+    color: #008a35;
+    font-weight: 800;
+}
+
+.settings-security-note strong {
+    display: block;
+    color: #334155;
+    font-size: 0.78rem;
+}
+
+.settings-nav-fallback {
+    display: flex;
+    gap: 8px;
+}
+
+.settings-panel {
+    overflow: hidden;
+}
+
+.settings-panel-heading {
+    padding: 26px 30px 22px;
+    border-bottom: 1px solid #e8eeea;
+}
+
+.settings-eyebrow {
+    display: block;
+    margin-bottom: 8px;
+    color: #009639;
+}
+
+.settings-panel-heading h2 {
+    color: #173e2a;
+    font-size: 1.45rem;
+}
+
+.settings-panel-heading p {
+    margin-top: 5px;
+    color: #64748b;
+}
+
+.settings-form-area {
+    max-width: 650px;
+    padding: 8px 30px 30px;
+}
+
+.settings-form-area form {
+    margin-top: 20px;
+}
+
+.settings-form-area label {
+    gap: 8px;
+    color: #334155;
+    font-weight: 700;
+}
+
+.settings-form-area input:not([type='file']),
+.settings-form-area textarea {
+    min-height: 48px;
+    border-color: #d6ded9;
+    border-radius: 12px;
+    box-shadow: 0 2px 5px rgb(15 52 35 / 0.04);
+}
+
+.settings-form-area input:focus,
+.settings-form-area textarea:focus {
+    border-color: #009639;
+    box-shadow: 0 0 0 4px rgb(0 150 57 / 0.1);
+}
+
+.settings-form-area button[type='submit'] {
+    min-height: 46px;
+    padding-inline: 24px;
+    border-radius: 12px;
+    box-shadow: 0 8px 18px rgb(0 150 57 / 0.2);
+}
+
+/* Settings: dark theme */
+.dark .settings-page-heading,
+.dark .settings-workspace {
+    background: #181c1a;
+}
+
+.dark .settings-page-heading,
+.dark .settings-nav-card,
+.dark .settings-panel {
+    border-color: #334139;
+}
+
+.dark .settings-nav-card,
+.dark .settings-panel {
+    background: #222825;
+}
+
+.dark .settings-page-heading h1,
+.dark .settings-panel-heading h2 {
+    color: #f0fdf4;
+}
+
+.dark .settings-react-link {
+    color: #d5ded8;
+}
+
+.dark .settings-react-link:hover,
+.dark .settings-react-link.is-active {
+    border-color: #166534;
+    background: rgb(0 150 57 / 0.14);
+    color: #86efac;
+}
+
+.dark .settings-react-icon,
+.dark .settings-security-note {
+    background: #2c3530;
+}
+
+/* Settings: tablet */
+@media (max-width: 900px) {
+    .settings-workspace {
+        grid-template-columns: 1fr;
+        padding: 20px;
+    }
+}
+
+/* Settings: mobile */
+@media (max-width: 600px) {
+    .settings-page-heading {
+        padding: 22px 18px;
+    }
+
+    .settings-workspace {
+        gap: 18px;
+        padding: 14px;
+    }
+
+    .settings-panel-heading,
+    .settings-form-area {
+        padding-right: 20px;
+        padding-left: 20px;
+    }
+
+    .settings-nav-intro {
+        display: none;
+    }
+}

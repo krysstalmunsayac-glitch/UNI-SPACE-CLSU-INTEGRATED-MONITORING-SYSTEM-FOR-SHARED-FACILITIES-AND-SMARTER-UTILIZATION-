@@ -10,7 +10,7 @@
         ];
     @endphp
 
-    <div class="-m-6 min-h-screen bg-slate-50 p-6 text-slate-950 dark:bg-zinc-950 dark:text-white">
+    <div class="admin-dashboard-canvas bg-slate-50 text-slate-950 dark:bg-zinc-950 dark:text-white">
         <div class="mx-auto max-w-7xl space-y-6">
             <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                 <div class="grid gap-5 border-b border-slate-100 p-6 lg:grid-cols-[1fr_auto] lg:items-end dark:border-zinc-800">

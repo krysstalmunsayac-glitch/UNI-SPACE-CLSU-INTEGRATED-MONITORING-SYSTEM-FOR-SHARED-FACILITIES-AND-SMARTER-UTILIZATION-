@@ -17,16 +17,20 @@ return new class extends Migration
             $table->integer('FID')->autoIncrement();
             $table->string('Facility_Name', 255);
             $table->string('Image_URL', 255)->nullable();
-            $table->decimal('Price');
+            $table->decimal('Price')->unsigned()->nullable();
             $table->string('Office', 255)->nullable();
             $table->text('Description')->nullable();
             $table->string('Location', 255)->nullable();
+            $table->decimal('Latitude', 10, 7)->nullable();
+            $table->decimal('Longitude', 10, 7)->nullable();
             $table->integer('Capacity')->nullable();
             $table->enum('facility_type', ['sports', 'conference', 'auditorium', 'classroom', 'laboratory', 'other'])->nullable();
-            $table->enum('Status', ['Available', 'Under Maintenance', 'Unavailable'])->nullable();
+            $table->enum('Status', ['Available', 'Unavailable'])->nullable();
             $table->timestamp('Created_at')->nullable()->useCurrent();
             $table->timestamp('Updated_at')->nullable()->useCurrent();
             $table->softDeletes();
+            $table->index(['deleted_at', 'Status'], 'facilities_status_index');
+            $table->index(['Office', 'deleted_at'], 'facilities_office_index');
         });
 
         Schema::enableForeignKeyConstraints();

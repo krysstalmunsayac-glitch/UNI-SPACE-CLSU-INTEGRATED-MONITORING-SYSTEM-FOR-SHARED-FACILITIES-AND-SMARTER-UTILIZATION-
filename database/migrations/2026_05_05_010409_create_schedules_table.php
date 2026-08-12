@@ -16,7 +16,7 @@ return new class extends Migration
         if (! Schema::hasTable('schedules')) {
             Schema::create('schedules', function (Blueprint $table) {
                 $table->integer('SID')->autoIncrement();
-                $table->integer('Request_ID')->unique()->nullable();
+                $table->integer('Request_ID')->nullable()->index();
                 $table->foreign('Request_ID')->references('RID')->on('requests')->cascadeOnDelete();
                 $table->date('Date');
                 $table->time('Start_Time');
@@ -25,6 +25,8 @@ return new class extends Migration
                 $table->timestamp('created_at')->nullable()->useCurrent();
                 $table->timestamp('updated_at')->nullable()->useCurrent();
                 $table->softDeletes();
+                $table->index(['deleted_at', 'Date', 'Start_Time'], 'schedules_calendar_index');
+                $table->index(['deleted_at', 'Status'], 'schedules_status_index');
             });
         }
 

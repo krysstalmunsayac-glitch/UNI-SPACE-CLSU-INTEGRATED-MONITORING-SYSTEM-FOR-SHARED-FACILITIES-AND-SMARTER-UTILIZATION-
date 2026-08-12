@@ -32,8 +32,12 @@ Route::middleware([
             ->name('dashboard.officeadmin');
     });
 
-    Route::post('/dashboard/requests/{facilityRequest}/feedback', [FeedbacksController::class, 'store'])
-        ->name('facility-feedback.store');
+    Route::middleware('user.pages')->group(function () {
+        Route::get('/dashboard/requests/{facilityRequest}/feedback', [FeedbacksController::class, 'create'])
+            ->name('facility-feedback.create');
+        Route::post('/dashboard/requests/{facilityRequest}/feedback', [FeedbacksController::class, 'store'])
+            ->name('facility-feedback.store');
+    });
 
     /*
     |--------------------------------------------------------------------------
@@ -50,6 +54,22 @@ Route::middleware([
 
         Volt::route('/report-management', 'report.report-management')
             ->name('ReportManagement');
+
+        Route::prefix('exports')->name('exports.')->controller(ReportExportController::class)->group(function () {
+            Route::get('/facilities.csv', 'facilitiesCsv')->name('facilities.csv');
+            Route::get('/facilities.xlsx', 'facilitiesXlsx')->name('facilities.xlsx');
+            Route::get('/facilities.pdf', 'facilitiesPdf')->name('facilities.pdf');
+            Route::get('/requests.csv', 'requestsCsv')->name('requests.csv');
+            Route::get('/requests.xlsx', 'requestsXlsx')->name('requests.xlsx');
+            Route::get('/requests.pdf', 'requestsPdf')->name('requests.pdf');
+            Route::get('/users.csv', 'usersCsv')->name('users.csv');
+            Route::get('/users.xlsx', 'usersXlsx')->name('users.xlsx');
+            Route::get('/users.pdf', 'usersPdf')->name('users.pdf');
+            Route::get('/amenities.csv', 'amenitiesCsv')->name('amenities.csv');
+            Route::get('/amenities.xlsx', 'amenitiesXlsx')->name('amenities.xlsx');
+            Route::get('/amenities.pdf', 'amenitiesPdf')->name('amenities.pdf');
+        });
+
     });
 
     /*
@@ -70,15 +90,6 @@ Route::middleware([
     */
 
     Route::middleware('role:super_admin,office_admin')->group(function () {
-        Route::prefix('exports')->name('exports.')->controller(ReportExportController::class)->group(function () {
-            Route::get('/facilities.csv', 'facilitiesCsv')->name('facilities.csv');
-            Route::get('/facilities.xlsx', 'facilitiesXlsx')->name('facilities.xlsx');
-            Route::get('/facilities.pdf', 'facilitiesPdf')->name('facilities.pdf');
-            Route::get('/requests.csv', 'requestsCsv')->name('requests.csv');
-            Route::get('/requests.xlsx', 'requestsXlsx')->name('requests.xlsx');
-            Route::get('/requests.pdf', 'requestsPdf')->name('requests.pdf');
-        });
-
         Route::get('/facility', [DashboardController::class, 'facilityRedirect'])
             ->name('Facility');
 

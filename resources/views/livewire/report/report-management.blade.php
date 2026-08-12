@@ -21,6 +21,11 @@ new #[Layout('components.layouts.app')] class extends Component {
         $this->resetPage('auditPage');
     }
 
+    public function updatedSearchInput(): void
+    {
+        $this->applyFilters();
+    }
+
     public function updatedActionFilter(): void
     {
         $this->resetPage('auditPage');
@@ -36,7 +41,12 @@ new #[Layout('components.layouts.app')] class extends Component {
     public function logs()
     {
         return AuditLog::query()
-            ->with(['actor', 'requestRecord.user', 'requestRecord.facility'])
+            ->with([
+                'actor:id,name,user_type',
+                'requestRecord:RID,User_ID,Facility_ID',
+                'requestRecord.user:id,name',
+                'requestRecord.facility:FID,Facility_Name',
+            ])
             ->when($this->search, function ($query): void {
                 $query->where(function ($query): void {
                     $query->where('description', 'like', "%{$this->search}%")
@@ -51,29 +61,94 @@ new #[Layout('components.layouts.app')] class extends Component {
             ->when($this->dateFrom, fn ($query) => $query->whereDate('created_at', '>=', $this->dateFrom))
             ->when($this->dateTo, fn ($query) => $query->whereDate('created_at', '<=', $this->dateTo))
             ->latest()
-            ->paginate(10, pageName: 'auditPage');
+            ->paginate(8, pageName: 'auditPage');
     }
 
     #[Computed]
     public function stats(): array
     {
+        $startOfToday = today()->startOfDay();
+        $startOfTomorrow = today()->addDay()->startOfDay();
+
+        $stats = AuditLog::query()
+            ->selectRaw('COUNT(*) as total')
+            ->selectRaw(
+                'SUM(CASE WHEN created_at >= ? AND created_at < ? THEN 1 ELSE 0 END) as today_count',
+                [$startOfToday, $startOfTomorrow],
+            )
+            ->selectRaw("SUM(CASE WHEN action = 'request_approved' THEN 1 ELSE 0 END) as approved")
+            ->selectRaw("SUM(CASE WHEN action = 'request_rejected' THEN 1 ELSE 0 END) as rejected")
+            ->first();
+
         return [
-            'total' => AuditLog::query()->count(),
-            'today' => AuditLog::query()->whereDate('created_at', today())->count(),
-            'approved' => AuditLog::query()->where('action', 'request_approved')->count(),
-            'rejected' => AuditLog::query()->where('action', 'request_rejected')->count(),
+            'total' => (int) $stats->total,
+            'today' => (int) $stats->today_count,
+            'approved' => (int) $stats->approved,
+            'rejected' => (int) $stats->rejected,
         ];
     }
 }; ?>
 
 <div class="w-full space-y-6">
-    <div class="flex items-center gap-3">
-        <span class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
-            <flux:icon.clipboard-document-list class="size-6" />
-        </span>
-        <div>
-            <h1 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">Report Management</h1>
-            <p class="text-gray-600 dark:text-gray-400">Review request activity and identify who performed each action.</p>
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex items-center gap-3">
+            <span class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+                <x-ui::icon.clipboard-document-list class="size-6" />
+            </span>
+            <div>
+                <h1 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">Report Management</h1>
+                <p class="text-gray-600 dark:text-gray-400">Review request activity and download administrative reports.</p>
+            </div>
+        </div>
+
+        <div class="flex flex-wrap gap-2 sm:justify-end">
+            <x-ui::dropdown position="bottom" align="end">
+                <x-ui::button variant="outline" class="w-32 justify-start gap-2">
+                    <x-ui::icon.building-office class="size-4 shrink-0" />
+                    Facilities
+                </x-ui::button>
+                <x-ui::menu>
+                    <x-ui::menu.item icon="document-text" href="{{ route('exports.facilities.csv') }}">CSV</x-ui::menu.item>
+                    <x-ui::menu.item icon="table-cells" href="{{ route('exports.facilities.xlsx') }}">Excel (.xlsx)</x-ui::menu.item>
+                    <x-ui::menu.item icon="document" href="{{ route('exports.facilities.pdf') }}">PDF</x-ui::menu.item>
+                </x-ui::menu>
+            </x-ui::dropdown>
+
+            <x-ui::dropdown position="bottom" align="end">
+                <x-ui::button variant="outline" class="w-32 justify-start gap-2">
+                    <x-ui::icon.document-text class="size-4 shrink-0" />
+                    Requests
+                </x-ui::button>
+                <x-ui::menu>
+                    <x-ui::menu.item icon="document-text" href="{{ route('exports.requests.csv') }}">CSV</x-ui::menu.item>
+                    <x-ui::menu.item icon="table-cells" href="{{ route('exports.requests.xlsx') }}">Excel (.xlsx)</x-ui::menu.item>
+                    <x-ui::menu.item icon="document" href="{{ route('exports.requests.pdf') }}">PDF</x-ui::menu.item>
+                </x-ui::menu>
+            </x-ui::dropdown>
+
+            <x-ui::dropdown position="bottom" align="end">
+                <x-ui::button variant="outline" class="w-32 justify-start gap-2">
+                    <x-ui::icon.users class="size-4 shrink-0" />
+                    Users
+                </x-ui::button>
+                <x-ui::menu>
+                    <x-ui::menu.item icon="document-text" href="{{ route('exports.users.csv') }}">CSV</x-ui::menu.item>
+                    <x-ui::menu.item icon="table-cells" href="{{ route('exports.users.xlsx') }}">Excel (.xlsx)</x-ui::menu.item>
+                    <x-ui::menu.item icon="document" href="{{ route('exports.users.pdf') }}">PDF</x-ui::menu.item>
+                </x-ui::menu>
+            </x-ui::dropdown>
+
+            <x-ui::dropdown position="bottom" align="end">
+                <x-ui::button variant="outline" class="w-32 justify-start gap-2">
+                    <x-ui::icon.rectangle-stack class="size-4 shrink-0" />
+                    Amenities
+                </x-ui::button>
+                <x-ui::menu>
+                    <x-ui::menu.item icon="document-text" href="{{ route('exports.amenities.csv') }}">CSV</x-ui::menu.item>
+                    <x-ui::menu.item icon="table-cells" href="{{ route('exports.amenities.xlsx') }}">Excel (.xlsx)</x-ui::menu.item>
+                    <x-ui::menu.item icon="document" href="{{ route('exports.amenities.pdf') }}">PDF</x-ui::menu.item>
+                </x-ui::menu>
+            </x-ui::dropdown>
         </div>
     </div>
 
@@ -91,49 +166,49 @@ new #[Layout('components.layouts.app')] class extends Component {
                 'border-emerald-200 bg-emerald-50 dark:border-emerald-500/30 dark:bg-emerald-500/10' => $stat['tone'] === 'green',
                 'border-rose-200 bg-rose-50 dark:border-rose-500/30 dark:bg-rose-500/10' => $stat['tone'] === 'red',
             ])>
-                <p class="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-zinc-400">{{ $stat['label'] }}</p>
-                <p class="mt-2 text-3xl font-bold text-slate-950 dark:text-white">{{ $stat['value'] }}</p>
+                <p class="text-xs font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{{ $stat['label'] }}</p>
+                <p class="mt-2 text-3xl font-bold text-zinc-950 dark:text-white">{{ $stat['value'] }}</p>
             </div>
         @endforeach
     </div>
 
-    <flux:card>
+    <x-ui::card>
         <div class="mb-5 grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(200px,1.2fr)_minmax(170px,1fr)_minmax(140px,.8fr)_minmax(140px,.8fr)_auto] xl:items-end">
-            <flux:input wire:model="searchInput" wire:keydown.enter="applyFilters" label="Search" placeholder="Actor, Request ID, or action..." icon="magnifying-glass" />
+            <x-ui::input wire:model.live.debounce.400ms="searchInput" label="Search" placeholder="Actor, Request ID, or action..." icon="magnifying-glass" />
 
-            <flux:select wire:model.live="actionFilter" label="Action">
-                <flux:select.option value="">All actions</flux:select.option>
-                <flux:select.option value="request_submitted">Submitted</flux:select.option>
-                <flux:select.option value="request_approved">Approved</flux:select.option>
-                <flux:select.option value="request_rejected">Rejected</flux:select.option>
-                <flux:select.option value="revision_requested">Revision requested</flux:select.option>
-                <flux:select.option value="request_updated">Updated</flux:select.option>
-                <flux:select.option value="request_cancelled">Cancelled</flux:select.option>
-                <flux:select.option value="event_ended">Event ended</flux:select.option>
-                <flux:select.option value="request_archived">Archived</flux:select.option>
-                <flux:select.option value="request_restored">Restored</flux:select.option>
-                <flux:select.option value="request_deleted">Deleted</flux:select.option>
-            </flux:select>
+            <x-ui::select wire:model.live="actionFilter" label="Action">
+                <x-ui::select.option value="">All actions</x-ui::select.option>
+                <x-ui::select.option value="request_submitted">Submitted</x-ui::select.option>
+                <x-ui::select.option value="request_approved">Approved</x-ui::select.option>
+                <x-ui::select.option value="request_rejected">Rejected</x-ui::select.option>
+                <x-ui::select.option value="revision_requested">Revision requested</x-ui::select.option>
+                <x-ui::select.option value="request_updated">Updated</x-ui::select.option>
+                <x-ui::select.option value="request_cancelled">Cancelled</x-ui::select.option>
+                <x-ui::select.option value="event_ended">Event ended</x-ui::select.option>
+                <x-ui::select.option value="request_archived">Archived</x-ui::select.option>
+                <x-ui::select.option value="request_restored">Restored</x-ui::select.option>
+                <x-ui::select.option value="request_deleted">Deleted</x-ui::select.option>
+            </x-ui::select>
 
-            <flux:input wire:model="dateFrom" type="date" label="From" />
-            <flux:input wire:model="dateTo" type="date" label="To" />
+            <x-ui::input wire:model="dateFrom" type="date" label="From" />
+            <x-ui::input wire:model="dateTo" type="date" label="To" />
             <div class="flex gap-2 md:col-span-2 xl:col-span-1">
-                <flux:button wire:click="applyFilters" icon="funnel" class="flex-1">Apply</flux:button>
-                <flux:button wire:click="clearFilters" variant="outline" icon="x-mark" class="flex-1">Clear</flux:button>
+                <x-ui::button wire:click="applyFilters" icon="funnel" class="flex-1">Apply</x-ui::button>
+                <x-ui::button wire:click="clearFilters" variant="outline" icon="x-mark" class="flex-1">Clear</x-ui::button>
             </div>
         </div>
 
-        <flux:table :paginate="$this->logs">
-            <flux:table.columns>
-                <flux:table.column>Date & Time</flux:table.column>
-                <flux:table.column>Performed By</flux:table.column>
-                <flux:table.column>Action</flux:table.column>
-                <flux:table.column>Request</flux:table.column>
-                <flux:table.column>User / Facility</flux:table.column>
-                <flux:table.column>Details</flux:table.column>
-            </flux:table.columns>
+        <x-ui::table :paginate="$this->logs">
+            <x-ui::table.columns>
+                <x-ui::table.column>Date & Time</x-ui::table.column>
+                <x-ui::table.column>Performed By</x-ui::table.column>
+                <x-ui::table.column>Action</x-ui::table.column>
+                <x-ui::table.column>Request</x-ui::table.column>
+                <x-ui::table.column>User / Facility</x-ui::table.column>
+                <x-ui::table.column>Details</x-ui::table.column>
+            </x-ui::table.columns>
 
-            <flux:table.rows>
+            <x-ui::table.rows>
                 @forelse ($this->logs as $log)
                     @php
                         $badgeColor = match ($log->action) {
@@ -145,41 +220,41 @@ new #[Layout('components.layouts.app')] class extends Component {
                         };
                         $actionLabel = str($log->action)->replace('_', ' ')->title();
                     @endphp
-                    <flux:table.row :key="$log->id">
-                        <flux:table.cell class="whitespace-nowrap">
+                    <x-ui::table.row :key="$log->id">
+                        <x-ui::table.cell class="whitespace-nowrap">
                             <div class="font-medium">{{ $log->created_at->format('M d, Y') }}</div>
                             <div class="text-xs text-zinc-500">{{ $log->created_at->format('h:i:s A') }}</div>
-                        </flux:table.cell>
-                        <flux:table.cell>
+                        </x-ui::table.cell>
+                        <x-ui::table.cell>
                             <div class="font-medium">{{ $log->actor?->name ?? 'System' }}</div>
                             <div class="text-xs text-zinc-500">{{ $log->actor?->roleLabel() ?? 'Automated action' }}</div>
-                        </flux:table.cell>
-                        <flux:table.cell><flux:badge size="sm" :color="$badgeColor">{{ $actionLabel }}</flux:badge></flux:table.cell>
-                        <flux:table.cell class="font-medium">#{{ $log->auditable_id }}</flux:table.cell>
-                        <flux:table.cell>
-                            <div>{{ $log->requestRecord?->user?->name ?? 'Unavailable user' }}</div>
-                            <div class="text-xs text-zinc-500">{{ $log->requestRecord?->facility?->Facility_Name ?? 'No facility' }}</div>
-                        </flux:table.cell>
-                        <flux:table.cell>
+                        </x-ui::table.cell>
+                        <x-ui::table.cell><x-ui::badge size="sm" :color="$badgeColor">{{ $actionLabel }}</x-ui::badge></x-ui::table.cell>
+                        <x-ui::table.cell class="font-medium">#{{ $log->auditable_id }}</x-ui::table.cell>
+                        <x-ui::table.cell>
+                            <div>{{ $log->requestRecord?->user?->name ?? '—' }}</div>
+                            <div class="text-xs text-zinc-500">{{ $log->requestRecord?->facility?->Facility_Name ?? '—' }}</div>
+                        </x-ui::table.cell>
+                        <x-ui::table.cell>
                             <p class="max-w-sm">{{ $log->description }}</p>
                             @if ($log->new_values)
-                                <p class="mt-1 max-w-sm truncate text-xs text-zinc-500">
+                                <p class="mt-1 max-w-md whitespace-normal break-words text-xs text-zinc-500">
                                     {{ collect($log->new_values)->map(fn ($value, $key) => str($key)->replace('_', ' ')->title().': '.(is_scalar($value) ? $value : json_encode($value)))->implode(' · ') }}
                                 </p>
                             @endif
-                        </flux:table.cell>
-                    </flux:table.row>
+                        </x-ui::table.cell>
+                    </x-ui::table.row>
                 @empty
-                    <flux:table.row>
-                        <flux:table.cell colspan="6">
+                    <x-ui::table.row>
+                        <x-ui::table.cell colspan="6">
                             <div class="flex flex-col items-center justify-center gap-2 py-12 text-center text-zinc-500">
-                                <flux:icon.clipboard-document-list class="size-9 text-zinc-300" />
+                                <x-ui::icon.clipboard-document-list class="size-9 text-zinc-300" />
                                 <p>No audit records match the selected filters.</p>
                             </div>
-                        </flux:table.cell>
-                    </flux:table.row>
+                        </x-ui::table.cell>
+                    </x-ui::table.row>
                 @endforelse
-            </flux:table.rows>
-        </flux:table>
-    </flux:card>
+            </x-ui::table.rows>
+        </x-ui::table>
+    </x-ui::card>
 </div>

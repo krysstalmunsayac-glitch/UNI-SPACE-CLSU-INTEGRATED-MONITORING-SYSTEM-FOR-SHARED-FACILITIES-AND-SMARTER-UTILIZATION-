@@ -27,7 +27,6 @@ class EventsController extends Controller
             'Event_Title' => $validated['Event_Title'],
             'Description' => $validated['Description'] ?? null,
             'Type_Event' => $validated['Type_Event'] ?? null,
-            'Status' => 'Upcoming',
             'User_ID' => auth()->id(),
         ]);
 

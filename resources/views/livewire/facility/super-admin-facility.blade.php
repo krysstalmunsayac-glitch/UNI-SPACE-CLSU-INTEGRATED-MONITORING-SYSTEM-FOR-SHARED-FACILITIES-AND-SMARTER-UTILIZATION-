@@ -1,9 +1,8 @@
 <?php
 
-use App\Models\Amenities;
 use App\Models\Facilities;
 use App\Services\FacilityAvailabilityService;
-use Flux\Flux;
+use App\Support\Ui;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -19,11 +18,20 @@ new #[Layout('components.layouts.app')] class extends Component {
     public ?int $editingId = null;
 
     public bool $showModal = false;
+    public bool $showStatusConfirmation = false;
+    public ?int $pendingStatusId = null;
+    public string $pendingStatusName = '';
+    public bool $pendingStatusWillActivate = false;
+    public string $deactivationConfirmation = '';
+    public bool $viewMode = false;
+    public bool $showCreateConfirmation = false;
     public bool $showArchivedModal = false;
+    public bool $archiveOnly = false;
 
     public function mount(): void
     {
-        $this->showArchivedModal = request()->boolean('archive');
+        $this->archiveOnly = request()->boolean('archive');
+        $this->showArchivedModal = $this->archiveOnly;
     }
 
     public string $searchInput = '';
@@ -41,19 +49,19 @@ new #[Layout('components.layouts.app')] class extends Component {
     public array $existingImages = [];
     public array $removedImageIds = [];
 
-    #[Validate('nullable|in:sports,conference,auditorium,classroom,laboratory,other')]
+    #[Validate('required|in:sports,conference,auditorium,classroom,laboratory,other')]
     public ?string $facility_type = null;
 
-    #[Validate('required|numeric|min:0|max:9999999.99')]
-    public float $Price = 0;
+    #[Validate('nullable|numeric|min:0|max:9999999.99')]
+    public ?float $Price = null;
 
-    #[Validate('nullable|string|min:2|max:150')]
+    #[Validate('required|string|min:2|max:150')]
     public ?string $Office = null;
 
-    #[Validate('nullable|string|max:2000')]
+    #[Validate('required|string|min:5|max:2000')]
     public ?string $Description = null;
 
-    #[Validate('nullable|string|max:255')]
+    #[Validate('required|string|min:2|max:255')]
     public ?string $Location = null;
 
     #[Validate('nullable|numeric|between:-90,90')]
@@ -65,25 +73,19 @@ new #[Layout('components.layouts.app')] class extends Component {
     #[Validate('required|integer|min:70|max:100000')]
     public ?int $Capacity = null;
 
-    #[Validate('required|in:Available,Under Maintenance,Unavailable')]
+    #[Validate('required|in:Available,Unavailable')]
     public string $Status = 'Available';
-
-    #[Validate('nullable|array')]
-    public array $selectedAmenityIds = [];
-
-    #[Computed]
-    public function amenities()
-    {
-        return Amenities::query()
-            ->where('Status', 'Available')
-            ->orderBy('name')
-            ->get();
-    }
 
     public function applySearch(): void
     {
         $this->search = trim($this->searchInput);
         $this->resetPage('facilitiesPage');
+        $this->resetPage('archivedFacilitiesPage');
+    }
+
+    public function updatedSearchInput(): void
+    {
+        $this->applySearch();
     }
 
     public function updatedStatusFilter(): void
@@ -124,12 +126,12 @@ new #[Layout('components.layouts.app')] class extends Component {
             'Latitude',
             'Longitude',
             'Capacity',
-            'selectedAmenityIds',
         ]);
 
         $this->editingId = null;
+        $this->viewMode = false;
+        $this->showCreateConfirmation = false;
         $this->Status = 'Available';
-        $this->selectedAmenityIds = [];
         $this->resetValidation();
     }
 
@@ -143,10 +145,11 @@ new #[Layout('components.layouts.app')] class extends Component {
     {
         $facility = Facilities::query()->findOrFail($facilityId);
 
+        $this->viewMode = false;
         $this->editingId = $facility->FID;
         $this->Facility_Name = $facility->Facility_Name;
         $this->facility_type = $facility->facility_type;
-        $this->Price = (float) $facility->Price;
+        $this->Price = $facility->Price === null ? null : (float) $facility->Price;
         $this->Office = $facility->Office;
         $this->Description = $facility->Description;
         $this->Location = $facility->Location;
@@ -160,13 +163,17 @@ new #[Layout('components.layouts.app')] class extends Component {
             ->map(fn ($image) => ['id' => $image->id, 'path' => $image->image_path])
             ->all();
         $this->removedImageIds = [];
-        $this->selectedAmenityIds = $facility->amenities()->pluck('amenities.AID')->map(fn ($id) => (int) $id)->all();
-
         $this->resetValidation();
         $this->showModal = true;
     }
 
-    public function save(): void
+    public function viewFacility(int $facilityId): void
+    {
+        $this->edit($facilityId);
+        $this->viewMode = true;
+    }
+
+    public function save(bool $createConfirmed = false): void
     {
         $this->validate();
 
@@ -175,6 +182,14 @@ new #[Layout('components.layouts.app')] class extends Component {
 
             return;
         }
+
+        if (! $this->editingId && ! $createConfirmed) {
+            $this->showCreateConfirmation = true;
+
+            return;
+        }
+
+        $this->showCreateConfirmation = false;
 
         $data = [
             'Facility_Name' => $this->Facility_Name,
@@ -212,9 +227,7 @@ new #[Layout('components.layouts.app')] class extends Component {
             ]);
         }
 
-        $facility->amenities()->sync($this->selectedAmenityIds);
-
-        Flux::toast(
+        Ui::toast(
             text: $wasEditing
                 ? 'Facility updated successfully!'
                 : 'Facility created successfully!',
@@ -267,7 +280,7 @@ new #[Layout('components.layouts.app')] class extends Component {
         $facility = Facilities::query()->findOrFail($facilityId);
         $facility->delete();
 
-        Flux::toast(
+        Ui::toast(
             text: 'Facility moved to archived records.',
             variant: 'success'
         );
@@ -293,7 +306,7 @@ new #[Layout('components.layouts.app')] class extends Component {
         $facility = Facilities::onlyTrashed()->findOrFail($facilityId);
         $facility->restore();
 
-        Flux::toast(
+        Ui::toast(
             text: 'Facility restored successfully!',
             variant: 'success'
         );
@@ -311,7 +324,7 @@ new #[Layout('components.layouts.app')] class extends Component {
     public function forceDeleteFacility(int $facilityId): void
     {
         $facility = Facilities::onlyTrashed()
-            ->with('images')
+            ->with(['images' => fn ($query) => $query->oldest('id')->limit(1)])
             ->findOrFail($facilityId);
 
         foreach ($facility->images as $image) {
@@ -324,7 +337,7 @@ new #[Layout('components.layouts.app')] class extends Component {
         $facility->images()->delete();
         $facility->forceDelete();
 
-        Flux::toast(
+        Ui::toast(
             text: 'Facility permanently deleted.',
             variant: 'success'
         );
@@ -338,27 +351,52 @@ new #[Layout('components.layouts.app')] class extends Component {
         $this->resetPage('archivedFacilitiesPage');
     }
 
-    public function toggleStatus(int $facilityId): void
+    public function requestToggleStatus(int $facilityId): void
     {
         $facility = Facilities::query()->findOrFail($facilityId);
+        $this->pendingStatusId = $facility->FID;
+        $this->pendingStatusName = $facility->Facility_Name;
+        $this->pendingStatusWillActivate = $facility->Status === 'Unavailable';
+        $this->deactivationConfirmation = '';
+        $this->resetValidation('deactivationConfirmation');
+        $this->showStatusConfirmation = true;
+    }
+
+    public function confirmToggleStatus(): void
+    {
+        $facility = Facilities::query()->findOrFail($this->pendingStatusId);
+
+        if ($facility->Status !== 'Unavailable') {
+            $this->validate([
+                'deactivationConfirmation' => ['required', 'in:DEACTIVATE'],
+            ], [
+                'deactivationConfirmation.required' => 'Type DEACTIVATE to confirm.',
+                'deactivationConfirmation.in' => 'Type DEACTIVATE exactly to confirm.',
+            ]);
+        }
+
         $cancelledCount = app(FacilityAvailabilityService::class)->toggle($facility);
         $facility->refresh();
 
-        Flux::toast(
+        Ui::toast(
             text: $facility->Status === 'Available'
                 ? 'Facility reactivated successfully!'
                 : "Facility deactivated. {$cancelledCount} active request(s) cancelled.",
             variant: 'success'
         );
+
+        $this->showStatusConfirmation = false;
+        $this->pendingStatusId = null;
+        $this->deactivationConfirmation = '';
     }
 
     #[Computed]
     public function facilities()
     {
         return Facilities::query()
-            ->with('images')
+            ->with(['images' => fn ($query) => $query->oldest('id')->limit(1)])
             ->when(
-                in_array($this->statusFilter, ['Available', 'Under Maintenance', 'Unavailable'], true),
+                in_array($this->statusFilter, ['Available', 'Unavailable'], true),
                 fn ($query) => $query->where('Status', $this->statusFilter)
             )
             ->when($this->search !== '', function ($query) {
@@ -373,7 +411,7 @@ new #[Layout('components.layouts.app')] class extends Component {
             })
             ->orderBy($this->sortBy, $this->sortDirection)
             ->paginate(
-                perPage: 10,
+                perPage: 8,
                 pageName: 'facilitiesPage'
             );
     }
@@ -382,18 +420,54 @@ new #[Layout('components.layouts.app')] class extends Component {
     public function archivedFacilities()
     {
         return Facilities::onlyTrashed()
-            ->with('images')
+            ->when($this->search, fn ($query) => $query->where(function ($query) {
+                $query->where('Facility_Name', 'like', '%'.$this->search.'%')
+                    ->orWhere('Location', 'like', '%'.$this->search.'%')
+                    ->orWhere('Office', 'like', '%'.$this->search.'%');
+            }))
+            ->with(['images' => fn ($query) => $query->oldest('id')->limit(1)])
             ->orderByDesc('deleted_at')
             ->paginate(
-                perPage: 10,
+                perPage: 8,
                 pageName: 'archivedFacilitiesPage'
             );
     }
 }; ?>
 
 <div class="w-full">
+    @if ($archiveOnly)
+        <div class="mx-auto max-w-7xl">
+            <x-ui::card>
+                @include('facility.components.super-admin.archived-facilities-modal', ['archiveOnly' => true])
+            </x-ui::card>
+        </div>
+    @else
     @include('facility.components.super-admin.page-header')
     @include('facility.components.super-admin.facilities-table')
-    @include('facility.components.super-admin.archived-facilities-modal')
-    @include('facility.components.super-admin.facility-form-modal')
+    @if ($showArchivedModal)
+        <x-ui::modal wire:model.self="showArchivedModal" class="w-[95vw] max-w-7xl">
+            @include('facility.components.super-admin.archived-facilities-modal')
+        </x-ui::modal>
+    @endif
+    @if ($showModal)
+        @include('facility.components.super-admin.facility-form-modal')
+    @endif
+    @if ($showCreateConfirmation)
+        <x-ui::modal wire:model.self="showCreateConfirmation" class="md:w-[28rem]">
+            <div class="space-y-6">
+                <div>
+                    <x-ui::heading size="lg">Confirm new facility</x-ui::heading>
+                    <x-ui::subheading>
+                        Are you sure you want to add <span class="font-semibold">{{ $Facility_Name }}</span> as a new facility?
+                    </x-ui::subheading>
+                </div>
+                <div class="flex gap-2">
+                    <x-ui::button wire:click="save(true)" variant="primary" class="flex-1">Add facility</x-ui::button>
+                    <x-ui::button wire:click="$set('showCreateConfirmation', false)" variant="ghost" class="flex-1">Cancel</x-ui::button>
+                </div>
+            </div>
+        </x-ui::modal>
+    @endif
+    @include('facility.components.status-confirmation-modal')
+    @endif
 </div>

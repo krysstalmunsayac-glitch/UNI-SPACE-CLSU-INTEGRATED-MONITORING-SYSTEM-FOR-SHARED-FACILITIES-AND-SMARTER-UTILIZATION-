@@ -9,25 +9,46 @@ use App\Models\Requests;
 use App\Models\User;
 use App\Notifications\NewRequestSubmitted;
 use App\Notifications\RequestCancelledByUser;
+use Carbon\CarbonPeriod;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 class FacilitiesController extends Controller
 {
     public function showRequest(Facilities $facility)
     {
-        $facility->load(['amenities', 'images']);
+        abort_unless($facility->Status === 'Available', 409, 'This facility is not currently available for requests.');
+
+        $facility->load('images');
+
+        $availableAmenities = $facility->amenities()
+            ->where('amenities.Status', 'Available')
+            ->withCount([
+                'requests as current_usage_count' => fn ($requestQuery) => $requestQuery
+                    ->whereIn('Status', ['Pending', 'Approved']),
+            ])
+            ->get()
+            ->filter(fn (Amenities $amenity) => $amenity->reservation_limit === null
+                || $amenity->current_usage_count < $amenity->reservation_limit)
+            ->values();
+
         $events = Events::orderBy('Event_Title')->get();
 
-        return view('requests.create', compact('facility', 'events'));
+        return view('requests.create', compact('facility', 'events', 'availableAmenities'));
     }
 
     public function storeRequest(Request $request, Facilities $facility)
     {
+        abort_unless($facility->Status === 'Available', 409, 'This facility is not currently available for requests.');
+
         $earliestReservationDate = now()->addDays(3)->toDateString();
 
         $validated = $request->validate([
@@ -38,65 +59,132 @@ class FacilitiesController extends Controller
                 Rule::exists('amenities', 'AID')->where('Status', 'Available'),
             ],
             'Event_ID' => ['nullable', 'integer', Rule::exists('events', 'EID')],
-            'Event_Title' => ['nullable', 'string', 'min:3', 'max:255'],
-            'Description' => ['nullable', 'string', 'min:5', 'max:2000'],
-            'Type_Event' => ['nullable', 'string', 'max:100'],
+            'Event_Title' => ['required', 'string', 'min:3', 'max:255'],
+            'Description' => ['required', 'string', 'min:5', 'max:2000'],
+            'Type_Event' => ['required', 'string', 'max:100'],
             'Other_Event_Type' => ['nullable', 'required_if:Type_Event,Other', 'string', 'max:100'],
             'Proposed_Date' => ['required', 'date', 'after_or_equal:'.$earliestReservationDate],
-            'Proposed_Start_Time' => ['required', 'date_format:H:i'],
-            'Proposed_End_Time' => ['required', 'date_format:H:i', 'after:Proposed_Start_Time'],
-            'Purpose' => ['required', 'string', 'min:5', 'max:1000'],
+            'Proposed_End_Date' => ['required', 'date', 'after_or_equal:Proposed_Date'],
+            'Daily_Schedules' => ['required', 'array', 'min:1', 'max:31'],
+            'Daily_Schedules.*.date' => ['required', 'date_format:Y-m-d'],
+            'Daily_Schedules.*.start' => ['required', 'date_format:H:i'],
+            'Daily_Schedules.*.end' => ['required', 'date_format:H:i'],
+            'Purpose_Categories' => ['required', 'array', 'min:1'],
+            'Purpose_Categories.*' => ['string', Rule::in([
+                'Meeting or Conference', 'Seminar or Workshop', 'Training Session',
+                'Class or Educational Activity', 'Student Organization Event', 'Club Meeting',
+                'Sports or Recreational Activity', 'Cultural or Arts Program', 'Religious Activity',
+                'Community Outreach Program', 'Birthday Celebration', 'Wedding Reception or Ceremony',
+                'Family Gathering or Reunion', 'Corporate Event', 'Product Launch or Promotion',
+                'Exhibition or Fair', 'Concert or Performance', 'Graduation or Recognition Ceremony',
+                'Health or Medical Mission', 'Government or Public Service Activity',
+                'Photo or Video Shoot', 'Other',
+            ])],
+            'Other_Purpose' => [
+                'nullable',
+                Rule::requiredIf(fn () => in_array('Other', $request->input('Purpose_Categories', []), true)),
+                'string',
+                'max:150',
+            ],
+            'Reservation_Frequency' => ['required', Rule::in(['First time', 'Occasionally', 'Regularly', 'Frequently'])],
+            'Facility_Importance' => ['required', Rule::in(['Very Important', 'Important', 'Neutral', 'Slightly Important', 'Not Important'])],
+            'Requirements_Fit' => ['required', Rule::in(['Yes, completely', 'Mostly', 'Partially', 'No'])],
+            'Reserve_Again_Intent' => ['required', Rule::in(['Definitely Yes', 'Probably Yes', 'Not Sure', 'Probably No', 'Definitely No'])],
             'Capacity' => ['nullable', 'integer', 'min:1', 'max:'.($facility->Capacity ?? 100000)],
             'attachment' => ['nullable', 'file', 'mimes:pdf', 'max:5120'],
         ], [
             'Proposed_Date.after_or_equal' => 'Reservations must be submitted at least 3 days before the event date.',
         ]);
 
-        $this->validateDailyRequestLimit($validated['Proposed_Date']);
-
-        $this->validateAmenityAvailability(
-            $validated['Amenity_ID'] ?? [],
-            $validated['Proposed_Date'],
-            $validated['Proposed_Start_Time'],
-            $validated['Proposed_End_Time'],
-        );
+        $dailySchedules = $this->validatedDailySchedules($validated);
+        $firstSchedule = $dailySchedules[0];
+        $lastSchedule = $dailySchedules[array_key_last($dailySchedules)];
 
         $attachmentPath = null;
 
         if ($request->hasFile('attachment')) {
-            $attachmentPath = $request->file('attachment')->store('request-attachments', 'public');
+            $attachmentPath = $request->file('attachment')->store('request-attachments', 'local');
         }
 
         if (($validated['Type_Event'] ?? null) === 'Other') {
             $validated['Type_Event'] = trim($validated['Other_Event_Type']);
         }
 
-        $event = null;
+        try {
+            $requestModel = DB::transaction(function () use ($validated, $dailySchedules, $firstSchedule, $lastSchedule, $facility, $attachmentPath): Requests {
+                User::query()->whereKey(auth()->id())->lockForUpdate()->firstOrFail();
+                Facilities::query()->whereKey($facility->FID)->lockForUpdate()->firstOrFail();
 
-        if (! empty($validated['Event_Title']) || ! empty($validated['Description']) || ! empty($validated['Type_Event'])) {
-            $event = Events::create([
-                'User_ID' => auth()->id(),
-                'Event_Title' => $validated['Event_Title'] ?? 'Untitled Event',
-                'Description' => $validated['Description'] ?? null,
-                'Type_Event' => $validated['Type_Event'] ?? null,
-                'Status' => 'Upcoming',
+                $this->validateDailyRequestLimit($validated['Proposed_Date'], $validated['Proposed_End_Date'], lockForUpdate: true);
+                if (Requests::hasActiveDailyScheduleConflict($facility->FID, $dailySchedules, lockForUpdate: true)) {
+                    throw ValidationException::withMessages([
+                        'Daily_Schedules' => 'This facility already has a request during one or more selected time slots. Please adjust the highlighted schedule.',
+                    ]);
+                }
+
+                foreach ($dailySchedules as $schedule) {
+                    $this->validateAmenityAvailability(
+                        $validated['Amenity_ID'] ?? [],
+                        $schedule['date'],
+                        $schedule['date'],
+                        $schedule['start'],
+                        $schedule['end'],
+                        lockForUpdate: true,
+                    );
+                }
+
+                $event = Events::create([
+                    'User_ID' => auth()->id(),
+                    'Event_Title' => $validated['Event_Title'],
+                    'Description' => $validated['Description'],
+                    'Type_Event' => $validated['Type_Event'],
+                ]);
+
+                $requestModel = Requests::create([
+                    'User_ID' => auth()->id(),
+                    'Event_ID' => $event->EID,
+                    'Facility_ID' => $facility->FID,
+                    'Proposed_Date' => $validated['Proposed_Date'],
+                    'Proposed_End_Date' => $validated['Proposed_End_Date'],
+                    'Proposed_Start_Time' => $firstSchedule['start'],
+                    'Proposed_End_Time' => $lastSchedule['end'],
+                    'Daily_Schedules' => $dailySchedules,
+                    'Status' => 'Pending',
+                    'Purpose' => collect($validated['Purpose_Categories'])
+                        ->map(fn (string $category): string => $category === 'Other'
+                            ? $validated['Other_Purpose']
+                            : $category)
+                        ->implode(', '),
+                    'Purpose_Categories' => $validated['Purpose_Categories'],
+                    'Other_Purpose' => $validated['Other_Purpose'] ?? null,
+                    'Reservation_Frequency' => $validated['Reservation_Frequency'],
+                    'Facility_Importance' => $validated['Facility_Importance'],
+                    'Requirements_Fit' => $validated['Requirements_Fit'],
+                    'Reserve_Again_Intent' => $validated['Reserve_Again_Intent'],
+                    'Capacity' => $validated['Capacity'] ?? null,
+                    'attachment_path' => $attachmentPath,
+                ]);
+
+                $requestModel->amenities()->sync($validated['Amenity_ID'] ?? []);
+
+                return $requestModel;
+            }, 3);
+        } catch (ValidationException $exception) {
+            if ($attachmentPath) Storage::disk('local')->delete($attachmentPath);
+            throw $exception;
+        } catch (Throwable $exception) {
+            if ($attachmentPath) Storage::disk('local')->delete($attachmentPath);
+
+            Log::error('Facility request submission failed.', [
+                'user_id' => auth()->id(),
+                'facility_id' => $facility->FID,
+                'exception' => $exception,
+            ]);
+
+            return back()->withInput()->withErrors([
+                'submission' => 'We could not submit your request right now. Nothing was saved. Please try again.',
             ]);
         }
-
-        $requestModel = Requests::create([
-            'User_ID' => auth()->id(),
-            'Event_ID' => $event?->EID ?? $validated['Event_ID'] ?? null,
-            'Facility_ID' => $facility->FID,
-            'Proposed_Date' => $validated['Proposed_Date'],
-            'Proposed_Start_Time' => $validated['Proposed_Start_Time'],
-            'Proposed_End_Time' => $validated['Proposed_End_Time'],
-            'Status' => 'Pending',
-            'Purpose' => $validated['Purpose'],
-            'Capacity' => $validated['Capacity'] ?? null,
-            'attachment_path' => $attachmentPath,
-        ]);
-
-        $requestModel->amenities()->sync($validated['Amenity_ID'] ?? []);
 
         Notification::send(
             $this->notificationRecipientsFor($facility),
@@ -126,21 +214,33 @@ class FacilitiesController extends Controller
             'Description' => ['nullable', 'string', 'min:5', 'max:2000'],
             'Type_Event' => ['nullable', 'string', 'max:100'],
             'Proposed_Date' => ['required', 'date', 'after_or_equal:'.$earliestReservationDate],
+            'Proposed_End_Date' => ['required', 'date', 'after_or_equal:Proposed_Date'],
             'Proposed_Start_Time' => ['required', 'date_format:H:i'],
             'Proposed_End_Time' => ['required', 'date_format:H:i', 'after:Proposed_Start_Time'],
             'Purpose' => ['required', 'string', 'min:5', 'max:1000'],
             'Capacity' => ['nullable', 'integer', 'min:1', 'max:100000'],
-            'Event_Status' => ['nullable', 'string', 'in:Upcoming,Ongoing,Completed,Cancelled'],
             'attachment' => ['nullable', 'file', 'mimes:pdf', 'max:5120'],
         ], [
             'Proposed_Date.after_or_equal' => 'Reservations must be scheduled at least 3 days from today.',
         ]);
 
-        $this->validateDailyRequestLimit($validated['Proposed_Date'], $requestModel->RID);
+        $this->validateDailyRequestLimit($validated['Proposed_Date'], $validated['Proposed_End_Date'], $requestModel->RID);
+
+        if ($requestModel->Facility_ID) {
+            $this->validateFacilityAvailability(
+                $requestModel->Facility_ID,
+                $validated['Proposed_Date'],
+                $validated['Proposed_End_Date'],
+                $validated['Proposed_Start_Time'],
+                $validated['Proposed_End_Time'],
+                $requestModel->RID,
+            );
+        }
 
         $this->validateAmenityAvailability(
             $requestModel->amenities()->pluck('amenities.AID')->all(),
             $validated['Proposed_Date'],
+            $validated['Proposed_End_Date'],
             $validated['Proposed_Start_Time'],
             $validated['Proposed_End_Time'],
             $requestModel->RID,
@@ -150,10 +250,12 @@ class FacilitiesController extends Controller
 
         if ($request->hasFile('attachment')) {
             if ($attachmentPath) {
+                Storage::disk('local')->delete($attachmentPath);
+                // Remove a legacy public copy after an older request is updated.
                 Storage::disk('public')->delete($attachmentPath);
             }
 
-            $attachmentPath = $request->file('attachment')->store('request-attachments', 'public');
+            $attachmentPath = $request->file('attachment')->store('request-attachments', 'local');
         }
 
         if ($requestModel->event) {
@@ -161,12 +263,12 @@ class FacilitiesController extends Controller
                 'Event_Title' => $validated['Event_Title'] ?? $requestModel->event->Event_Title,
                 'Description' => $validated['Description'] ?? $requestModel->event->Description,
                 'Type_Event' => $validated['Type_Event'] ?? $requestModel->event->Type_Event,
-                'Status' => $validated['Event_Status'] ?? $requestModel->event->Status,
             ]);
         }
 
         $requestModel->update([
             'Proposed_Date' => $validated['Proposed_Date'],
+            'Proposed_End_Date' => $validated['Proposed_End_Date'],
             'Proposed_Start_Time' => $validated['Proposed_Start_Time'],
             'Proposed_End_Time' => $validated['Proposed_End_Time'],
             'Purpose' => $validated['Purpose'],
@@ -198,13 +300,7 @@ class FacilitiesController extends Controller
             'Cancellation_Reason' => ['required', 'string', 'min:5', 'max:1000'],
         ]);
 
-        $requestModel->schedule()->delete();
-
-        if ($requestModel->event && $requestModel->event->Status !== 'Completed') {
-            $requestModel->event->update([
-                'Status' => 'Cancelled',
-            ]);
-        }
+        $requestModel->schedules()->delete();
 
         $requestModel->update([
             'Status' => 'Cancelled',
@@ -218,11 +314,41 @@ class FacilitiesController extends Controller
             new RequestCancelledByUser($requestModel)
         );
 
-        $requestModel->delete();
-
         return redirect()
             ->route('dashboard')
-            ->with('success', 'Your request has been cancelled and moved to the archive.');
+            ->with('success', 'Your request has been cancelled. It will be archived automatically after 10 days.');
+    }
+
+    /**
+     * Download a request attachment after enforcing record-level access.
+     */
+    public function downloadAttachment(Request $request, Requests $requestModel): StreamedResponse
+    {
+        $user = $request->user();
+        $isOwner = $requestModel->User_ID === $user->id;
+        $isSuperAdmin = $user->isSuperAdmin();
+        $isAssignedAdmin = $user->isAdmin()
+            && $requestModel->facility()
+                ->whereHas('assignedAdmins', fn ($query) => $query->where('users.id', $user->id))
+                ->exists();
+
+        abort_unless($isOwner || $isSuperAdmin || $isAssignedAdmin, 403);
+        abort_unless($requestModel->attachment_path, 404);
+
+        $path = $requestModel->attachment_path;
+        abort_unless(Storage::disk('local')->exists($path), 404);
+
+        $extension = pathinfo($path, PATHINFO_EXTENSION) ?: 'pdf';
+
+        return Storage::disk('local')->download(
+            $path,
+            "request-{$requestModel->RID}-attachment.{$extension}",
+            [
+                'Content-Type' => 'application/pdf',
+                'X-Content-Type-Options' => 'nosniff',
+                'Cache-Control' => 'private, no-store, max-age=0',
+            ],
+        );
     }
 
     /**
@@ -233,18 +359,21 @@ class FacilitiesController extends Controller
      */
     private function validateAmenityAvailability(
         array $amenityIds,
-        string $date,
+        string $startDate,
+        string $endDate,
         string $startTime,
         string $endTime,
         ?int $ignoreRequestId = null,
+        bool $lockForUpdate = false,
     ): void {
         $limitedAmenities = Amenities::query()
             ->whereIn('AID', $amenityIds)
             ->whereNotNull('reservation_limit')
+            ->when($lockForUpdate, fn ($query) => $query->lockForUpdate())
             ->get();
 
         foreach ($limitedAmenities as $amenity) {
-            if (! $amenity->isFullyReserved($date, $startTime, $endTime, $ignoreRequestId)) {
+            if (! $amenity->isFullyReserved($startDate, $endDate, $startTime, $endTime, $ignoreRequestId)) {
                 continue;
             }
 
@@ -254,14 +383,76 @@ class FacilitiesController extends Controller
         }
     }
 
-    private function validateDailyRequestLimit(string $date, ?int $ignoreRequestId = null): void
+    /**
+     * Ensure that every date in the selected range has exactly one valid time slot.
+     *
+     * @return array<int, array{date:string,start:string,end:string}>
+     */
+    private function validatedDailySchedules(array $validated): array
     {
-        if (! Requests::userHasRequestOnDate(auth()->id(), $date, $ignoreRequestId)) {
+        $expectedDates = collect(CarbonPeriod::create($validated['Proposed_Date'], $validated['Proposed_End_Date']))
+            ->map(fn ($date) => $date->format('Y-m-d'))
+            ->values();
+
+        if ($expectedDates->count() > 31) {
+            throw ValidationException::withMessages([
+                'Proposed_End_Date' => 'A single request may cover no more than 31 consecutive days.',
+            ]);
+        }
+
+        $submitted = collect($validated['Daily_Schedules'])
+            ->map(fn (array $schedule) => [
+                'date' => $schedule['date'],
+                'start' => $schedule['start'],
+                'end' => $schedule['end'],
+            ])
+            ->keyBy('date');
+
+        if ($submitted->count() !== $expectedDates->count() || $expectedDates->contains(fn ($date) => ! $submitted->has($date))) {
+            throw ValidationException::withMessages([
+                'Daily_Schedules' => 'Please provide one time schedule for every selected booking day.',
+            ]);
+        }
+
+        $schedules = $expectedDates->map(fn (string $date) => $submitted->get($date))->all();
+
+        foreach ($schedules as $index => $schedule) {
+            if ($schedule['end'] <= $schedule['start']) {
+                throw ValidationException::withMessages([
+                    "Daily_Schedules.{$index}.end" => 'The end time must be later than the start time.',
+                ]);
+            }
+        }
+
+        return $schedules;
+    }
+
+    private function validateDailyRequestLimit(string $startDate, string $endDate, ?int $ignoreRequestId = null, bool $lockForUpdate = false): void
+    {
+        if (! Requests::userHasRequestOnDate(auth()->id(), $startDate, $endDate, $ignoreRequestId, $lockForUpdate)) {
             return;
         }
 
         throw ValidationException::withMessages([
             'Proposed_Date' => 'You may only submit one reservation request per event date. Please choose another date.',
+        ]);
+    }
+
+    private function validateFacilityAvailability(
+        int $facilityId,
+        string $startDate,
+        string $endDate,
+        string $startTime,
+        string $endTime,
+        ?int $ignoreRequestId = null,
+        bool $lockForUpdate = false,
+    ): void {
+        if (! Requests::hasActiveFacilityConflict($facilityId, $startDate, $endDate, $startTime, $endTime, $ignoreRequestId, $lockForUpdate)) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'Proposed_Start_Time' => 'This facility already has a request during the selected time. Please choose another time.',
         ]);
     }
 
@@ -280,6 +471,7 @@ class FacilitiesController extends Controller
             'Amenity_ID' => ['nullable', 'array'],
             'Amenity_ID.*' => ['integer', Rule::exists('amenities', 'AID')],
             'Proposed_Date' => ['required', 'date', 'after_or_equal:'.$earliestReservationDate],
+            'Proposed_End_Date' => ['required', 'date', 'after_or_equal:Proposed_Date'],
             'Proposed_Start_Time' => ['required', 'date_format:H:i'],
             'Proposed_End_Time' => ['required', 'date_format:H:i', 'after:Proposed_Start_Time'],
             'Purpose' => ['required', 'string', 'min:5', 'max:1000'],
@@ -288,18 +480,40 @@ class FacilitiesController extends Controller
             'Proposed_Date.after_or_equal' => 'Reservations must be submitted at least 3 days before the event date.',
         ]);
 
-        $this->validateDailyRequestLimit($validated['Proposed_Date']);
+        try {
+            $requestModel = DB::transaction(function () use ($validated, $event): Requests {
+                User::query()->whereKey(auth()->id())->lockForUpdate()->firstOrFail();
+                $this->validateDailyRequestLimit($validated['Proposed_Date'], $validated['Proposed_End_Date'], lockForUpdate: true);
 
-        $requestModel = Requests::create([
-            'Event_ID' => $event->EID,
-            'User_ID' => auth()->id(),
-            'Proposed_Date' => $validated['Proposed_Date'],
-            'Proposed_Start_Time' => $validated['Proposed_Start_Time'],
-            'Proposed_End_Time' => $validated['Proposed_End_Time'],
-            'Status' => 'Pending',
-            'Purpose' => $validated['Purpose'],
-            'Capacity' => $validated['Capacity'] ?? null,
-        ]);
+                $requestModel = Requests::create([
+                    'Event_ID' => $event->EID,
+                    'User_ID' => auth()->id(),
+                    'Proposed_Date' => $validated['Proposed_Date'],
+                    'Proposed_End_Date' => $validated['Proposed_End_Date'],
+                    'Proposed_Start_Time' => $validated['Proposed_Start_Time'],
+                    'Proposed_End_Time' => $validated['Proposed_End_Time'],
+                    'Status' => 'Pending',
+                    'Purpose' => $validated['Purpose'],
+                    'Capacity' => $validated['Capacity'] ?? null,
+                ]);
+
+                $requestModel->amenities()->sync($validated['Amenity_ID'] ?? []);
+
+                return $requestModel;
+            }, 3);
+        } catch (ValidationException $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
+            Log::error('Event request submission failed.', [
+                'user_id' => auth()->id(),
+                'event_id' => $event->EID,
+                'exception' => $exception,
+            ]);
+
+            return back()->withInput()->withErrors([
+                'submission' => 'We could not submit your request right now. Nothing was saved. Please try again.',
+            ]);
+        }
 
         Notification::send(
             User::query()->where('user_type', 'super_admin')->get(),

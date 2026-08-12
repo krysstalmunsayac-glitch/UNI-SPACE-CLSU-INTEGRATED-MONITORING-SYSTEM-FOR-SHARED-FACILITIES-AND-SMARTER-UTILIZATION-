@@ -1,0 +1,66 @@
+/* ==========================================================================
+   06. Shared Blade navigation
+   Used by the public/home layout; the authenticated shell uses React.
+   ========================================================================== */
+
+.navigation-typeface,
+.navigation-typeface :is(a, button, [role='menuitem'], [data-ui-navlist-item], [data-ui-navbar-item], [data-ui-sidebar-item]) {
+    font-family: var(--font-sans);
+    font-size: 15px;
+}
+
+/*
+ * Keep navigation feedback consistent across sidebar and navigation items.
+ * `data-current` is rendered by the UI component when a Blade item receives :current="true".
+ */
+.navigation-typeface :is([data-ui-sidebar-item], [data-ui-navlist-item]) {
+    transition:
+        color 150ms ease,
+        background-color 150ms ease,
+        border-color 150ms ease,
+        box-shadow 150ms ease,
+        transform 150ms ease;
+}
+
+.navigation-typeface :is([data-ui-sidebar-item], [data-ui-navlist-item]):hover {
+    color: #007a2f;
+    background-color: rgb(0 150 57 / 0.10);
+    border-color: rgb(0 150 57 / 0.20);
+    transform: translateX(2px);
+}
+
+.navigation-typeface :is([data-ui-sidebar-item], [data-ui-navlist-item])[data-current] {
+    color: #ffffff;
+    background-color: #009639;
+    border-color: #009639;
+    box-shadow: 0 5px 14px rgb(0 150 57 / 0.22);
+    font-weight: 700;
+}
+
+.navigation-typeface :is([data-ui-sidebar-item], [data-ui-navlist-item])[data-current]:hover {
+    color: #ffffff;
+    background-color: #007a2f;
+    border-color: #007a2f;
+}
+
+.navigation-typeface :is([data-ui-sidebar-item], [data-ui-navlist-item]):focus-visible {
+    outline: 2px solid #facc15;
+    outline-offset: 2px;
+}
+
+.dark .navigation-typeface :is([data-ui-sidebar-item], [data-ui-navlist-item]):hover {
+    color: #ffffff;
+    background-color: rgb(52 211 153 / 0.14);
+    border-color: rgb(52 211 153 / 0.24);
+}
+
+.dark .navigation-typeface :is([data-ui-sidebar-item], [data-ui-navlist-item])[data-current] {
+    color: #ffffff;
+    background-color: #009639;
+    border-color: #22c55e;
+    box-shadow: 0 5px 14px rgb(0 0 0 / 0.30);
+}
+
+.dark .navigation-typeface :is([data-ui-sidebar-item], [data-ui-navlist-item])[data-current]:hover {
+    background-color: #00ad43;
+}

@@ -9,22 +9,17 @@
     </div>
 
     <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-end">
-        <flux:select wire:model.live="statusFilter" label="Availability" class="w-full sm:w-[190px]">
-            <flux:select.option value="">All facilities</flux:select.option>
-            <flux:select.option value="Available">Available</flux:select.option>
-            <flux:select.option value="Under Maintenance">Under Maintenance</flux:select.option>
-            <flux:select.option value="Unavailable">Unavailable</flux:select.option>
-        </flux:select>
+        <x-ui::select wire:model.live="statusFilter" label="Availability" class="w-full sm:w-[190px]">
+            <x-ui::select.option value="">All facilities</x-ui::select.option>
+            <x-ui::select.option value="Available">Available</x-ui::select.option>
+            <x-ui::select.option value="Unavailable">Unavailable</x-ui::select.option>
+        </x-ui::select>
 
-        <flux:input
-            wire:model="searchInput"
-            wire:keydown.enter="applySearch"
+        <x-ui::input
+            wire:model.live.debounce.400ms="searchInput"
             placeholder="Search by name, location, or office..."
             class="w-full sm:w-[240px]"
         />
 
-        <flux:button wire:click="applySearch" icon="magnifying-glass">
-            Search
-        </flux:button>
     </div>
 </div>

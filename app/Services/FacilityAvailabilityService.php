@@ -27,7 +27,10 @@ class FacilityAvailabilityService
             $facility->update(['Status' => 'Unavailable']);
 
             $requests = Requests::query()
-                ->with(['user', 'facility', 'event', 'schedule'])
+                ->with([
+                    'user:id,name,email',
+                    'facility:FID,Facility_Name',
+                ])
                 ->where('Facility_ID', $facility->FID)
                 ->whereIn('Status', ['Pending', 'Approved'])
                 ->lockForUpdate()
@@ -39,13 +42,7 @@ class FacilityAvailabilityService
                     'Cancellation_Reason' => 'The facility has been marked unavailable by the facility administrator.',
                 ]);
 
-                if ($request->schedule) {
-                    $request->schedule->delete();
-                }
-
-                if ($request->event && ! in_array($request->event->Status, ['Completed', 'Cancelled'], true)) {
-                    $request->event->update(['Status' => 'Cancelled']);
-                }
+                $request->schedules()->delete();
             }
 
             return $requests;

@@ -1,0 +1,86 @@
+/* ==========================================================================
+   04. Application content layout
+   ========================================================================== */
+
+.admin-responsive-main {
+    width: auto;
+    min-width: 0;
+    padding: 1.25rem;
+    font-size: 0.875rem;
+    line-height: 1.45;
+    transition: margin 200ms ease, width 200ms ease;
+}
+
+.admin-shell-content {
+    min-width: 0;
+    width: 100%;
+}
+
+.admin-dashboard-canvas {
+    min-height: calc(100dvh - 72px);
+    margin: -1.25rem;
+    padding: 1.25rem;
+}
+
+.admin-responsive-main h1 {
+    font-size: 2rem;
+    line-height: 1.2;
+    letter-spacing: -0.025em;
+}
+
+.admin-responsive-main h2 {
+    font-size: 1.5rem;
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+}
+
+.admin-responsive-main h3 {
+    font-size: 1rem;
+    line-height: 1.4;
+}
+
+.admin-responsive-main [data-ui-card] {
+    padding: 1.25rem;
+}
+
+.admin-responsive-main [data-ui-button] {
+    font-size: 0.875rem;
+}
+
+.admin-responsive-main [data-ui-control] {
+    font-size: 0.875rem;
+}
+
+.admin-responsive-main [data-ui-badge] {
+    font-size: 0.75rem;
+    line-height: 1rem;
+}
+
+.admin-responsive-main [data-ui-table] table {
+    font-size: 0.875rem;
+}
+
+.admin-responsive-main [data-ui-table] thead {
+    font-size: 0.8125rem;
+}
+
+.admin-responsive-main [data-ui-table] tbody tr {
+    height: 3.375rem;
+}
+
+.admin-responsive-main [data-ui-table] th,
+.admin-responsive-main [data-ui-table] td {
+    padding-inline: 1rem;
+}
+
+.admin-responsive-main [data-ui-modal] > section {
+    padding: 1.25rem;
+}
+
+.admin-responsive-main .p-6 {
+    padding: 1.25rem;
+}
+
+.admin-responsive-main .gap-6 {
+    gap: 1.25rem;
+}

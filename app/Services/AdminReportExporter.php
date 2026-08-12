@@ -15,7 +15,7 @@ class AdminReportExporter
                 $facility->FID,
                 $facility->Facility_Name,
                 $facility->facility_type ? ucfirst($facility->facility_type) : '',
-                (float) $facility->Price,
+                $facility->Price === null ? '' : (float) $facility->Price,
                 $facility->Capacity,
                 $facility->Location ?? '',
                 $facility->Office ?? '',
@@ -29,20 +29,41 @@ class AdminReportExporter
     {
         return $this->xlsx(
             'Facility Requests',
-            ['Request ID', 'Requester', 'Email', 'Facility', 'Date', 'Start Time', 'End Time', 'Attendees', 'Status', 'Purpose'],
+            ['Request ID', 'Requester', 'Email', 'Facility', 'First Day', 'Last Day', 'Start Time', 'End Time', 'Attendees', 'Status', 'Purpose'],
             $requests->map(fn ($request) => [
                 $request->RID,
                 $request->user?->name ?? '',
                 $request->user?->email ?? '',
                 $request->facility?->Facility_Name ?? '',
                 $request->Proposed_Date?->format('Y-m-d') ?? '',
+                $request->Proposed_End_Date?->format('Y-m-d') ?? $request->Proposed_Date?->format('Y-m-d') ?? '',
                 $request->Proposed_Start_Time?->format('H:i') ?? '',
                 $request->Proposed_End_Time?->format('H:i') ?? '',
                 $request->Capacity,
                 $request->Review_Requested_At && $request->Status === 'Pending' ? 'Needs Revision' : $request->Status,
                 $request->Purpose,
             ])->all(),
-            [12, 24, 30, 28, 14, 13, 13, 12, 18, 42],
+            [12, 24, 30, 28, 14, 14, 13, 13, 12, 18, 42],
+        );
+    }
+
+    public function usersXlsx(Collection $users): string
+    {
+        return $this->xlsx(
+            'Users',
+            ['User ID', 'Name', 'Email', 'Role', 'Contact Number', 'Office', 'Status', 'Email Verified'],
+            $users->map(fn ($user) => [$user->id, $user->name, $user->email, $user->roleLabel(), $user->contact_number ?? '', $user->office ?? '', $user->is_active ? 'Active' : 'Inactive', $user->email_verified_at ? 'Yes' : 'No'])->all(),
+            [12, 28, 34, 20, 20, 28, 14, 18],
+        );
+    }
+
+    public function amenitiesXlsx(Collection $amenities): string
+    {
+        return $this->xlsx(
+            'Amenities',
+            ['Amenity ID', 'Name', 'Description', 'Status', 'Reservation Limit', 'Facilities', 'Created By'],
+            $amenities->map(fn ($amenity) => [$amenity->AID, $amenity->name, $amenity->Description ?? '', $amenity->Status, $amenity->reservation_limit ?? 'Unlimited', $amenity->facilities->pluck('Facility_Name')->join(', '), $amenity->creator?->name ?? ''])->all(),
+            [14, 28, 45, 16, 20, 40, 24],
         );
     }
 
@@ -54,7 +75,7 @@ class AdminReportExporter
             $facility->FID,
             $facility->Facility_Name,
             $facility->facility_type ? ucfirst($facility->facility_type) : 'N/A',
-            number_format((float) $facility->Price, 2),
+            $facility->Price === null ? 'N/A' : number_format((float) $facility->Price, 2),
             $facility->Capacity ?? 'N/A',
             $facility->Location ?? 'N/A',
             $facility->Office ?? 'N/A',
@@ -72,7 +93,7 @@ class AdminReportExporter
             $request->RID,
             $request->user?->name ?? 'N/A',
             $request->facility?->Facility_Name ?? 'N/A',
-            $request->Proposed_Date?->format('Y-m-d') ?? 'N/A',
+            ($request->Proposed_Date?->format('Y-m-d') ?? 'N/A').' – '.($request->Proposed_End_Date?->format('Y-m-d') ?? $request->Proposed_Date?->format('Y-m-d') ?? 'N/A'),
             ($request->Proposed_Start_Time?->format('H:i') ?? '--:--').'-'.($request->Proposed_End_Time?->format('H:i') ?? '--:--'),
             $request->Capacity ?? 'N/A',
             $request->Review_Requested_At && $request->Status === 'Pending' ? 'Needs Revision' : $request->Status,
@@ -82,12 +103,34 @@ class AdminReportExporter
         return $this->tablePdf('Facility Request List', $scopeLabel, $headers, $widths, $rows);
     }
 
+    public function usersPdf(Collection $users): string
+    {
+        $headers = ['ID', 'Name', 'Email', 'Role', 'Contact', 'Office', 'Status', 'Verified'];
+        $widths = [12, 38, 48, 27, 30, 42, 22, 20];
+        $rows = $users->map(fn ($user) => [$user->id, $user->name, $user->email, $user->roleLabel(), $user->contact_number ?? 'N/A', $user->office ?? 'N/A', $user->is_active ? 'Active' : 'Inactive', $user->email_verified_at ? 'Yes' : 'No'])->all();
+
+        return $this->tablePdf('User List', 'All active and inactive accounts', $headers, $widths, $rows);
+    }
+
+    public function amenitiesPdf(Collection $amenities): string
+    {
+        $headers = ['ID', 'Name', 'Description', 'Status', 'Limit', 'Facilities', 'Created By'];
+        $widths = [12, 38, 72, 25, 24, 66, 35];
+        $rows = $amenities->map(fn ($amenity) => [$amenity->AID, $amenity->name, $amenity->Description ?? 'N/A', $amenity->Status, $amenity->reservation_limit ?? 'Unlimited', $amenity->facilities->pluck('Facility_Name')->join(', ') ?: 'Unassigned', $amenity->creator?->name ?? 'N/A'])->all();
+
+        return $this->tablePdf('Amenity List', 'All active amenities', $headers, $widths, $rows);
+    }
+
     private function tablePdf(string $title, string $scopeLabel, array $headers, array $widths, array $rows): string
     {
-        $pdf = new class('L', 'mm', 'A4') extends \FPDF {
+        $pdf = new class('L', 'mm', 'A4') extends \FPDF
+        {
             public string $reportTitle = '';
+
             public string $scopeLabel = '';
+
             public array $headers = [];
+
             public array $widths = [];
 
             public function Header(): void
@@ -115,7 +158,7 @@ class AdminReportExporter
                 $this->SetY(-10);
                 $this->SetFont('Arial', '', 7);
                 $this->SetTextColor(100, 100, 100);
-                $this->Cell(0, 5, 'CLSU Uni Space | Page '.$this->PageNo().'/{nb}', 0, 0, 'C');
+                $this->Cell(0, 5, 'SIEL SPACE | Page '.$this->PageNo().'/{nb}', 0, 0, 'C');
             }
         };
 
@@ -226,8 +269,8 @@ class AdminReportExporter
             'xl/worksheets/sheet1.xml' => $worksheet,
         ];
 
-        $temporaryPath = tempnam(sys_get_temp_dir(), 'unispace-xlsx-');
-        $zip = new \ZipArchive();
+        $temporaryPath = tempnam(sys_get_temp_dir(), 'silesyu-space-xlsx-');
+        $zip = new \ZipArchive;
         $zip->open($temporaryPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
 
         foreach ($files as $path => $content) {

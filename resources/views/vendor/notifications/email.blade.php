@@ -3,7 +3,7 @@
 @if (! empty($greeting))
 # {{ $greeting }}
 @else
-# Hello from CLSU Uni Space
+# Hello from SIEL SPACE
 @endif
 
 {{-- Intro Lines --}}
@@ -32,7 +32,7 @@
 @endforeach
 
 Thank you,<br>
-CLSU Uni Space<br>
+SIEL SPACE<br>
 Central Luzon State University
 
 {{-- Subcopy --}}

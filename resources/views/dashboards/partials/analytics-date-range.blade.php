@@ -10,6 +10,5 @@
     <button type="submit" class="h-10 rounded-lg bg-emerald-700 px-5 text-sm font-bold text-white transition hover:bg-emerald-800 dark:bg-emerald-400 dark:text-emerald-950">Apply range</button>
     <a href="{{ url()->current() }}" class="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 px-4 text-sm font-bold text-slate-600 transition hover:border-emerald-300 hover:text-emerald-700 dark:border-zinc-700 dark:text-zinc-300">Reset</a>
 </form>
-
 @error('date_from') <p class="mt-2 text-sm text-rose-600">{{ $message }}</p> @enderror
 @error('date_to') <p class="mt-2 text-sm text-rose-600">{{ $message }}</p> @enderror

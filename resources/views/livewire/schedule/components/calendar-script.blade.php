@@ -5,11 +5,27 @@ function scheduleCalendar(initialEvents, livewireView) {
         events: initialEvents,
         resizeObserver: null,
         resizeTimer: null,
+        refreshCleanup: null,
+        readyHandler: null,
 
         initCalendar() {
             const el = document.getElementById('fc-calendar');
 
-            if (!el || typeof FullCalendar === 'undefined') {
+            if (!el) {
+                return;
+            }
+
+            if (!window.ScheduleCalendar?.Calendar) {
+                this.readyHandler ??= () => {
+                    this.readyHandler = null;
+                    this.initCalendar();
+                };
+                window.addEventListener('schedule-calendar-ready', this.readyHandler, { once: true });
+                return;
+            }
+
+            if (this.calendar) {
+                this.calendar.updateSize();
                 return;
             }
 
@@ -17,7 +33,8 @@ function scheduleCalendar(initialEvents, livewireView) {
                 ? 'dayGridMonth'
                 : 'timeGridWeek';
 
-            this.calendar = new FullCalendar.Calendar(el, {
+            this.calendar = new window.ScheduleCalendar.Calendar(el, {
+                plugins: window.ScheduleCalendar.plugins,
                 initialView: fcView,
 
                 headerToolbar: {
@@ -54,8 +71,12 @@ function scheduleCalendar(initialEvents, livewireView) {
             this.calendar.render();
             this.observeCalendarWidth(el);
 
-            Livewire.on('calendar-refresh', (payload) => {
+            this.refreshCleanup = Livewire.on('calendar-refresh', (payload) => {
                 const events = payload.events ?? [];
+
+                if (!this.calendar) {
+                    return;
+                }
 
                 this.calendar.removeAllEvents();
                 this.calendar.addEventSource(events);
@@ -96,6 +117,14 @@ function scheduleCalendar(initialEvents, livewireView) {
         destroy() {
             this.resizeObserver?.disconnect();
             window.cancelAnimationFrame(this.resizeTimer);
+            this.refreshCleanup?.();
+
+            if (this.readyHandler) {
+                window.removeEventListener('schedule-calendar-ready', this.readyHandler);
+            }
+
+            this.calendar?.destroy();
+            this.calendar = null;
         },
     };
 }

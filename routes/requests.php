@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware([
     'auth',
+    'verified',
+    'user.pages',
     PreventBackHistory::class,
 ])->group(function () {
     Route::prefix('requests')

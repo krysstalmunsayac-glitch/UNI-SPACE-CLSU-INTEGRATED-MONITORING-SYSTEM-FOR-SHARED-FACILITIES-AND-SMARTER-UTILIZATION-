@@ -136,16 +136,16 @@ new #[Layout('components.layouts.app')] class extends Component {
                 </div>
             </div>
 
-            <flux:input wire:model="name" label="{{ __('Name') }}" type="text" name="name" required minlength="2" maxlength="100" autofocus autocomplete="name" />    
-            <flux:input wire:model="contact_number" label="Contact Number" type="tel" name="contact_number" minlength="11" maxlength="13" pattern="(?:09[0-9]{9}|\+639[0-9]{9})" title="Use 09XXXXXXXXX or +639XXXXXXXXX." placeholder="09123456789" autocomplete="tel" />
+            <x-ui::input wire:model="name" label="{{ __('Name') }}" type="text" name="name" required minlength="2" maxlength="100" autofocus autocomplete="name" />    
+            <x-ui::input wire:model="contact_number" label="Contact Number" type="tel" name="contact_number" minlength="11" maxlength="13" pattern="(?:09[0-9]{9}|\+639[0-9]{9})" title="Use 09XXXXXXXXX or +639XXXXXXXXX." placeholder="09123456789" autocomplete="tel" />
             @if (auth()->user()->hasrole('user'))
-                <flux:textarea wire:model="address" label="Address" name="address" rows="3" />
+                <x-ui::textarea wire:model="address" label="Address" name="address" rows="3" />
             @else
-                <flux:input wire:model="office" label="Office" type="text" name="office" minlength="2" maxlength="150"/>
+                <x-ui::input wire:model="office" label="Office" type="text" name="office" minlength="2" maxlength="150"/>
             @endif
 
             <div>
-                <flux:input wire:model="email" label="{{ __('Email') }}" type="email" name="email" required maxlength="255" autocomplete="email" />
+                <x-ui::input wire:model="email" label="{{ __('Email') }}" type="email" name="email" required maxlength="255" autocomplete="email" />
 
                 @if (auth()->user() instanceof \Illuminate\Contracts\Auth\MustVerifyEmail &&! auth()->user()->hasVerifiedEmail())
                     <div>
@@ -171,7 +171,7 @@ new #[Layout('components.layouts.app')] class extends Component {
 
             <div class="flex items-center gap-4">
                 <div class="flex items-center justify-end">
-                    <flux:button variant="primary" type="submit" class="w-full">{{ __('Save') }}</flux:button>
+                    <x-ui::button variant="primary" type="submit" class="w-full">{{ __('Save') }}</x-ui::button>
                 </div>
 
                 <x-action-message class="me-3" on="profile-updated">

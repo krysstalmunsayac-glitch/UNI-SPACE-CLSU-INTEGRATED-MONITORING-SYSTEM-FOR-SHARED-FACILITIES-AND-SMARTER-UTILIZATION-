@@ -1,4 +1,149 @@
-window.addEventListener('swal', event => {
+import './settings.jsx';
+import './app-shell.jsx';
+import { Calendar } from '@fullcalendar/core';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import interactionPlugin from '@fullcalendar/interaction';
+import timeGridPlugin from '@fullcalendar/timegrid';
+
+window.ScheduleCalendar = {
+    Calendar,
+    plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
+};
+
+window.dispatchEvent(new CustomEvent('schedule-calendar-ready'));
+
+window.scheduleCalendar = function (initialEvents, livewireView, livewire) {
+    return {
+        calendar: null,
+        events: initialEvents,
+        viewMode: livewireView,
+        resizeObserver: null,
+        resizeTimer: null,
+        refreshCleanup: null,
+
+        initCalendar() {
+            const element = this.$refs.calendar ?? document.getElementById('fc-calendar');
+
+            if (!element || !window.ScheduleCalendar?.Calendar) return;
+
+            if (this.calendar) {
+                this.calendar.updateSize();
+                return;
+            }
+
+            this.calendar = new window.ScheduleCalendar.Calendar(element, {
+                plugins: window.ScheduleCalendar.plugins,
+                initialView: livewireView === 'monthly' ? 'dayGridMonth' : 'timeGridWeek',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: '',
+                },
+                height: 'auto',
+                nowIndicator: true,
+                slotMinTime: '07:00:00',
+                slotMaxTime: '21:00:00',
+                allDaySlot: false,
+                events: this.events,
+                dateClick: info => livewire.create(info.dateStr.split('T')[0]),
+                eventClick: info => {
+                    const scheduleId = info.event.extendedProps.scheduleId;
+                    if (scheduleId) livewire.edit(scheduleId);
+                },
+                eventDidMount: info => {
+                    info.el.style.cursor = 'pointer';
+
+                    const formatDate = date => date?.toLocaleDateString([], {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                    }) ?? '—';
+                    const formatTime = date => date?.toLocaleTimeString([], {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                    }) ?? '—';
+                    const details = info.event.extendedProps;
+
+                    info.el.title = [
+                        `Facility: ${details.facility ?? info.event.title}`,
+                        `Purpose: ${details.purpose ?? '—'}`,
+                        `Status: ${details.status ?? '—'}`,
+                        `Date: ${formatDate(info.event.start)}`,
+                        `Time: ${formatTime(info.event.start)}–${formatTime(info.event.end)}`,
+                    ].join('\n');
+                },
+            });
+
+            this.calendar.render();
+            this.observeCalendarWidth(element);
+
+            this.refreshCleanup = window.Livewire?.on('calendar-refresh', payload => {
+                if (!this.calendar) return;
+
+                this.calendar.removeAllEvents();
+                this.calendar.addEventSource(payload.events ?? []);
+                this.calendar.updateSize();
+            });
+        },
+
+        observeCalendarWidth(element) {
+            if (typeof ResizeObserver === 'undefined') {
+                window.addEventListener('resize', () => this.resizeCalendar());
+                return;
+            }
+
+            this.resizeObserver = new ResizeObserver(() => this.resizeCalendar());
+            this.resizeObserver.observe(element.parentElement);
+        },
+
+        resizeCalendar() {
+            if (!this.calendar) return;
+
+            window.cancelAnimationFrame(this.resizeTimer);
+            this.resizeTimer = window.requestAnimationFrame(() => this.calendar?.updateSize());
+        },
+
+        switchView(viewName, mode) {
+            if (!this.calendar) return;
+
+            this.calendar.changeView(viewName);
+            this.calendar.updateSize();
+            this.viewMode = mode;
+
+            const url = new URL(window.location.href);
+            url.searchParams.set('view', mode);
+            window.history.replaceState(window.history.state, '', url);
+        },
+
+        destroy() {
+            this.resizeObserver?.disconnect();
+            window.cancelAnimationFrame(this.resizeTimer);
+            this.refreshCleanup?.();
+            this.calendar?.destroy();
+            this.calendar = null;
+        },
+    };
+};
+
+let sweetAlertPromise;
+
+const loadSweetAlert = () => {
+    if (window.Swal) return Promise.resolve(window.Swal);
+    if (sweetAlertPromise) return sweetAlertPromise;
+
+    sweetAlertPromise = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+        script.async = true;
+        script.onload = () => resolve(window.Swal);
+        script.onerror = reject;
+        document.head.appendChild(script);
+    });
+
+    return sweetAlertPromise;
+};
+
+window.addEventListener('swal', async event => {
     const {
         title = 'Success',
         text = '',
@@ -7,9 +152,8 @@ window.addEventListener('swal', event => {
         showConfirmButton = false,
     } = event?.detail ?? {};
 
-    if (typeof Swal === 'undefined') {
-        return;
-    }
+    const Swal = await loadSweetAlert().catch(() => null);
+    if (!Swal) return;
 
     Swal.fire({
         title,
@@ -30,13 +174,21 @@ window.facilityLocationPicker = function (livewire) {
     return {
         map: null,
         marker: null,
+        openTimer: null,
         latitude: null,
         longitude: null,
         searching: false,
 
         openPicker() {
-            window.setTimeout(() => {
+            window.clearTimeout(this.openTimer);
+            this.openTimer = window.setTimeout(() => {
                 if (!window.L || !this.$refs.map) return;
+
+                if (this.map && this.map.getContainer() !== this.$refs.map) {
+                    this.map.remove();
+                    this.map = null;
+                    this.marker = null;
+                }
 
                 const savedLatitude = Number(livewire.get('Latitude'));
                 const savedLongitude = Number(livewire.get('Longitude'));
@@ -49,6 +201,13 @@ window.facilityLocationPicker = function (livewire) {
                     : [15.7354, 120.9335];
 
                 if (!this.map) {
+                    // A Livewire morph can leave Leaflet's container marker behind.
+                    // Clear it before attaching a fresh map to the current element.
+                    if (this.$refs.map._leaflet_id) {
+                        delete this.$refs.map._leaflet_id;
+                    }
+                    this.$refs.map.replaceChildren();
+
                     this.map = L.map(this.$refs.map, { scrollWheelZoom: false }).setView(center, hasSavedPin ? 18 : 16);
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                         maxZoom: 20,
@@ -61,6 +220,18 @@ window.facilityLocationPicker = function (livewire) {
                 this.map.invalidateSize();
                 this.map.setView(center, hasSavedPin ? 18 : 16);
             }, 250);
+        },
+
+        closePicker() {
+            window.clearTimeout(this.openTimer);
+            this.openTimer = null;
+
+            if (this.map) {
+                this.map.remove();
+                this.map = null;
+            }
+
+            this.marker = null;
         },
 
         setPin(latitude, longitude, updateLivewire = true) {

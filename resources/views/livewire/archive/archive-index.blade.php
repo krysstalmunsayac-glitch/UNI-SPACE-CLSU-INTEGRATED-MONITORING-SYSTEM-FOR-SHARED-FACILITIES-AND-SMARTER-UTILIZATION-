@@ -31,13 +31,16 @@ new #[Layout('components.layouts.app')] class extends Component {
             );
         }
 
-        if (in_array($this->archiveStatusFilter, ['Cancelled', 'Approved', 'Rejected'], true)) {
+        if (in_array($this->archiveStatusFilter, ['Cancelled', 'Approved', 'Rejected', 'Ended'], true)) {
             $query->where('Status', $this->archiveStatusFilter);
         }
 
-        return $query->with(['user', 'facility'])
+        return $query->with([
+            'user:id,name',
+            'facility:FID,Facility_Name',
+        ])
             ->orderByDesc('deleted_at')
-            ->paginate(10, pageName: 'archivedRequestsPage');
+            ->paginate(8, pageName: 'archivedRequestsPage');
     }
 
     #[Computed]
@@ -53,9 +56,14 @@ new #[Layout('components.layouts.app')] class extends Component {
             });
         }
 
-        return $query->with(['request' => fn ($requestQuery) => $requestQuery->withTrashed()->with('facility')])
+        return $query->with([
+            'request' => fn ($requestQuery) => $requestQuery
+                ->withTrashed()
+                ->select(['RID', 'Facility_ID', 'Purpose'])
+                ->with('facility:FID,Facility_Name'),
+        ])
             ->orderByDesc('deleted_at')
-            ->paginate(10, pageName: 'archivedSchedulesPage');
+            ->paginate(8, pageName: 'archivedSchedulesPage');
     }
 
     #[Computed]
@@ -64,7 +72,7 @@ new #[Layout('components.layouts.app')] class extends Component {
         $query = Events::query()->onlyTrashed();
 
         return $query->orderByDesc('deleted_at')
-            ->paginate(10, pageName: 'archivedEventsPage');
+            ->paginate(8, pageName: 'archivedEventsPage');
     }
 
     #[Computed]
@@ -73,7 +81,7 @@ new #[Layout('components.layouts.app')] class extends Component {
         $query = User::query()->onlyTrashed();
 
         return $query->orderByDesc('deleted_at')
-            ->paginate(10, pageName: 'archivedUsersPage');
+            ->paginate(8, pageName: 'archivedUsersPage');
     }
 
     public function restoreRequest(int $id): void
@@ -135,16 +143,17 @@ new #[Layout('components.layouts.app')] class extends Component {
         <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Archived Requests</h2>
-                <flux:select wire:model.live="archiveStatusFilter" label="Request status" class="sm:w-48">
-                    <flux:select.option value="">All statuses</flux:select.option>
-                    <flux:select.option value="Cancelled">Cancelled</flux:select.option>
-                    <flux:select.option value="Approved">Approved</flux:select.option>
-                    <flux:select.option value="Rejected">Rejected</flux:select.option>
-                </flux:select>
+                <x-ui::select wire:model.live="archiveStatusFilter" label="Request status" class="sm:w-48">
+                    <x-ui::select.option value="">All statuses</x-ui::select.option>
+                    <x-ui::select.option value="Cancelled">Cancelled</x-ui::select.option>
+                    <x-ui::select.option value="Approved">Approved</x-ui::select.option>
+                    <x-ui::select.option value="Ended">Event Ended</x-ui::select.option>
+                    <x-ui::select.option value="Rejected">Rejected</x-ui::select.option>
+                </x-ui::select>
             </div>
             <div class="mt-4 space-y-3">
                 @forelse ($this->archivedRequests as $request)
-                    <div class="rounded-lg border border-gray-200 p-3 dark:border-gray-800">
+                    <div wire:key="archive-request-{{ $request->RID }}" class="rounded-lg border border-gray-200 p-3 dark:border-gray-800">
                         <div class="flex items-start justify-between gap-3">
                             <div>
                                 <p class="font-medium text-gray-900 dark:text-white">Request #{{ $request->RID }}</p>
@@ -152,8 +161,8 @@ new #[Layout('components.layouts.app')] class extends Component {
                                 <p class="mt-1 text-xs font-semibold text-gray-500 dark:text-gray-400">{{ $request->Status }}</p>
                             </div>
                             <div class="flex gap-2">
-                                <flux:button size="sm" variant="ghost" wire:click="restoreRequest({{ $request->RID }})">Restore</flux:button>
-                                <flux:button size="sm" variant="danger" wire:click="forceDeleteRequest({{ $request->RID }})" wire:confirm="Delete this archived request permanently?">Delete</flux:button>
+                                <x-ui::button size="sm" variant="ghost" wire:click="restoreRequest({{ $request->RID }})">Restore</x-ui::button>
+                                <x-ui::button size="sm" variant="danger" wire:click="forceDeleteRequest({{ $request->RID }})" data-ui-confirm="Delete this archived request permanently?">Delete</x-ui::button>
                             </div>
                         </div>
                     </div>
@@ -168,15 +177,15 @@ new #[Layout('components.layouts.app')] class extends Component {
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Archived Schedules</h2>
             <div class="mt-4 space-y-3">
                 @forelse ($this->archivedSchedules as $schedule)
-                    <div class="rounded-lg border border-gray-200 p-3 dark:border-gray-800">
+                    <div wire:key="archive-schedule-{{ $schedule->SID }}" class="rounded-lg border border-gray-200 p-3 dark:border-gray-800">
                         <div class="flex items-start justify-between gap-3">
                             <div>
                                 <p class="font-medium text-gray-900 dark:text-white">Schedule #{{ $schedule->SID }}</p>
                                 <p class="text-sm text-gray-600 dark:text-gray-400">{{ $schedule->request?->facility?->Facility_Name ?? 'Unassigned facility' }}</p>
                             </div>
                             <div class="flex gap-2">
-                                <flux:button size="sm" variant="ghost" wire:click="restoreSchedule({{ $schedule->SID }})">Restore</flux:button>
-                                <flux:button size="sm" variant="danger" wire:click="forceDeleteSchedule({{ $schedule->SID }})" wire:confirm="Delete this archived schedule permanently?">Delete</flux:button>
+                                <x-ui::button size="sm" variant="ghost" wire:click="restoreSchedule({{ $schedule->SID }})">Restore</x-ui::button>
+                                <x-ui::button size="sm" variant="danger" wire:click="forceDeleteSchedule({{ $schedule->SID }})" data-ui-confirm="Delete this archived schedule permanently?">Delete</x-ui::button>
                             </div>
                         </div>
                     </div>
@@ -191,15 +200,15 @@ new #[Layout('components.layouts.app')] class extends Component {
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Archived Events</h2>
             <div class="mt-4 space-y-3">
                 @forelse ($this->archivedEvents as $event)
-                    <div class="rounded-lg border border-gray-200 p-3 dark:border-gray-800">
+                    <div wire:key="archive-event-{{ $event->EID }}" class="rounded-lg border border-gray-200 p-3 dark:border-gray-800">
                         <div class="flex items-start justify-between gap-3">
                             <div>
                                 <p class="font-medium text-gray-900 dark:text-white">Event #{{ $event->EID }}</p>
                                 <p class="text-sm text-gray-600 dark:text-gray-400">{{ $event->Event_Title }}</p>
                             </div>
                             <div class="flex gap-2">
-                                <flux:button size="sm" variant="ghost" wire:click="restoreEvent({{ $event->EID }})">Restore</flux:button>
-                                <flux:button size="sm" variant="danger" wire:click="forceDeleteEvent({{ $event->EID }})" wire:confirm="Delete this archived event permanently?">Delete</flux:button>
+                                <x-ui::button size="sm" variant="ghost" wire:click="restoreEvent({{ $event->EID }})">Restore</x-ui::button>
+                                <x-ui::button size="sm" variant="danger" wire:click="forceDeleteEvent({{ $event->EID }})" data-ui-confirm="Delete this archived event permanently?">Delete</x-ui::button>
                             </div>
                         </div>
                     </div>
@@ -214,15 +223,15 @@ new #[Layout('components.layouts.app')] class extends Component {
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Archived Users</h2>
             <div class="mt-4 space-y-3">
                 @forelse ($this->archivedUsers as $user)
-                    <div class="rounded-lg border border-gray-200 p-3 dark:border-gray-800">
+                    <div wire:key="archive-user-{{ $user->id }}" class="rounded-lg border border-gray-200 p-3 dark:border-gray-800">
                         <div class="flex items-start justify-between gap-3">
                             <div>
                                 <p class="font-medium text-gray-900 dark:text-white">User #{{ $user->id }}</p>
                                 <p class="text-sm text-gray-600 dark:text-gray-400">{{ $user->name }}</p>
                             </div>
                             <div class="flex gap-2">
-                                <flux:button size="sm" variant="ghost" wire:click="restoreUser({{ $user->id }})">Restore</flux:button>
-                                <flux:button size="sm" variant="danger" wire:click="forceDeleteUser({{ $user->id }})" wire:confirm="Delete this archived user permanently?">Delete</flux:button>
+                                <x-ui::button size="sm" variant="ghost" wire:click="restoreUser({{ $user->id }})">Restore</x-ui::button>
+                                <x-ui::button size="sm" variant="danger" wire:click="forceDeleteUser({{ $user->id }})" data-ui-confirm="Delete this archived user permanently?">Delete</x-ui::button>
                             </div>
                         </div>
                     </div>

@@ -19,13 +19,10 @@ class RequestFacilityAmenity extends Model
         'Request_ID',
         'Amenity_ID',
     ];
-    public function event(): BelongsTo
-    {
-        return $this->belongsTo(Requests::class, 'Request_ID', 'RID');
-    }
+
     public function request(): BelongsTo
     {
-        return $this->belongsTo(Requests::class, 'Request_ID');
+        return $this->belongsTo(Requests::class, 'Request_ID', 'RID');
     }
 
     public function amenity(): BelongsTo

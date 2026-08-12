@@ -8,7 +8,7 @@
             <div class="flex w-full max-w-md flex-col gap-6">
                 <a href="{{ route('home') }}" class="flex flex-col items-center gap-2 font-medium" wire:navigate>
 
-                    <span class="sr-only">{{ config('app.name', 'Uni Space') }}</span>
+                    <span class="sr-only">{{ config('app.name', 'SIEL SPACE') }}</span>
                 </a>
 
                 <div class="flex flex-col gap-6">
@@ -18,6 +18,5 @@
                 </div>
             </div>
         </div>
-        @fluxScripts
     </body>
 </html>

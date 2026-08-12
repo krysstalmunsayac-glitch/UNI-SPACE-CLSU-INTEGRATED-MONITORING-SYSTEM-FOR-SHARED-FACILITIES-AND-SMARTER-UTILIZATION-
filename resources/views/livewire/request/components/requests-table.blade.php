@@ -1,134 +1,96 @@
-    <flux:card>
-        <div class="mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-            <flux:heading size="lg">Requests</flux:heading>
-            <div class="flex w-full flex-wrap items-center gap-2 xl:w-auto xl:justify-end">
-                <flux:dropdown position="bottom" align="end">
-                    <flux:button icon="arrow-down-tray" icon:trailing="chevron-down">Download</flux:button>
-                    <flux:menu>
-                        <flux:menu.item icon="document-text" href="{{ route('exports.requests.csv') }}">CSV</flux:menu.item>
-                        <flux:menu.item icon="table-cells" href="{{ route('exports.requests.xlsx') }}">Excel (.xlsx)</flux:menu.item>
-                        <flux:menu.item icon="document" href="{{ route('exports.requests.pdf') }}">PDF</flux:menu.item>
-                    </flux:menu>
-                </flux:dropdown>
-
-                <flux:select
-                    wire:model.live="statusFilter"
-                    class="min-w-[145px] flex-1 sm:flex-none sm:w-[160px]"
-                >
-                    <flux:select.option value="">All statuses</flux:select.option>
-                    <flux:select.option value="Pending">Pending</flux:select.option>
-                    <flux:select.option value="Needs Revision">Needs Revision</flux:select.option>
-                    <flux:select.option value="Approved">Approved</flux:select.option>
-                    <flux:select.option value="Ended">Event Ended</flux:select.option>
-                    <flux:select.option value="Cancelled">Cancelled</flux:select.option>
-                    <flux:select.option value="Rejected">Rejected</flux:select.option>
-                </flux:select>
-
+    <x-ui::card>
+        <div class="mb-4">
+            <div>
+                <x-ui::heading size="lg">Facility Requests</x-ui::heading>
+                <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Open a request to see its full booking details before taking action.</p>
             </div>
         </div>
 
-        <flux:table :paginate="$this->requests">
-            <flux:table.columns>
-                <flux:table.column>
-                    <flux:dropdown position="bottom" align="start">
-                        <button
-                            type="button"
-                            class="inline-flex items-center gap-1.5 font-semibold text-zinc-700 transition hover:text-emerald-700 dark:text-zinc-200 dark:hover:text-emerald-300"
-                            aria-label="Sort requests by Request ID"
-                        >
-                            Request ID
-                            <flux:icon.chevron-down class="size-3.5" />
-                        </button>
-                        <flux:menu>
-                            <flux:menu.item
-                                :icon="$sortBy === 'RID' && $receivedOrder === 'fifo' ? 'check' : null"
-                                wire:click="setRequestIdOrder('fifo')"
-                            >
-                                Oldest first
-                            </flux:menu.item>
-                            <flux:menu.item
-                                :icon="$sortBy === 'RID' && $receivedOrder === 'recent' ? 'check' : null"
-                                wire:click="setRequestIdOrder('recent')"
-                            >
-                                Newest first
-                            </flux:menu.item>
-                        </flux:menu>
-                    </flux:dropdown>
-                </flux:table.column>
+        <div class="mb-4 flex flex-wrap gap-x-5 gap-y-2 rounded-xl bg-zinc-50 px-4 py-3 text-xs text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300">
+            <span><strong class="text-blue-700 dark:text-blue-300">Pending:</strong> waiting for review</span>
+            <span><strong class="text-amber-700 dark:text-amber-300">Needs Revision:</strong> user must update details</span>
+            <span><strong class="text-emerald-700 dark:text-emerald-300">Approved:</strong> ready and added to the schedule</span>
+            <span><strong class="text-red-700 dark:text-red-300">Rejected:</strong> request was not accepted</span>
+        </div>
 
-                <flux:table.column
+        <x-ui::table :paginate="$this->requests" class="request-data-table">
+            <x-ui::table.columns>
+                <x-ui::table.column>Request ID</x-ui::table.column>
+
+                <x-ui::table.column
                     sortable
                     :sorted="$sortBy === 'User_ID'"
                     :direction="$sortDirection"
                     wire:click="sort('User_ID')"
                 >
                     User
-                </flux:table.column>
+                </x-ui::table.column>
 
-                <flux:table.column
+                <x-ui::table.column
                     sortable
                     :sorted="$sortBy === 'Proposed_Date'"
                     :direction="$sortDirection"
                     wire:click="sort('Proposed_Date')"
                 >
-                    Date
-                </flux:table.column>
+                    Event date
+                </x-ui::table.column>
 
-                <flux:table.column>Facility</flux:table.column>
+                <x-ui::table.column>Facility</x-ui::table.column>
 
-                <flux:table.column>Time</flux:table.column>
-                <flux:table.column>Capacity</flux:table.column>
-                <flux:table.column>Purpose</flux:table.column>
+                <x-ui::table.column>Time</x-ui::table.column>
 
-                <flux:table.column
+                <x-ui::table.column
                     sortable
                     :sorted="$sortBy === 'Status'"
                     :direction="$sortDirection"
                     wire:click="sort('Status')"
                 >
                     Status
-                </flux:table.column>
+                </x-ui::table.column>
 
-                <flux:table.column></flux:table.column>
-            </flux:table.columns>
+                <x-ui::table.column>Actions</x-ui::table.column>
+            </x-ui::table.columns>
 
-            <flux:table.rows>
+            <x-ui::table.rows>
                 @forelse ($this->requests as $request)
-                    <flux:table.row :key="$request->RID">
+                    <x-ui::table.row :key="$request->RID">
 
-                        <flux:table.cell>
+                        <x-ui::table.cell>
                             <div class="font-medium">#{{ $request->RID }}</div>
-                        </flux:table.cell>
+                        </x-ui::table.cell>
 
-                        <flux:table.cell class="flex items-center gap-3">
-                            <flux:avatar size="xs" :name="$request->user?->name ?? 'N/A'" />
-                            <div>
-                                <div class="font-medium">{{ $request->user?->name ?? 'N/A' }}</div>
+                        <x-ui::table.cell>
+                            <div class="flex min-w-44 items-center gap-3">
+                                <x-ui::avatar size="xs" :name="$request->user?->name ?? '—'" />
+                                <div class="min-w-0">
+                                    <div class="font-medium">{{ $request->user?->name ?? '—' }}</div>
+                                    <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ $request->user?->email ?? 'No email' }}</div>
+                                </div>
                             </div>
-                        </flux:table.cell>
+                        </x-ui::table.cell>
 
-                        <flux:table.cell variant="strong">
-                            {{ $request->Proposed_Date->format('M d, Y') }}
-                        </flux:table.cell>
+                        <x-ui::table.cell variant="strong" class="min-w-36">
+                            <div>{{ $request->Proposed_Date->format('M d, Y') }}</div>
+                            @if ($request->Proposed_End_Date && ! $request->Proposed_End_Date->isSameDay($request->Proposed_Date))
+                                <div class="text-xs font-normal text-zinc-500 dark:text-zinc-400">to {{ $request->Proposed_End_Date->format('M d, Y') }}</div>
+                            @endif
+                        </x-ui::table.cell>
 
-                        <flux:table.cell>
-                            {{ $request->facility?->Facility_Name ?? 'N/A' }}
-                        </flux:table.cell>
+                        <x-ui::table.cell class="min-w-44">
+                            {{ $request->facility?->Facility_Name ?? '—' }}
+                        </x-ui::table.cell>
 
-                        <flux:table.cell class="whitespace-nowrap">
-                            {{ $request->Proposed_Start_Time->format('H:i') }} – {{ $request->Proposed_End_Time->format('H:i') }}
-                        </flux:table.cell>
+                        <x-ui::table.cell class="whitespace-nowrap">
+                            @if (count($request->Daily_Schedules ?? []) > 1)
+                                <span class="font-medium">Daily times vary</span>
+                                <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ count($request->Daily_Schedules) }} daily slots</div>
+                            @else
+                                {{ $request->Proposed_Start_Time->format('g:i A') }} – {{ $request->Proposed_End_Time->format('g:i A') }}
+                            @endif
+                        </x-ui::table.cell>
 
-                        <flux:table.cell>
-                            {{ $request->Capacity ?? 'N/A' }}
-                        </flux:table.cell>
-
-                        <flux:table.cell>
-                            <div class="truncate max-w-xs">{{ $request->Purpose }}</div>
-                        </flux:table.cell>
-
-                        <flux:table.cell>
-                            <flux:badge
+                        <x-ui::table.cell>
+                            <x-ui::badge
                                 size="sm"
                                 :color="match($request->Status) {
                                     'Approved'  => 'green',
@@ -143,83 +105,94 @@
                                 {{ $request->Review_Requested_At && $request->Status === 'Pending'
                                     ? 'Needs Revision'
                                     : ($request->Status === 'Ended' ? 'Event Ended' : $request->Status) }}
-                            </flux:badge>
-                        </flux:table.cell>
+                            </x-ui::badge>
+                        </x-ui::table.cell>
 
-                        <flux:table.cell>
+                        <x-ui::table.cell>
                             <div class="flex items-center justify-end gap-2">
-                                <flux:dropdown position="bottom" align="end">
-                                <flux:button variant="ghost" size="sm" icon="ellipsis-horizontal" />
-                                <flux:menu>
-                                    <flux:menu.item
-                                        icon="eye"
-                                        wire:click="showRequest({{ $request->RID }})"
-                                    >
-                                        View
-                                    </flux:menu.item>
+                                <x-ui::dropdown :position="$loop->remaining < 2 ? 'top' : 'bottom'" align="end">
+                                <x-ui::button variant="ghost" size="sm" icon="ellipsis-horizontal" />
+                                <x-ui::menu>
+                                    <x-ui::menu.item icon="eye" wire:click="showRequest({{ $request->RID }})">
+                                        View details
+                                    </x-ui::menu.item>
                                     @if (! in_array($request->Status, ['Approved', 'Cancelled', 'Ended'], true))
-                                        <flux:menu.item
+                                        <x-ui::menu.item
                                             icon="document-magnifying-glass"
                                             class="text-amber-700 dark:text-amber-300"
                                             wire:click="openReviewModal({{ $request->RID }})"
                                         >
-                                            Review
-                                        </flux:menu.item>
+                                            Request changes
+                                        </x-ui::menu.item>
                                     @endif
                                     @if (! in_array($request->Status, ['Approved', 'Cancelled', 'Ended'], true))
-                                        <flux:menu.separator />
-                                        <flux:menu.item
+                                        <x-ui::menu.separator />
+                                        <x-ui::menu.item
                                             icon="check"
                                             class="text-green-600 dark:text-green-400"
                                             wire:click="approve({{ $request->RID }})"
-                                            wire:confirm="Approve this request?"
+                                            data-ui-confirm="Approve request #{{ $request->RID }}? It will be added to the facility schedule."
+                                            data-ui-confirm-title="Confirm approval"
+                                            data-ui-confirm-label="Approve request"
                                         >
-                                            Approve
-                                        </flux:menu.item>
+                                            Approve request
+                                        </x-ui::menu.item>
                                     @endif
-                                    @if (! in_array($request->Status, ['Cancelled', 'Ended'], true))
-                                        @if (in_array($request->Status, ['Approved'], true))
-                                            <flux:menu.separator />
-                                        @endif
-                                        <flux:menu.item
+                                    @if ($request->Status === 'Approved')
+                                        <x-ui::menu.separator />
+                                        <x-ui::menu.item
+                                            icon="x-mark"
+                                            class="text-red-600 dark:text-red-400"
+                                            wire:click="cancel({{ $request->RID }})"
+                                            data-ui-confirm="Cancel approved request #{{ $request->RID }}? Its facility schedule will be removed and the requester will be notified."
+                                            data-ui-confirm-title="Confirm cancellation"
+                                            data-ui-confirm-label="Cancel request"
+                                            data-ui-confirm-variant="danger"
+                                        >
+                                            Cancel request
+                                        </x-ui::menu.item>
+                                    @elseif (! in_array($request->Status, ['Cancelled', 'Ended'], true))
+                                        <x-ui::menu.item
                                             icon="x-mark"
                                             class="text-red-600 dark:text-red-400"
                                             wire:click="openRejectModal({{ $request->RID }})"
                                         >
-                                            Reject
-                                        </flux:menu.item>
+                                            Reject request
+                                        </x-ui::menu.item>
                                     @endif
                                     @if ($request->attachment_path)
-                                        <flux:menu.separator />
-                                        <flux:menu.item
+                                        <x-ui::menu.separator />
+                                        <x-ui::menu.item
                                             icon="arrow-down-tray"
-                                            wire:click="downloadAttachment({{ $request->RID }})"
+                                            href="{{ route('requests.attachment.download', $request) }}"
                                         >
                                             Download attachment
-                                        </flux:menu.item>
+                                        </x-ui::menu.item>
                                     @endif
-                                    <flux:menu.separator />
-                                    <flux:menu.item
+                                    <x-ui::menu.separator />
+                                    <x-ui::menu.item
                                         icon="archive-box"
                                         class="text-amber-600"
                                         wire:click="delete({{ $request->RID }})"
-                                        wire:confirm="Archive this request?"
+                                        data-ui-confirm="Archive request #{{ $request->RID }}? It will be removed from this list and can be restored from Archives."
+                                        data-ui-confirm-title="Confirm archive"
+                                        data-ui-confirm-label="Archive request"
                                     >
-                                        Archive
-                                    </flux:menu.item>
-                                </flux:menu>
-                                </flux:dropdown>
+                                        Archive request
+                                    </x-ui::menu.item>
+                                </x-ui::menu>
+                                </x-ui::dropdown>
                             </div>
-                        </flux:table.cell>
+                        </x-ui::table.cell>
 
-                    </flux:table.row>
+                    </x-ui::table.row>
                 @empty
-                    <flux:table.row>
-                        <flux:table.cell colspan="9" class="text-center py-8">
-                            No requests found.
-                        </flux:table.cell>
-                    </flux:table.row>
+                    <x-ui::table.row>
+                        <x-ui::table.cell colspan="7" class="text-center py-8">
+                            No requests match your current search or status filter.
+                        </x-ui::table.cell>
+                    </x-ui::table.row>
                 @endforelse
-            </flux:table.rows>
-        </flux:table>
-    </flux:card>
+            </x-ui::table.rows>
+        </x-ui::table>
+    </x-ui::card>

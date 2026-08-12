@@ -11,10 +11,12 @@
             ['label' => 'Total Requests', 'value' => $totalRequests, 'note' => 'Submitted records', 'tone' => 'slate'],
             ['label' => 'Pending', 'value' => $pendingRequests, 'note' => 'Awaiting review', 'tone' => 'emerald'],
             ['label' => 'Approved', 'value' => $approvedRequests, 'note' => 'Ready for scheduling', 'tone' => 'emerald'],
+            ['label' => 'Rejected', 'value' => $dashboardStatusCounts['Rejected'] ?? 0, 'note' => 'Not approved in range', 'tone' => 'rose'],
+            ['label' => 'Cancelled', 'value' => $dashboardStatusCounts['Cancelled'] ?? 0, 'note' => 'Cancelled in range', 'tone' => 'amber'],
         ];
     @endphp
 
-    <div class="-m-6 min-h-screen bg-slate-50 p-6 text-slate-950 dark:bg-zinc-950 dark:text-white">
+    <div class="admin-dashboard-canvas bg-slate-50 text-slate-950 dark:bg-zinc-950 dark:text-white">
         <div class="mx-auto max-w-7xl space-y-6">
             <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                 <div class="grid gap-5 border-b border-slate-100 p-6 lg:grid-cols-[1fr_auto] lg:items-end dark:border-zinc-800">
@@ -36,17 +38,21 @@
                     </div>
                 </div>
 
-                <div class="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-4">
+                <div class="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                     @foreach ($summaryCards as $card)
                         <article @class([
                             'rounded-xl border p-4',
                             'border-slate-200 bg-slate-50 dark:border-zinc-800 dark:bg-zinc-950' => $card['tone'] === 'slate',
                             'border-emerald-100 bg-emerald-50 dark:border-emerald-900/40 dark:bg-emerald-950/20' => $card['tone'] === 'emerald',
+                            'border-rose-100 bg-rose-50 dark:border-rose-900/40 dark:bg-rose-950/20' => $card['tone'] === 'rose',
+                            'border-amber-100 bg-amber-50 dark:border-amber-900/40 dark:bg-amber-950/20' => $card['tone'] === 'amber',
                         ])>
                             <p @class([
                                 'text-xs font-bold uppercase tracking-wide',
                                 'text-slate-500 dark:text-zinc-400' => $card['tone'] === 'slate',
                                 'text-emerald-700 dark:text-emerald-300' => $card['tone'] === 'emerald',
+                                'text-rose-700 dark:text-rose-300' => $card['tone'] === 'rose',
+                                'text-amber-700 dark:text-amber-300' => $card['tone'] === 'amber',
                             ])>{{ $card['label'] }}</p>
                             <div class="mt-3 text-3xl font-bold">{{ $card['value'] }}</div>
                             <p class="mt-1 text-sm text-slate-500 dark:text-zinc-400">{{ $card['note'] }}</p>

@@ -14,15 +14,17 @@
         <div class="grid gap-2">
             <button
                 type="button"
-                class="admin-calendar-control {{ $view === 'weekly' ? 'is-active' : '' }}"
-                x-on:click="switchView('timeGridWeek'); $wire.setView('weekly')"
+                class="admin-calendar-control"
+                x-bind:class="{ 'is-active': viewMode === 'weekly' }"
+                x-on:click="switchView('timeGridWeek', 'weekly')"
             >
                 Week view
             </button>
             <button
                 type="button"
-                class="admin-calendar-control {{ $view === 'monthly' ? 'is-active' : '' }}"
-                x-on:click="switchView('dayGridMonth'); $wire.setView('monthly')"
+                class="admin-calendar-control"
+                x-bind:class="{ 'is-active': viewMode === 'monthly' }"
+                x-on:click="switchView('dayGridMonth', 'monthly')"
             >
                 Month view
             </button>
@@ -43,6 +45,7 @@
     <section class="min-w-0 max-w-full overflow-hidden p-3 sm:p-5">
         <div
             wire:ignore
+            x-ref="calendar"
             id="fc-calendar"
             class="schedule-calendar"
             style="min-height: 640px;"

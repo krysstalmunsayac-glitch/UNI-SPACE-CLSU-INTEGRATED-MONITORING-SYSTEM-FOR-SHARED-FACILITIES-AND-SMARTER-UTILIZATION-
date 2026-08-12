@@ -28,7 +28,11 @@ new #[Layout('components.layouts.auth')] class extends Component {
 
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt(['email' => $this->email, 'password' => $this->password], $this->remember)) {
+        if (! Auth::attempt([
+            'email' => $this->email,
+            'password' => $this->password,
+            'is_active' => true,
+        ], $this->remember)) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
@@ -73,6 +77,16 @@ new #[Layout('components.layouts.auth')] class extends Component {
 }; ?>
 
 <div class="flex flex-col gap-6">
+    <a
+        href="{{ route('home') }}"
+        class="fixed left-4 top-4 z-10 inline-flex items-center justify-center gap-2 rounded-full border border-emerald-700 bg-white px-5 py-2.5 text-xs font-black uppercase tracking-wide text-emerald-700 shadow-sm transition hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 dark:border-emerald-400 dark:bg-zinc-900 dark:text-emerald-400 dark:hover:bg-emerald-950 dark:focus:ring-offset-zinc-900 sm:left-6 sm:top-6"
+    >
+        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="m15 18-6-6 6-6" />
+        </svg>
+        {{ __('Back to Home') }}
+    </a>
+
     <x-auth-header title="Sign in" description="or use your account" />
 
     <!-- Session Status -->
@@ -80,11 +94,11 @@ new #[Layout('components.layouts.auth')] class extends Component {
 
     <form wire:submit="login" class="flex flex-col gap-6">
         <!-- Email Address -->
-        <flux:input wire:model="email" label="{{ __('Email address') }}" type="email" name="email" required autofocus autocomplete="email" placeholder="email@example.com" />
+        <x-ui::input wire:model="email" label="{{ __('Email address') }}" type="email" name="email" required autofocus autocomplete="email" placeholder="email@example.com" />
 
         <!-- Password -->
         <div class="relative">
-            <flux:input
+            <x-ui::input
                 wire:model="password"
                 label="{{ __('Password') }}"
                 type="password"
@@ -95,22 +109,29 @@ new #[Layout('components.layouts.auth')] class extends Component {
             />
 
             @if (Route::has('password.request'))
-                <x-text-link class="absolute right-0 top-0" href="{{ route('password.request') }}">
+                <x-text-link class="absolute right-0 top-0 text-xs" href="{{ route('password.request') }}">
                     {{ __('Forgot your password?') }}
                 </x-text-link>
             @endif
         </div>
 
         <!-- Remember Me -->
-        <flux:checkbox wire:model="remember" label="{{ __('Remember me') }}" />
+        <x-ui::checkbox wire:model="remember" label="{{ __('Remember me') }}" />
 
-        <div class="flex items-center justify-end">
-            <flux:button variant="primary" type="submit" class="mx-auto w-36 rounded-full bg-emerald-700 py-3 text-xs font-black uppercase tracking-wide text-white hover:bg-emerald-800">{{ __('Sign in') }}</flux:button>
+        <div class="flex items-center justify-center">
+            <x-ui::button variant="primary" type="submit" class="w-36 rounded-full bg-emerald-700 py-3 text-xs font-black uppercase tracking-wide text-white hover:bg-emerald-800">{{ __('Sign in') }}</x-ui::button>
         </div>
     </form>
 
-    <div class="space-x-1 text-center text-sm text-zinc-600 dark:text-zinc-400">
-        Don't have an account?
-        <x-text-link href="{{ route('register') }}">Sign up</x-text-link>
+    <div class="flex items-center justify-center gap-2 text-sm font-semibold lg:hidden">
+        <span class="text-zinc-600 dark:text-zinc-300">{{ __("Don't have an account?") }}</span>
+        <a
+            href="{{ route('register') }}"
+            data-auth-switch="register"
+            class="font-black text-emerald-700 hover:text-emerald-800 hover:underline focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 dark:text-emerald-400 dark:hover:text-emerald-300 dark:focus:ring-offset-zinc-900"
+        >
+            {{ __('Sign Up') }}
+        </a>
     </div>
+
 </div>
