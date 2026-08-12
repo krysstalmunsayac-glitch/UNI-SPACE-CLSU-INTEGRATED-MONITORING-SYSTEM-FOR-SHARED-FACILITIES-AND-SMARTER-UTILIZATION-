@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Feedbacks;
 use App\Models\Requests;
-use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class FeedbacksController extends Controller
@@ -56,12 +56,12 @@ class FeedbacksController extends Controller
             403,
         );
 
-        abort_if($facilityRequest->feedback()->exists(), 409, 'Feedback has already been submitted for this request.');
-
         $validated = $request->validate([
             'Rating' => ['required', 'integer', 'between:1,5'],
             'Comment' => ['required', 'string', 'min:5', 'max:1000'],
         ]);
+
+        abort_if($facilityRequest->feedback()->exists(), 409, 'Feedback has already been submitted for this request.');
 
         Feedbacks::create([
             'User_ID' => $request->user()->id,

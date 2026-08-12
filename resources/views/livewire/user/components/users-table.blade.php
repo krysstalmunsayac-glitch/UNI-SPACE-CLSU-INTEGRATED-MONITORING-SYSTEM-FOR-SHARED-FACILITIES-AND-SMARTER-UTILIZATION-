@@ -59,7 +59,7 @@
                                 <div class="min-w-0">
                                     <div class="truncate font-semibold text-zinc-950 dark:text-white">{{ $user->name }}</div>
                                     <div class="truncate text-xs text-zinc-500 dark:text-zinc-400">{{ $user->email }}</div>
-                                    <div class="mt-0.5 text-[11px] font-medium text-zinc-400">ID #{{ $user->id }}</div>
+                                    <div class="mt-0.5 text-[11px] font-medium text-zinc-400">USR-{{ str_pad((string) $user->id, 5, '0', STR_PAD_LEFT) }}</div>
                                 </div>
                             </div>
                         </x-ui::table.cell>

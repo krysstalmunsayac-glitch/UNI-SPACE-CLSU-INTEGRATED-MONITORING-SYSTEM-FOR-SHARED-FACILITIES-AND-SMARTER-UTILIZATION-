@@ -31,6 +31,11 @@ new #[Layout('components.layouts.home')] class extends Component {
     {
         $user = Auth::user();
 
+        $this->name = trim($this->name);
+        $this->email = strtolower(trim($this->email));
+        $this->contact_number = trim($this->contact_number);
+        $this->address = trim($this->address);
+
         $validated = $this->validate([
             'name' => ['required', 'string', 'min:2', 'max:100'],
             'email' => [
@@ -123,6 +128,7 @@ new #[Layout('components.layouts.home')] class extends Component {
                         <span wire:loading wire:target="updateProfileInformation">Saving...</span>
                     </button>
                     <a href="{{ route('dashboard') }}" class="rounded-xl border border-emerald-900/10 px-6 py-3 text-sm font-black text-emerald-800 transition hover:bg-emerald-50 dark:border-white/10 dark:text-emerald-300 dark:hover:bg-zinc-800">Cancel</a>
+                    <a href="{{ route('profile.external.password') }}" class="rounded-xl border border-emerald-900/10 px-6 py-3 text-sm font-black text-emerald-800 transition hover:bg-emerald-50 dark:border-white/10 dark:text-emerald-300 dark:hover:bg-zinc-800">Change password</a>
                     <x-action-message on="profile-updated" class="font-semibold text-emerald-700 dark:text-emerald-300">Profile saved successfully.</x-action-message>
                 </div>
             </div>

@@ -207,6 +207,12 @@ class FacilitiesController extends Controller
             abort(403);
         }
 
+        if ($requestModel->Status === 'Ended') {
+            return redirect()
+                ->route('dashboard', ['request' => $requestModel->RID])
+                ->with('warning', 'This event has ended. Its request details can no longer be changed.');
+        }
+
         $earliestReservationDate = now()->addDays(3)->toDateString();
 
         $validated = $request->validate([

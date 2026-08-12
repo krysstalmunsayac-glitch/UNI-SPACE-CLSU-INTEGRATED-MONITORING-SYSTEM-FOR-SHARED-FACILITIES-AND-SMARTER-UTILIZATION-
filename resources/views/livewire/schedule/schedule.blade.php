@@ -365,8 +365,9 @@ new #[Layout('components.layouts.app')] class extends Component {
     {
         return Schedule::query()
             ->with([
-                'request:RID,Facility_ID,Purpose,Status',
+                'request:RID,Event_ID,Facility_ID,Purpose,Status',
                 'request.facility:FID,Facility_Name',
+                'request.event:EID,Event_Title',
             ])
             ->when(auth()->user()->isAdmin(), function ($query) {
                 $query->whereHas('request.facility', function ($facilityQuery) {
@@ -401,13 +402,13 @@ new #[Layout('components.layouts.app')] class extends Component {
                 $facility = $schedule->request?->facility?->Facility_Name
                     ?? 'Request #' . $schedule->Request_ID;
 
-                $purpose = $schedule->request?->Purpose ?? 'No purpose';
+                $eventName = $schedule->request?->event?->Event_Title ?? 'Reserved facility';
                 $colors = CalendarColor::forValue($facility);
                 $isEnded = $schedule->request?->Status === 'Ended';
 
                 return [
                     'id' => $schedule->SID,
-                    'title' => $facility,
+                    'title' => $eventName.' · '.$facility,
                     'start' => "{$date}T{$start}",
                     'end' => "{$date}T{$end}",
                     'backgroundColor' => $isEnded
@@ -420,7 +421,7 @@ new #[Layout('components.layouts.app')] class extends Component {
                         'status' => $isEnded ? 'Ended' : $schedule->Status,
                         'scheduleId' => $schedule->SID,
                         'facility' => $facility,
-                        'purpose' => $purpose,
+                        'event' => $eventName,
                     ],
                 ];
             })

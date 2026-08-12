@@ -230,7 +230,7 @@ new #[Layout('components.layouts.app')] class extends Component {
                             <div class="text-xs text-zinc-500">{{ $log->actor?->roleLabel() ?? 'Automated action' }}</div>
                         </x-ui::table.cell>
                         <x-ui::table.cell><x-ui::badge size="sm" :color="$badgeColor">{{ $actionLabel }}</x-ui::badge></x-ui::table.cell>
-                        <x-ui::table.cell class="font-medium">#{{ $log->auditable_id }}</x-ui::table.cell>
+                        <x-ui::table.cell class="font-medium">REQ-{{ str_pad((string) $log->auditable_id, 5, '0', STR_PAD_LEFT) }}</x-ui::table.cell>
                         <x-ui::table.cell>
                             <div>{{ $log->requestRecord?->user?->name ?? '—' }}</div>
                             <div class="text-xs text-zinc-500">{{ $log->requestRecord?->facility?->Facility_Name ?? '—' }}</div>

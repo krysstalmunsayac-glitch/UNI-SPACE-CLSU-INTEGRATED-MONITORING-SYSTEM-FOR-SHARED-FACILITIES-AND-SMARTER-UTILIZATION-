@@ -12,6 +12,8 @@
         $mobileNavActive = 'text-emerald-700 dark:text-emerald-300';
         $isEndUser = auth()->check() && auth()->user()->hasrole('user');
         $profileRoute = $isEndUser ? route('profile.external') : route('settings.profile');
+        $homeRoute = $isEndUser ? route('dashboard') : route('home');
+        $aboutRoute = $homeRoute;
     @endphp
 
     <header
@@ -36,7 +38,7 @@
         class="sticky top-0 z-[2000] border-b border-emerald-900/10 bg-white/95 backdrop-blur dark:border-white/10 dark:bg-zinc-950/95"
     >
         <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:h-20 sm:px-6 lg:px-8">
-            <a href="{{ route('home') }}#home" class="flex h-16 shrink-0 items-center justify-center sm:h-20" aria-label="SIEL SPACE home">
+            <a href="{{ $homeRoute }}#home" class="flex h-16 shrink-0 items-center justify-center sm:h-20" aria-label="SIEL SPACE home">
                 <picture class="relative block size-14 overflow-hidden sm:h-20 sm:w-auto sm:overflow-visible">
                     <source media="(max-width: 639px)" srcset="{{ asset('images/admin-collapsed-logo.png') }}">
                     <img src="{{ asset('images/silesyu-space-logo.png') }}" alt="SIEL SPACE" class="absolute left-1/2 h-full w-auto max-w-none -translate-x-1/2 object-contain sm:static sm:translate-x-0">
@@ -46,12 +48,12 @@
             <nav class="navigation-typeface hidden items-center gap-6 text-sm font-semibold text-emerald-950 dark:text-zinc-100 lg:flex">
                 @auth
                     @if ($isEndUser)
-                        <a href="{{ route('home') }}#home" class="{{ $navLink }}" x-on:click="setActive('home')" x-bind:class="activeSection === 'home' ? @js($navActive) : ''">Home</a>
-                        <a href="{{ route('home') }}#about" class="{{ $navLink }}" x-on:click="setActive('about')" x-bind:class="activeSection === 'about' ? @js($navActive) : ''">About</a>
-                        <a href="{{ route('home') }}#facilities" class="{{ $navLink }}" x-on:click="setActive('facilities')" x-bind:class="activeSection === 'facilities' ? @js($navActive) : ''">Facilities</a>
-                        <a href="{{ route('home') }}#calendar" class="{{ $navLink }}" x-on:click="setActive('calendar')" x-bind:class="activeSection === 'calendar' ? @js($navActive) : ''">Calendar</a>
-                        <a href="{{ route('home') }}#map" class="{{ $navLink }}" x-on:click="setActive('map')" x-bind:class="activeSection === 'map' ? @js($navActive) : ''">Map</a>
-                        <a href="{{ route('home') }}#help" class="{{ $navLink }}" x-on:click="setActive('help')" x-bind:class="activeSection === 'help' ? @js($navActive) : ''">Help</a>
+                        <a href="{{ $homeRoute }}#home" class="{{ $navLink }}" x-on:click="setActive('home')" x-bind:class="activeSection === 'home' ? @js($navActive) : ''">Home</a>
+                        <a href="{{ $aboutRoute }}#about" class="{{ $navLink }}" x-on:click="setActive('about')" x-bind:class="activeSection === 'about' ? @js($navActive) : ''">About</a>
+                        <a href="{{ $homeRoute }}#facilities" class="{{ $navLink }}" x-on:click="setActive('facilities')" x-bind:class="activeSection === 'facilities' ? @js($navActive) : ''">Facilities</a>
+                        <a href="{{ $homeRoute }}#calendar" class="{{ $navLink }}" x-on:click="setActive('calendar')" x-bind:class="activeSection === 'calendar' ? @js($navActive) : ''">Calendar</a>
+                        <a href="{{ $homeRoute }}#map" class="{{ $navLink }}" x-on:click="setActive('map')" x-bind:class="activeSection === 'map' ? @js($navActive) : ''">Map</a>
+                        <a href="{{ $homeRoute }}#help" class="{{ $navLink }}" x-on:click="setActive('help')" x-bind:class="activeSection === 'help' ? @js($navActive) : ''">Help</a>
                     @else
                         <a href="{{ route('dashboard') }}" @class([$navLink, $navActive => request()->routeIs('dashboard*')])>Dashboard</a>
                         <a href="{{ route('settings.profile') }}" @class([$navLink, $navActive => request()->routeIs('settings.*')])>Profile</a>
@@ -108,6 +110,9 @@
 
                             <x-ui::menu.radio.group>
                                 <x-ui::menu.item :href="$profileRoute" icon="profile" class="min-h-12 rounded-xl font-semibold text-slate-700 dark:text-zinc-100" wire:navigate>Profile settings</x-ui::menu.item>
+                                @if ($isEndUser)
+                                    <x-ui::menu.item :href="route('profile.external.password')" icon="key" class="min-h-12 rounded-xl font-semibold text-slate-700 dark:text-zinc-100" wire:navigate>Change password</x-ui::menu.item>
+                                @endif
                             </x-ui::menu.radio.group>
 
                             <form method="POST" action="{{ route('logout') }}" class="w-full">
@@ -149,12 +154,12 @@
             <div class="grid gap-1">
             @auth
                 @if ($isEndUser)
-                    <a href="{{ route('home') }}#home" x-on:click="mobileMenuOpen = false; setActive('home')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'home' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">Home</a>
-                    <a href="{{ route('home') }}#about" x-on:click="mobileMenuOpen = false; setActive('about')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'about' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">About</a>
-                    <a href="{{ route('home') }}#facilities" x-on:click="mobileMenuOpen = false; setActive('facilities')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'facilities' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">Facilities</a>
-                    <a href="{{ route('home') }}#calendar" x-on:click="mobileMenuOpen = false; setActive('calendar')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'calendar' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">Calendar</a>
-                    <a href="{{ route('home') }}#map" x-on:click="mobileMenuOpen = false; setActive('map')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'map' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">Map</a>
-                    <a href="{{ route('home') }}#help" x-on:click="mobileMenuOpen = false; setActive('help')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'help' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">Help</a>
+                    <a href="{{ $homeRoute }}#home" x-on:click="mobileMenuOpen = false; setActive('home')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'home' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">Home</a>
+                    <a href="{{ $aboutRoute }}#about" x-on:click="mobileMenuOpen = false; setActive('about')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'about' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">About</a>
+                    <a href="{{ $homeRoute }}#facilities" x-on:click="mobileMenuOpen = false; setActive('facilities')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'facilities' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">Facilities</a>
+                    <a href="{{ $homeRoute }}#calendar" x-on:click="mobileMenuOpen = false; setActive('calendar')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'calendar' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">Calendar</a>
+                    <a href="{{ $homeRoute }}#map" x-on:click="mobileMenuOpen = false; setActive('map')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'map' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">Map</a>
+                    <a href="{{ $homeRoute }}#help" x-on:click="mobileMenuOpen = false; setActive('help')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'help' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">Help</a>
                     <a href="{{ route('waiting.list') }}" x-on:click="mobileMenuOpen = false" @class(['rounded-lg px-3 py-2.5', $mobileNavLink, 'bg-emerald-50 '.$mobileNavActive => request()->routeIs('waiting.list')])>My Requests / Waiting List</a>
 
                     <div class="mt-2 flex items-center justify-between border-t border-emerald-900/10 pt-3 dark:border-white/10">
@@ -188,6 +193,7 @@
 
                             <x-ui::menu.radio.group>
                                 <x-ui::menu.item :href="$profileRoute" icon="profile" class="min-h-12 rounded-xl font-semibold text-slate-700 dark:text-zinc-100" wire:navigate>Profile settings</x-ui::menu.item>
+                                <x-ui::menu.item :href="route('profile.external.password')" icon="key" class="min-h-12 rounded-xl font-semibold text-slate-700 dark:text-zinc-100" wire:navigate>Change password</x-ui::menu.item>
                             </x-ui::menu.radio.group>
 
                             <form method="POST" action="{{ route('logout') }}" class="w-full">

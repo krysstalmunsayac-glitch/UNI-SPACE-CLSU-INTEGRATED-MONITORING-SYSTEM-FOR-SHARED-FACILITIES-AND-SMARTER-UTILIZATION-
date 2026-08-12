@@ -58,7 +58,7 @@
                     <x-ui::table.row :key="$amenity->AID">
                         <x-ui::table.cell>
                             <div class="font-medium">{{ $amenity->name }}</div>
-                            <div class="text-xs text-zinc-500">#{{ $amenity->AID }}</div>
+                            <div class="text-xs text-zinc-500">AMN-{{ str_pad((string) $amenity->AID, 5, '0', STR_PAD_LEFT) }}</div>
                         </x-ui::table.cell>
 
                         <x-ui::table.cell>

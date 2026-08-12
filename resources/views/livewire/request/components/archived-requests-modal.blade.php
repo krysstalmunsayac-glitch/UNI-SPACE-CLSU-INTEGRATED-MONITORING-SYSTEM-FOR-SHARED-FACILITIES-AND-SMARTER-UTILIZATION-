@@ -34,7 +34,7 @@
                         @forelse ($this->archivedRequests as $request)
                             <x-ui::table.row :key="'archived-request-'.$request->RID">
                                 <x-ui::table.cell>
-                                    <div class="font-medium">#{{ $request->RID }}</div>
+                                    <div class="font-medium">REQ-{{ str_pad((string) $request->RID, 5, '0', STR_PAD_LEFT) }}</div>
                                 </x-ui::table.cell>
                                 <x-ui::table.cell>
                                     <div class="flex min-w-44 items-center gap-3">
@@ -83,12 +83,12 @@
                                 <x-ui::table.cell>
                                     <div class="flex items-center justify-end gap-2">
                                         <x-ui::dropdown position="bottom" align="end">
-                                            <x-ui::button variant="ghost" size="sm" icon="ellipsis-horizontal" aria-label="Actions for request #{{ $request->RID }}" />
+                                            <x-ui::button variant="ghost" size="sm" icon="ellipsis-horizontal" aria-label="Actions for request REQ-{{ str_pad((string) $request->RID, 5, '0', STR_PAD_LEFT) }}" />
                                             <x-ui::menu>
                                                 <x-ui::menu.item icon="eye" wire:click="showArchivedRequest({{ $request->RID }})">View details</x-ui::menu.item>
                                                 <x-ui::menu.item icon="arrow-path" wire:click="restore({{ $request->RID }})">Restore</x-ui::menu.item>
                                                 <x-ui::menu.separator />
-                                                <x-ui::menu.item icon="trash" variant="danger" wire:click="forceDelete({{ $request->RID }})" data-ui-confirm="Delete archived request #{{ $request->RID }} permanently? This action cannot be undone." data-ui-confirm-title="Delete archived request" data-ui-confirm-label="Delete permanently" data-ui-confirm-variant="danger">Delete permanently</x-ui::menu.item>
+                                                <x-ui::menu.item icon="trash" variant="danger" wire:click="forceDelete({{ $request->RID }})" data-ui-confirm="Delete archived request REQ-{{ str_pad((string) $request->RID, 5, '0', STR_PAD_LEFT) }} permanently? This action cannot be undone." data-ui-confirm-title="Delete archived request" data-ui-confirm-label="Delete permanently" data-ui-confirm-variant="danger">Delete permanently</x-ui::menu.item>
                                             </x-ui::menu>
                                         </x-ui::dropdown>
                                     </div>

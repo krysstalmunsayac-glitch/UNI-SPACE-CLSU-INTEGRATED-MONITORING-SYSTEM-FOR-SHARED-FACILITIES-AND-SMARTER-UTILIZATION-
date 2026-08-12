@@ -46,7 +46,7 @@
                         <x-ui::table.cell>
                             <div class="flex flex-col">
                                 <div class="font-medium">{{ $feedback->user?->name ?? 'Anonymous' }}</div>
-                                <div class="text-xs text-zinc-500">#{{ $feedback->getKey() }}</div>
+                                <div class="text-xs text-zinc-500">FDB-{{ str_pad((string) $feedback->getKey(), 5, '0', STR_PAD_LEFT) }}</div>
                             </div>
                         </x-ui::table.cell>
 
@@ -71,7 +71,7 @@
 
                         <x-ui::table.cell>
                             <x-ui::dropdown :position="$loop->remaining < 2 ? 'top' : 'bottom'" align="end">
-                                <x-ui::button variant="ghost" size="sm" icon="ellipsis-horizontal" aria-label="Actions for feedback #{{ $feedback->getKey() }}" />
+                                <x-ui::button variant="ghost" size="sm" icon="ellipsis-horizontal" aria-label="Actions for feedback FDB-{{ str_pad((string) $feedback->getKey(), 5, '0', STR_PAD_LEFT) }}" />
                                 <x-ui::menu>
                                     <x-ui::menu.item
                                         icon="trash"

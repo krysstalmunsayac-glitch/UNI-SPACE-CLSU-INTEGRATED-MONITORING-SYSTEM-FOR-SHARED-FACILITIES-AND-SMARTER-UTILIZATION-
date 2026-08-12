@@ -1,18 +1,33 @@
 <x-layouts.home.header>
-    <x-ui::main class="py-12 px-4 sm:px-6 lg:px-8">
-        <div class="mx-auto max-w-7xl space-y-8">
-            <div class="rounded-2xl bg-white/90 p-6 shadow-lg shadow-emerald-950/5 ring-1 ring-emerald-900/10 backdrop-blur dark:bg-zinc-950/90 dark:ring-white/5">
-                <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                    <div>
-                        <p class="text-sm font-black uppercase tracking-[0.24em] text-yellow-600 dark:text-yellow-300">Facility request</p>
-                        <h1 class="mt-2 text-3xl font-black tracking-tight text-emerald-950 dark:text-white">{{ $facility->Facility_Name }}</h1>
-                        <p class="mt-2 text-sm leading-6 text-emerald-900/70 dark:text-zinc-300">Submit a request for this facility, select available amenities, and choose the date and time you need.</p>
-                    </div>
-                    <div class="flex flex-col gap-3 rounded-2xl border border-emerald-900/10 bg-emerald-50 p-4 dark:border-white/10 dark:bg-zinc-900">
-                        <p class="text-sm font-semibold text-emerald-800 dark:text-emerald-300">Status</p>
-                        <span class="w-fit rounded-full bg-emerald-700 px-3 py-1 text-sm font-semibold text-white">{{ $facility->Status }}</span>
-                        <p class="text-sm text-emerald-900/70 dark:text-zinc-300">Capacity: {{ $facility->Capacity ?? 'N/A' }}</p>
-                        <p class="text-sm text-emerald-900/70 dark:text-zinc-300">Location: {{ $facility->Location ?? 'Unspecified' }}</p>
+    <x-ui::main class="bg-gradient-to-b from-emerald-50/70 via-white to-white px-4 py-8 dark:from-emerald-950/20 dark:via-zinc-950 dark:to-zinc-950 sm:px-6 lg:px-8">
+        <div class="mx-auto max-w-7xl space-y-6">
+            <div class="overflow-hidden rounded-3xl border border-emerald-900/10 bg-white shadow-xl shadow-emerald-950/5 dark:border-white/10 dark:bg-zinc-950">
+                <div class="h-1.5 bg-gradient-to-r from-emerald-700 via-emerald-500 to-yellow-400"></div>
+                <div class="p-6 sm:p-8">
+                    <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+                        <div class="max-w-3xl">
+                            <div class="mb-3 inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-200">
+                                <span class="size-2 rounded-full bg-emerald-600"></span>
+                                Facility reservation
+                            </div>
+                            <h1 class="text-3xl font-black tracking-tight text-emerald-950 dark:text-white sm:text-4xl">{{ $facility->Facility_Name }}</h1>
+                            <p class="mt-3 max-w-2xl text-sm leading-6 text-emerald-900/65 dark:text-zinc-300">Tell us about your event, choose a schedule, and select the amenities you need.</p>
+                        </div>
+
+                        <div class="grid gap-3 text-sm sm:grid-cols-3 lg:min-w-[34rem]">
+                            <div class="rounded-2xl border border-emerald-100 bg-emerald-50/80 p-4 dark:border-emerald-500/20 dark:bg-emerald-500/10">
+                                <p class="text-xs font-semibold text-emerald-700 dark:text-emerald-300">Availability</p>
+                                <p class="mt-1 font-black text-emerald-950 dark:text-white">{{ $facility->Status }}</p>
+                            </div>
+                            <div class="rounded-2xl border border-emerald-100 bg-emerald-50/80 p-4 dark:border-emerald-500/20 dark:bg-emerald-500/10">
+                                <p class="text-xs font-semibold text-emerald-700 dark:text-emerald-300">Capacity</p>
+                                <p class="mt-1 font-black text-emerald-950 dark:text-white">{{ $facility->Capacity ? number_format($facility->Capacity).' people' : 'Not specified' }}</p>
+                            </div>
+                            <div class="rounded-2xl border border-emerald-100 bg-emerald-50/80 p-4 dark:border-emerald-500/20 dark:bg-emerald-500/10">
+                                <p class="text-xs font-semibold text-emerald-700 dark:text-emerald-300">Location</p>
+                                <p class="mt-1 line-clamp-2 font-black text-emerald-950 dark:text-white">{{ $facility->Location ?? 'Not specified' }}</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -24,7 +39,7 @@
             @endif
 
             <div
-                class="grid items-start gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(22rem,0.85fr)]"
+                class="grid items-start gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(28rem,1.1fr)]"
                 x-data="{
                     step: {{ $errors->hasAny(['Amenity_ID', 'Amenity_ID.*', 'Proposed_Date', 'Proposed_End_Date', 'Daily_Schedules', 'Daily_Schedules.*', 'Purpose_Categories', 'Purpose_Categories.*', 'Other_Purpose', 'Reservation_Frequency', 'Facility_Importance', 'Requirements_Fit', 'Reserve_Again_Intent', 'Capacity', 'attachment']) ? 2 : 1 }},
                     submitting: false,
@@ -95,12 +110,12 @@
                 x-on:keydown.left.window="if (activePhoto !== null && photos.length > 1) previousPhoto()"
                 x-on:keydown.right.window="if (activePhoto !== null && photos.length > 1) nextPhoto()"
             >
-                <section aria-labelledby="facility-gallery-heading">
-                    <div class="mb-4 flex items-end justify-between gap-4">
+                <section aria-labelledby="facility-gallery-heading" class="order-2 rounded-3xl border border-emerald-900/10 bg-white p-5 shadow-lg shadow-emerald-950/5 dark:border-white/10 dark:bg-zinc-950 sm:p-6 lg:order-1">
+                    <div class="mb-5 flex items-end justify-between gap-4">
                         <div>
-                            <p class="text-sm font-black uppercase tracking-[0.24em] text-yellow-600 dark:text-yellow-300">Facility gallery</p>
-                            <h2 id="facility-gallery-heading" class="mt-1 text-xl font-black text-emerald-950 dark:text-white">
-                                Explore the space
+                            <p class="text-xs font-bold text-emerald-700 dark:text-emerald-300">Facility overview</p>
+                            <h2 id="facility-gallery-heading" class="mt-1 text-2xl font-black text-emerald-950 dark:text-white">
+                                Explore this space
                             </h2>
                         </div>
                         @if ($facility->images->isNotEmpty())
@@ -115,7 +130,7 @@
                             <button
                                 type="button"
                                 @class([
-                                    'group relative aspect-[4/3] overflow-hidden rounded-2xl bg-emerald-50 text-left shadow-lg shadow-emerald-950/5 ring-1 ring-emerald-900/10 transition hover:ring-2 hover:ring-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600 dark:bg-zinc-900 dark:ring-white/10',
+                                    'group relative aspect-[16/10] overflow-hidden rounded-2xl bg-emerald-50 text-left ring-1 ring-emerald-900/10 transition hover:-translate-y-0.5 hover:shadow-xl hover:ring-2 hover:ring-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600 dark:bg-zinc-900 dark:ring-white/10',
                                     'sm:col-span-2' => $facility->images->count() === 1,
                                 ])
                                 x-on:click="openPhoto({{ $loop->index }})"
@@ -135,13 +150,22 @@
                                 </div>
                             </button>
                         @empty
-                            <div class="col-span-2 flex min-h-72 flex-col items-center justify-center rounded-2xl bg-emerald-50 p-8 text-center shadow-lg shadow-emerald-950/5 ring-1 ring-emerald-900/10 dark:bg-zinc-900 dark:ring-white/10">
-                                <img src="{{ $facility->primaryImageUrl() }}" alt="" class="mb-5 h-20 w-20 object-contain opacity-70">
+                            <div class="col-span-2 flex min-h-52 flex-col items-center justify-center rounded-2xl border border-dashed border-emerald-300 bg-gradient-to-br from-emerald-50 to-white p-8 text-center dark:border-emerald-700 dark:from-emerald-950/30 dark:to-zinc-900">
+                                <div class="mb-4 flex size-20 items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-emerald-900/10 dark:bg-zinc-950 dark:ring-white/10">
+                                    <img src="{{ $facility->primaryImageUrl() }}" alt="" class="h-14 w-14 object-contain opacity-80">
+                                </div>
                                 <p class="font-semibold text-emerald-950 dark:text-white">No facility photos yet</p>
                                 <p class="mt-1 text-sm text-emerald-900/60 dark:text-zinc-400">Photos of this facility will appear here when available.</p>
                             </div>
                         @endforelse
                     </div>
+
+                    @if ($facility->Description)
+                        <div class="mt-5 border-t border-emerald-900/10 pt-5 dark:border-white/10">
+                            <p class="text-xs font-bold text-emerald-700 dark:text-emerald-300">About the facility</p>
+                            <p class="mt-2 text-sm leading-6 text-emerald-900/70 dark:text-zinc-300">{{ $facility->Description }}</p>
+                        </div>
+                    @endif
                 </section>
 
                 <template x-teleport="body">
@@ -195,15 +219,16 @@
                     </div>
                 </template>
 
-                <div class="space-y-6 lg:sticky lg:top-24">
-                    <x-ui::card>
-                        <div class="mb-6 flex items-center gap-3">
+                <div class="order-1 space-y-6 lg:order-2 lg:sticky lg:top-24">
+                    <x-ui::card class="overflow-hidden rounded-3xl border-emerald-900/10 p-0 shadow-xl shadow-emerald-950/10 dark:border-white/10">
+                        <div class="border-b border-emerald-900/10 bg-emerald-50/60 px-6 py-5 dark:border-white/10 dark:bg-emerald-950/20">
+                        <div class="flex items-center gap-3">
                             <div class="flex items-center gap-2">
                                 <span
                                     class="flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold"
                                     :class="step === 1 ? 'bg-emerald-700 text-white' : 'bg-zinc-200 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300'"
                                 >1</span>
-                                <span class="text-sm font-medium" :class="step === 1 ? 'text-emerald-950 dark:text-white' : 'text-zinc-500 dark:text-zinc-400'">Event details</span>
+                                <span class="text-sm font-semibold" :class="step === 1 ? 'text-emerald-950 dark:text-white' : 'text-zinc-500 dark:text-zinc-400'">Event</span>
                             </div>
                             <div class="h-px flex-1 bg-emerald-900/10 dark:bg-white/10"></div>
                             <div class="flex items-center gap-2">
@@ -211,9 +236,12 @@
                                     class="flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold"
                                     :class="step === 2 ? 'bg-emerald-700 text-white' : 'bg-zinc-200 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300'"
                                 >2</span>
-                                <span class="text-sm font-medium" :class="step === 2 ? 'text-emerald-950 dark:text-white' : 'text-zinc-500 dark:text-zinc-400'">Request details</span>
+                                <span class="text-sm font-semibold" :class="step === 2 ? 'text-emerald-950 dark:text-white' : 'text-zinc-500 dark:text-zinc-400'">Schedule & amenities</span>
                             </div>
                         </div>
+                        </div>
+
+                        <div class="p-6 sm:p-8">
 
                         @error('submission')
                             <div role="alert" class="mb-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-800 dark:border-red-500/30 dark:bg-red-950/30 dark:text-red-200">
@@ -299,14 +327,14 @@
                                             }
                                         "
                                     >
-                                        Next: Request details
+                                        Continue to schedule
                                     </button>
                                 </div>
                             </div>
 
                             {{-- STEP 2: Facility request details --}}
                             <div x-show="step === 2" x-cloak class="space-y-4">
-                                <x-ui::heading size="lg">Request details</x-ui::heading>
+                                <x-ui::heading size="lg">Schedule & amenities</x-ui::heading>
 
                                 <div>
                                     <x-ui::checkbox.group label="Amenities">
@@ -452,9 +480,9 @@
                                     >
                                         Back
                                     </button>
-                                    <x-ui::button
+                                    <button
                                         type="submit"
-                                        class="w-full sm:w-auto"
+                                        class="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 px-5 text-sm font-semibold text-white transition hover:bg-emerald-800 disabled:pointer-events-none disabled:opacity-60 sm:w-auto"
                                         data-ui-confirm="Are you sure you want to submit this reservation request? Please review the selected facility, date, time, and amenities before continuing."
                                         data-ui-confirm-title="Confirm request submission"
                                         data-ui-confirm-label="Submit request"
@@ -463,11 +491,12 @@
                                     >
                                         <span x-show="!submitting">Send request</span>
                                         <span x-cloak x-show="submitting">Submitting…</span>
-                                    </x-ui::button>
+                                    </button>
                                     <a href="{{ route('home') }}" class="inline-flex items-center justify-center rounded-xl border border-emerald-900/10 px-4 py-2 text-sm font-medium text-emerald-900 transition hover:border-emerald-700 hover:bg-emerald-50 dark:border-white/10 dark:text-zinc-200 dark:hover:bg-zinc-800">Back to home</a>
                                 </div>
                             </div>
                         </form>
+                        </div>
                     </x-ui::card>
                 </div>
             </div>

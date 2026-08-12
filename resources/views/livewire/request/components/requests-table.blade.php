@@ -56,7 +56,7 @@
                     <x-ui::table.row :key="$request->RID">
 
                         <x-ui::table.cell>
-                            <div class="font-medium">#{{ $request->RID }}</div>
+                            <div class="font-medium">REQ-{{ str_pad((string) $request->RID, 5, '0', STR_PAD_LEFT) }}</div>
                         </x-ui::table.cell>
 
                         <x-ui::table.cell>
@@ -131,7 +131,7 @@
                                             icon="check"
                                             class="text-green-600 dark:text-green-400"
                                             wire:click="approve({{ $request->RID }})"
-                                            data-ui-confirm="Approve request #{{ $request->RID }}? It will be added to the facility schedule."
+                                            data-ui-confirm="Approve request REQ-{{ str_pad((string) $request->RID, 5, '0', STR_PAD_LEFT) }}? It will be added to the facility schedule."
                                             data-ui-confirm-title="Confirm approval"
                                             data-ui-confirm-label="Approve request"
                                         >
@@ -144,7 +144,7 @@
                                             icon="x-mark"
                                             class="text-red-600 dark:text-red-400"
                                             wire:click="cancel({{ $request->RID }})"
-                                            data-ui-confirm="Cancel approved request #{{ $request->RID }}? Its facility schedule will be removed and the requester will be notified."
+                                            data-ui-confirm="Cancel approved request REQ-{{ str_pad((string) $request->RID, 5, '0', STR_PAD_LEFT) }}? Its facility schedule will be removed and the requester will be notified."
                                             data-ui-confirm-title="Confirm cancellation"
                                             data-ui-confirm-label="Cancel request"
                                             data-ui-confirm-variant="danger"
@@ -174,7 +174,7 @@
                                         icon="archive-box"
                                         class="text-amber-600"
                                         wire:click="delete({{ $request->RID }})"
-                                        data-ui-confirm="Archive request #{{ $request->RID }}? It will be removed from this list and can be restored from Archives."
+                                        data-ui-confirm="Archive request REQ-{{ str_pad((string) $request->RID, 5, '0', STR_PAD_LEFT) }}? It will be removed from this list and can be restored from Archives."
                                         data-ui-confirm-title="Confirm archive"
                                         data-ui-confirm-label="Archive request"
                                     >

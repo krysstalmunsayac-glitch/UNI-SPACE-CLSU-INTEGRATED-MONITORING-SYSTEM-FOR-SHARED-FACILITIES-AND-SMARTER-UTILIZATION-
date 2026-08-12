@@ -33,9 +33,13 @@ Route::middleware([
         ->middleware('throttle:30,1')
         ->name('requests.attachment.download');
 
-    Volt::route('/profile', 'settings.profile')
+    Volt::route('/profile', 'settings.external-profile')
         ->middleware('role:user')
         ->name('profile.external');
+
+    Volt::route('/profile/password', 'settings.external-password')
+        ->middleware('role:user')
+        ->name('profile.external.password');
 
     /*
     |--------------------------------------------------------------------------

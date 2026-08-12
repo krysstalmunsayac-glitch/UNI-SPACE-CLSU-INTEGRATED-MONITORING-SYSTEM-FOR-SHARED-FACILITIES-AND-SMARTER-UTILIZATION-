@@ -20,6 +20,7 @@
         'paper-airplane' => '<path stroke-linecap="round" stroke-linejoin="round" d="m3.75 3.75 16.5 8.25-16.5 8.25 3-8.25-3-8.25Zm3 8.25h7.5"/>',
         'funnel' => '<path stroke-linecap="round" stroke-linejoin="round" d="M3 4.5h18l-7.5 8.25v6l-3 1.5v-7.5L3 4.5Z"/>',
         'user', 'profile' => '<circle cx="12" cy="8" r="4"/><path stroke-linecap="round" stroke-linejoin="round" d="M4 21a8 8 0 0 1 16 0"/>',
+        'key' => '<circle cx="8" cy="15" r="4"/><path stroke-linecap="round" stroke-linejoin="round" d="m11 12 8-8m-3 3 2 2m-5 1 2 2"/>',
         'cog', 'cog-6-tooth' => '<circle cx="12" cy="12" r="3"/><path stroke-linecap="round" stroke-linejoin="round" d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21h-4v-.1A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3v-4h.1A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.1A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.16.38.37.72.6 1 .3.36.7.57 1.1.6h.1v4h-.1a1.7 1.7 0 0 0-1.7.4Z"/>',
         'appearance' => '<path stroke-linecap="round" stroke-linejoin="round" d="M12 3a9 9 0 1 0 9 9c0-1.1-.2-2.15-.56-3.12A7 7 0 0 1 12 3Z"/>',
         'arrow-right-start-on-rectangle', 'logout' => '<path stroke-linecap="round" stroke-linejoin="round" d="m10 17 5-5-5-5m5 5H3m11-9h5a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-5"/>',

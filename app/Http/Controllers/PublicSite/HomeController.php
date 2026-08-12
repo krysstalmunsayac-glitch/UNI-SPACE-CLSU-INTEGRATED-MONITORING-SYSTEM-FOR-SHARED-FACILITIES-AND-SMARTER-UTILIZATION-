@@ -29,7 +29,6 @@ class HomeController extends Controller
                     $facilityName = $schedule->request?->facility?->Facility_Name
                         ?? "Request #{$schedule->Request_ID}";
                     $eventTitle = $request?->event?->Event_Title
-                        ?? $request?->Purpose
                         ?? 'Reserved facility';
                     $colors = CalendarColor::forValue($facilityName);
                     $isEnded = $request?->Status === 'Ended';
@@ -38,7 +37,6 @@ class HomeController extends Controller
                         'id' => $schedule->SID,
                         'title' => $eventTitle,
                         'facility' => $facilityName,
-                        'purpose' => $request?->Purpose,
                         'requester' => $request?->user?->name,
                         'status' => $isEnded ? 'Ended' : $schedule->Status,
                         'start' => Carbon::parse($schedule->Date)->toDateString().'T'.Carbon::parse($schedule->Start_Time)->format('H:i:s'),

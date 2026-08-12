@@ -23,7 +23,7 @@
                         @forelse ($this->archivedSchedules as $schedule)
                             <x-ui::table.row :key="'archived-schedule-'.$schedule->SID">
                                 <x-ui::table.cell>
-                                    <div class="font-medium">#{{ $schedule->SID }}</div>
+                                    <div class="font-medium">SCH-{{ str_pad((string) $schedule->SID, 5, '0', STR_PAD_LEFT) }}</div>
                                     <div class="text-xs text-zinc-500">
                                         {{ \Carbon\Carbon::parse($schedule->Date)->format('M d, Y') }} ·
                                         {{ \Carbon\Carbon::parse($schedule->Start_Time)->format('h:i A') }}–{{ \Carbon\Carbon::parse($schedule->End_Time)->format('h:i A') }}
@@ -33,7 +33,7 @@
                                 <x-ui::table.cell>{{ $schedule->deleted_at?->format('M d, Y') ?? '—' }}</x-ui::table.cell>
                                 <x-ui::table.cell>
                                     <x-ui::dropdown position="bottom" align="end">
-                                        <x-ui::button variant="ghost" size="sm" icon="ellipsis-horizontal" aria-label="Actions for schedule #{{ $schedule->SID }}" />
+                                        <x-ui::button variant="ghost" size="sm" icon="ellipsis-horizontal" aria-label="Actions for schedule SCH-{{ str_pad((string) $schedule->SID, 5, '0', STR_PAD_LEFT) }}" />
                                         <x-ui::menu>
                                             <x-ui::menu.item icon="arrow-path" wire:click="restore({{ $schedule->SID }})">Restore</x-ui::menu.item>
                                             <x-ui::menu.separator />

@@ -10,8 +10,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class Requests extends Model
 {
@@ -279,8 +279,8 @@ class Requests extends Model
      * Return requests whose date and time slots overlap the supplied schedule.
      * Pending requests may coexist; only approved requests block new submissions.
      *
-     * @param array<int, array{date:string,start:string,end:string}> $dailySchedules
-     * @param array<int, string> $statuses
+     * @param  array<int, array{date:string,start:string,end:string}>  $dailySchedules
+     * @param  array<int, string>  $statuses
      * @return Collection<int, static>
      */
     public static function dailyScheduleConflicts(

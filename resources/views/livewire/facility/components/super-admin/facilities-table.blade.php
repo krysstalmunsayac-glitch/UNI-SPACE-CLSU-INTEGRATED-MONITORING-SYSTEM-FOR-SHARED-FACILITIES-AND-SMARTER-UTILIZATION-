@@ -43,7 +43,7 @@
 
                             <div>
                                 <div class="font-medium">{{ $facility->Facility_Name }}</div>
-                                <div class="text-xs text-zinc-500">#{{ $facility->FID }}</div>
+                                <div class="text-xs text-zinc-500">FAC-{{ str_pad((string) $facility->FID, 5, '0', STR_PAD_LEFT) }}</div>
                             </div>
                         </div>
                     </x-ui::table.cell>

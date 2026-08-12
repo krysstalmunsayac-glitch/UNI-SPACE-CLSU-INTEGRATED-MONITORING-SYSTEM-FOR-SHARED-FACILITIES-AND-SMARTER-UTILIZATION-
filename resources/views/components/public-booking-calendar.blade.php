@@ -156,12 +156,12 @@
                 };
 
                 const eventDetails = (event) => [
+                    event.event && event.event !== event.title ? `Event: ${event.event}` : null,
                     event.facility ? `Facility: ${event.facility}` : null,
                     formatEventDate(event) ? `Date: ${formatEventDate(event)}` : null,
                     formatEventTime(event) ? `Time: ${formatEventTime(event)}` : null,
                     event.requester ? `Requested by: ${event.requester}` : null,
                     event.status ? `Status: ${event.status}` : null,
-                    event.purpose ? `Purpose: ${event.purpose}` : null,
                 ].filter(Boolean);
 
                 const addEventTooltip = (item, event) => {

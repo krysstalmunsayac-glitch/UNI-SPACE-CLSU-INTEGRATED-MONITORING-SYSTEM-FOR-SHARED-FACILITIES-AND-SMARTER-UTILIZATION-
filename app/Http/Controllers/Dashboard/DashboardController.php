@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\Events;
 use App\Models\Facilities;
 use App\Models\Requests;
 use App\Models\Schedule;
 use App\Models\User;
-use App\Models\AuditLog;
 use App\Support\CalendarColor;
 use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
@@ -35,8 +35,12 @@ class DashboardController extends Controller
             Requests::withTrashed()->where('User_ID', Auth::id())
         );
 
-        $userRequests = Requests::query()
+        $userRequests = Requests::withTrashed()
             ->where('User_ID', Auth::id())
+            ->where(function (Builder $query) {
+                $query->whereNull('deleted_at')
+                    ->orWhere('Status', 'Ended');
+            })
             ->with(['facility', 'event', 'feedback'])
             ->when($requestStatus, fn (Builder $query) => $query->where('Status', $requestStatus))
             ->orderBy('Created_at', $requestSort === 'oldest' ? 'asc' : 'desc')
@@ -55,7 +59,13 @@ class DashboardController extends Controller
             'requests' => $userRequests,
             'requestSort' => $requestSort,
             'requestStatus' => $requestStatus,
-            'totalUserRequests' => Requests::query()->where('User_ID', Auth::id())->count(),
+            'totalUserRequests' => Requests::withTrashed()
+                ->where('User_ID', Auth::id())
+                ->where(function (Builder $query) {
+                    $query->whereNull('deleted_at')
+                        ->orWhere('Status', 'Ended');
+                })
+                ->count(),
             'schedules' => $this->publicScheduleEvents(),
             ...$requestMetrics,
         ]);
@@ -431,18 +441,22 @@ class DashboardController extends Controller
         }
 
         return Schedule::query()
-            ->with('request.facility')
+            ->with(['request.facility', 'request.event'])
             ->where('Status', 'Booked')
             ->get()
             ->map(function (Schedule $schedule): array {
                 $facilityName = $schedule->request?->facility?->Facility_Name
                     ?? "Request #{$schedule->Request_ID}";
+                $eventName = $schedule->request?->event?->Event_Title
+                    ?? 'Reserved facility';
                 $colors = CalendarColor::forValue($facilityName);
                 $isEnded = $schedule->request?->Status === 'Ended';
 
                 return [
                     'id' => $schedule->SID,
-                    'title' => $facilityName,
+                    'title' => $eventName,
+                    'event' => $eventName,
+                    'facility' => $facilityName,
                     'start' => Carbon::parse($schedule->Date)->toDateString().'T'.Carbon::parse($schedule->Start_Time)->format('H:i:s'),
                     'end' => Carbon::parse($schedule->Date)->toDateString().'T'.Carbon::parse($schedule->End_Time)->format('H:i:s'),
                     'backgroundColor' => $isEnded ? '#dc2626' : $colors['backgroundColor'],

@@ -1,5 +1,5 @@
 <x-layouts.home.header>
-    <section class="bg-gradient-to-b from-white to-emerald-50/40 dark:from-zinc-950 dark:to-emerald-950/10">
+    <section id="home" class="scroll-mt-20 bg-gradient-to-b from-white to-emerald-50/40 dark:from-zinc-950 dark:to-emerald-950/10">
         <div class="mx-auto grid min-h-[520px] max-w-7xl items-center gap-10 px-4 py-20 sm:px-6 lg:grid-cols-[0.95fr_1.05fr] lg:px-8">
             <div class="mx-auto max-w-2xl lg:mx-0">
                 <p class="text-sm font-black uppercase tracking-[0.24em] text-yellow-600 dark:text-yellow-300">
@@ -326,6 +326,26 @@
                                 </div>
                             </div>
 
+                            @if ($isEnded)
+                                <div class="mt-6 flex flex-col gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 sm:flex-row sm:items-center sm:justify-between">
+                                    <div>
+                                        <p>This event has ended. Its request details are now read-only and can no longer be changed.</p>
+                                        <p class="mt-1 text-xs font-normal">Sharing feedback is optional.</p>
+                                    </div>
+                                    @if ($request->feedback)
+                                        <span class="inline-flex shrink-0 items-center rounded-xl bg-emerald-100 px-4 py-2.5 text-xs font-black text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-200">
+                                            Feedback submitted
+                                        </span>
+                                    @elseif ($request->Facility_ID)
+                                        <a
+                                            href="{{ route('facility-feedback.create', $request) }}"
+                                            class="inline-flex shrink-0 items-center justify-center rounded-xl bg-emerald-700 px-4 py-2.5 text-xs font-black text-white transition hover:bg-emerald-800"
+                                        >
+                                            Give optional feedback
+                                        </a>
+                                    @endif
+                                </div>
+                            @else
                             <form action="{{ route('waiting.list.update', $request) }}" method="POST" enctype="multipart/form-data" class="mt-6 grid gap-4 lg:grid-cols-2">
                                 @csrf
                                 <input name="Event_Title" value="{{ old('Event_Title', $request->event?->Event_Title) }}" placeholder="Event title" class="rounded-xl border border-emerald-900/10 bg-white px-4 py-3 text-sm text-emerald-950 outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900 dark:text-white">
@@ -407,6 +427,7 @@
                                     </button>
                                 </div>
                             </form>
+                            @endif
 
                             @if ($canCancel)
                                 <form id="cancel-request-{{ $request->RID }}" action="{{ route('waiting.list.cancel', $request) }}" method="POST" class="hidden">
@@ -572,7 +593,14 @@
                         attribution: '&copy; OpenStreetMap contributors',
                     }).addTo(map);
 
-                    const facilities = [];
+                    const facilities = @js($facilities->map(fn ($facility) => [
+                        'FID' => $facility->FID,
+                        'Facility_Name' => $facility->Facility_Name,
+                        'Location' => $facility->Location,
+                        'Status' => $facility->Status,
+                        'Latitude' => $facility->Latitude,
+                        'Longitude' => $facility->Longitude,
+                    ])->values());
                     const bounds = L.latLngBounds();
                     const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, character => ({
                         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;',
@@ -606,7 +634,13 @@
                             }
 
                             const cacheKey = `clsu-facility-map-${facility.FID}-${facility.Location || ''}`;
-                            const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+                            let cached = null;
+
+                            try {
+                                cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+                            } catch {
+                                localStorage.removeItem(cacheKey);
+                            }
 
                             if (cached?.length === 2) {
                                 addFacilityMarker(facility, cached);
@@ -619,9 +653,14 @@
                                 const response = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(query)}`, {
                                     headers: { 'Accept': 'application/json' },
                                 });
+                                if (!response.ok) throw new Error(`Geocoding failed with status ${response.status}`);
                                 const result = (await response.json())[0];
                                 const coordinates = result ? [Number(result.lat), Number(result.lon)] : fallbackCoordinates(facility);
-                                localStorage.setItem(cacheKey, JSON.stringify(coordinates));
+                                try {
+                                    localStorage.setItem(cacheKey, JSON.stringify(coordinates));
+                                } catch {
+                                    // The map still works when browser storage is unavailable.
+                                }
                                 addFacilityMarker(facility, coordinates, !result);
                             } catch {
                                 addFacilityMarker(facility, fallbackCoordinates(facility), true);
