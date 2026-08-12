@@ -6,8 +6,8 @@
 <link rel="icon" type="image/png" href="{{ asset('images/Logo_Green.png') }}" />
 
 @if (request()->routeIs('home', 'dashboard', 'Facility*'))
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js" defer></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
 @endif
 <style>
     /* Header */

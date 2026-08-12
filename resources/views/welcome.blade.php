@@ -302,8 +302,11 @@
                 });
                 filterFacilities();
 
-                const mapElement = document.getElementById('campus-map');
-                if (mapElement && window.L && !mapElement.dataset.initialized) {
+                const initializeCampusMap = () => {
+                    const mapElement = document.getElementById('campus-map');
+                    if (!mapElement || mapElement.dataset.initialized) return true;
+                    if (!window.L) return false;
+
                     mapElement.dataset.initialized = 'true';
 
                     const campusCenter = [15.7354, 120.9335];
@@ -358,7 +361,13 @@
                             }
 
                             const cacheKey = `clsu-facility-map-${facility.FID}-${facility.Location || ''}`;
-                            const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+                            let cached = null;
+
+                            try {
+                                cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+                            } catch {
+                                localStorage.removeItem(cacheKey);
+                            }
 
                             if (cached?.length === 2) {
                                 addFacilityMarker(facility, cached);
@@ -371,9 +380,14 @@
                                 const response = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(query)}`, {
                                     headers: { 'Accept': 'application/json' },
                                 });
+                                if (!response.ok) throw new Error(`Geocoding failed with status ${response.status}`);
                                 const result = (await response.json())[0];
                                 const coordinates = result ? [Number(result.lat), Number(result.lon)] : fallbackCoordinates(facility);
-                                localStorage.setItem(cacheKey, JSON.stringify(coordinates));
+                                try {
+                                    localStorage.setItem(cacheKey, JSON.stringify(coordinates));
+                                } catch {
+                                    // The map still works when browser storage is unavailable.
+                                }
                                 addFacilityMarker(facility, coordinates, !result);
                             } catch {
                                 addFacilityMarker(facility, fallbackCoordinates(facility), true);
@@ -388,6 +402,21 @@
                     locateFacilities();
 
                     setTimeout(() => map.invalidateSize(), 100);
+                    return true;
+                };
+
+                if (!initializeCampusMap()) {
+                    let attempts = 0;
+                    const leafletTimer = window.setInterval(() => {
+                        attempts += 1;
+                        if (initializeCampusMap()) {
+                            window.clearInterval(leafletTimer);
+                        } else if (attempts >= 40) {
+                            window.clearInterval(leafletTimer);
+                            const mapElement = document.getElementById('campus-map');
+                            if (mapElement) mapElement.textContent = 'The campus map could not be loaded. Please refresh and try again.';
+                        }
+                    }, 250);
                 }
             });
         </script>

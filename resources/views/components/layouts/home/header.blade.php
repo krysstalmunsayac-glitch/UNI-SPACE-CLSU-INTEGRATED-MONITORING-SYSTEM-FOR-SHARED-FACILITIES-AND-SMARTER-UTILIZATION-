@@ -36,10 +36,10 @@
         class="sticky top-0 z-[2000] border-b border-emerald-900/10 bg-white/95 backdrop-blur dark:border-white/10 dark:bg-zinc-950/95"
     >
         <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:h-20 sm:px-6 lg:px-8">
-            <a href="{{ route('home') }}#home" class="flex h-16 w-12 shrink-0 items-center justify-center overflow-hidden sm:h-20 sm:w-64" aria-label="SIEL SPACE home">
-                <picture class="block size-10 sm:h-full sm:w-full">
+            <a href="{{ route('home') }}#home" class="flex h-16 shrink-0 items-center justify-center sm:h-20" aria-label="SIEL SPACE home">
+                <picture class="relative block size-14 overflow-hidden sm:h-20 sm:w-auto sm:overflow-visible">
                     <source media="(max-width: 639px)" srcset="{{ asset('images/admin-collapsed-logo.png') }}">
-                    <img src="{{ asset('images/silesyu-space-logo.png') }}" alt="SIEL SPACE" class="h-full w-full object-contain object-center">
+                    <img src="{{ asset('images/silesyu-space-logo.png') }}" alt="SIEL SPACE" class="absolute left-1/2 h-full w-auto max-w-none -translate-x-1/2 object-contain sm:static sm:translate-x-0">
                 </picture>
             </a>
 
