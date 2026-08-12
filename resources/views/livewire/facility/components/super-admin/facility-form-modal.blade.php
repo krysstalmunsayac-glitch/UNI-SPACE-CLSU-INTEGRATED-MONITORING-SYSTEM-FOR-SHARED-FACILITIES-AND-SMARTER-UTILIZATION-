@@ -28,8 +28,9 @@
 
         @if (auth()->user()?->isSuperAdmin())
             <div
+                wire:key="facility-location-picker-{{ $editingId ?? 'new' }}"
                 x-data="facilityLocationPicker($wire)"
-                x-effect="$wire.showModal ? openPicker() : closePicker()"
+                x-init="openPicker()"
                 class="space-y-3"
             >
             <div class="flex items-end justify-between gap-3">
@@ -47,7 +48,7 @@
                 </button>
             </div>
 
-            <div x-ref="map" class="h-64 w-full overflow-hidden rounded-xl border border-emerald-900/10 dark:border-white/10"></div>
+            <div wire:ignore x-ref="map" class="h-64 w-full overflow-hidden rounded-xl border border-emerald-900/10 dark:border-white/10"></div>
 
             <div class="grid gap-3 sm:grid-cols-2">
                 <label class="text-xs font-semibold text-zinc-600 dark:text-zinc-300">

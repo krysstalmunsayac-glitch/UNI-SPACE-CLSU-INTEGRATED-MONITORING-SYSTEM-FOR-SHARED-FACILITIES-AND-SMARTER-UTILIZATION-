@@ -285,7 +285,10 @@ new #[Layout('components.layouts.app')] class extends Component
     public function amenities()
     {
         $query = Amenities::query()
-            ->with('facilities:FID,Facility_Name')
+            ->with([
+                'facilities:FID,Facility_Name',
+                'creator:id,name',
+            ])
             ->withCount([
                 'requests as current_usage_count' => fn ($requestQuery) => $requestQuery
                     ->whereIn('Status', ['Pending', 'Approved']),

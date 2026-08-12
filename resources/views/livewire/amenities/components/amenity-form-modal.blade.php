@@ -1,11 +1,11 @@
     <x-ui::modal wire:model.self="showModal" class="md:w-[28rem]">
         <div class="space-y-6">
             <div>
-                <x-ui::heading size="lg">{{ $editingId ? 'Edit Amenity' : 'Add Amenity' }}</x-ui::heading>
+                <x-ui::heading size="lg">{{ $editingId ? 'Edit amenity' : 'Add amenity' }}</x-ui::heading>
                 <x-ui::subheading>{{ $editingId ? 'Update this amenity.' : 'Create a new amenity.' }}</x-ui::subheading>
             </div>
 
-            <x-ui::input wire:model="name" label="Amenity Name" placeholder="Enter amenity name" required minlength="2" maxlength="100" />
+            <x-ui::input wire:model="name" label="Amenity name" placeholder="Enter amenity name" required minlength="2" maxlength="100" />
 
             <x-ui::textarea wire:model="Description" label="Description" placeholder="Enter amenity description" rows="3" maxlength="1000" />
 

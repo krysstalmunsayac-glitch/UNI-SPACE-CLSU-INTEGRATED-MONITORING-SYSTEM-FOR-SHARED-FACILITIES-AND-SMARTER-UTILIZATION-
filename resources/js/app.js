@@ -216,9 +216,25 @@ window.facilityLocationPicker = function (livewire) {
                     this.map.on('click', event => this.setPin(event.latlng.lat, event.latlng.lng));
                 }
 
-                if (hasSavedPin) this.setPin(savedLatitude, savedLongitude, false);
-                this.map.invalidateSize();
-                this.map.setView(center, hasSavedPin ? 18 : 16);
+                if (hasSavedPin) {
+                    this.setPin(savedLatitude, savedLongitude, false);
+                } else if (this.marker) {
+                    this.marker.remove();
+                    this.marker = null;
+                    this.latitude = null;
+                    this.longitude = null;
+                }
+
+                const refreshMap = () => {
+                    if (!this.map) return;
+
+                    this.map.invalidateSize();
+                    this.map.setView(center, hasSavedPin ? 18 : 16, { animate: false });
+                };
+
+                window.requestAnimationFrame(refreshMap);
+                window.setTimeout(refreshMap, 150);
+                window.setTimeout(refreshMap, 350);
             }, 250);
         },
 
@@ -232,6 +248,10 @@ window.facilityLocationPicker = function (livewire) {
             }
 
             this.marker = null;
+        },
+
+        destroy() {
+            this.closePicker();
         },
 
         setPin(latitude, longitude, updateLivewire = true) {

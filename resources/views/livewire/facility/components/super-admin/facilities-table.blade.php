@@ -19,7 +19,7 @@
                 Facility
             </x-ui::table.column>
             <x-ui::table.column sortable :sorted="$sortBy === 'facility_type'" :direction="$sortDirection" wire:click="sort('facility_type')">
-                Facility Type
+                Facility type
             </x-ui::table.column>
             <x-ui::table.column>Capacity</x-ui::table.column>
             <x-ui::table.column>Location</x-ui::table.column>

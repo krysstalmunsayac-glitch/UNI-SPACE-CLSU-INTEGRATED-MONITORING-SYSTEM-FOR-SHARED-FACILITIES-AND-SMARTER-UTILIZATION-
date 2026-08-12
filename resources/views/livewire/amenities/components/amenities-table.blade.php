@@ -21,7 +21,7 @@
 
                 <x-ui::table.column>Description</x-ui::table.column>
 
-                <x-ui::table.column>Facilities</x-ui::table.column>
+                <x-ui::table.column>Created by</x-ui::table.column>
 
                 <x-ui::table.column
                     sortable
@@ -66,12 +66,8 @@
                         </x-ui::table.cell>
 
                         <x-ui::table.cell>
-                            <div class="flex max-w-xs flex-wrap gap-1">
-                                @forelse ($amenity->facilities as $facility)
-                                    <x-ui::badge color="blue">{{ $facility->Facility_Name }}</x-ui::badge>
-                                @empty
-                                    <span class="text-sm text-zinc-500">Unassigned</span>
-                                @endforelse
+                            <div class="font-medium text-zinc-900 dark:text-white">
+                                {{ $amenity->creator?->name ?? 'Legacy/System' }}
                             </div>
                         </x-ui::table.cell>
 

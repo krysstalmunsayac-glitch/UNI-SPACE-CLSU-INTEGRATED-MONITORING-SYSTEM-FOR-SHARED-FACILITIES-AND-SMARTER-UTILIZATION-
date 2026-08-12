@@ -200,11 +200,11 @@ new #[Layout('components.layouts.app')] class extends Component {
 
         <x-ui::table :paginate="$this->logs">
             <x-ui::table.columns>
-                <x-ui::table.column>Date & Time</x-ui::table.column>
-                <x-ui::table.column>Performed By</x-ui::table.column>
+                <x-ui::table.column>Date & time</x-ui::table.column>
+                <x-ui::table.column>Performed by</x-ui::table.column>
                 <x-ui::table.column>Action</x-ui::table.column>
                 <x-ui::table.column>Request</x-ui::table.column>
-                <x-ui::table.column>User / Facility</x-ui::table.column>
+                <x-ui::table.column>User / facility</x-ui::table.column>
                 <x-ui::table.column>Details</x-ui::table.column>
             </x-ui::table.columns>
 

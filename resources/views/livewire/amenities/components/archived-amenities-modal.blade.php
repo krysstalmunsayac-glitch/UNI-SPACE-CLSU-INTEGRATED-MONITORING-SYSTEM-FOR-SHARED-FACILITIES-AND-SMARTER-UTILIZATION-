@@ -1,7 +1,7 @@
     <div class="space-y-6">
             <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                 <div>
-                    <x-ui::heading size="lg">Archived Amenities</x-ui::heading>
+                    <x-ui::heading size="lg">Archived amenities</x-ui::heading>
                     <x-ui::subheading>Restore archived amenities or delete them permanently.</x-ui::subheading>
                 </div>
                 <div class="w-full lg:w-auto lg:min-w-[28rem]">
