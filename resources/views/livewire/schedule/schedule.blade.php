@@ -365,9 +365,10 @@ new #[Layout('components.layouts.app')] class extends Component {
     {
         return Schedule::query()
             ->with([
-                'request:RID,Event_ID,Facility_ID,Purpose,Status',
+                'request:RID,Event_ID,Facility_ID,User_ID,Purpose,Status',
                 'request.facility:FID,Facility_Name',
                 'request.event:EID,Event_Title',
+                'request.user:id,name',
             ])
             ->when(auth()->user()->isAdmin(), function ($query) {
                 $query->whereHas('request.facility', function ($facilityQuery) {
@@ -405,10 +406,11 @@ new #[Layout('components.layouts.app')] class extends Component {
                 $eventName = $schedule->request?->event?->Event_Title ?? 'Reserved facility';
                 $colors = CalendarColor::forValue($facility);
                 $isEnded = $schedule->request?->Status === 'Ended';
+                $isBlocked = $schedule->Status === 'Blocked';
 
                 return [
                     'id' => $schedule->SID,
-                    'title' => $eventName.' · '.$facility,
+                    'title' => ($isBlocked ? 'Blocked' : $eventName).' · '.$facility,
                     'start' => "{$date}T{$start}",
                     'end' => "{$date}T{$end}",
                     'backgroundColor' => $isEnded
@@ -422,6 +424,8 @@ new #[Layout('components.layouts.app')] class extends Component {
                         'scheduleId' => $schedule->SID,
                         'facility' => $facility,
                         'event' => $eventName,
+                        'purpose' => $schedule->request?->Purpose,
+                        'requester' => $schedule->request?->user?->name,
                     ],
                 ];
             })
@@ -432,6 +436,7 @@ new #[Layout('components.layouts.app')] class extends Component {
 ?>
 
 <div
+    wire:ignore.self
     x-data="scheduleCalendar(@js($this->calendarEvents), @js($view), $wire)"
     x-init="initCalendar()"
     class="min-w-0 w-full max-w-full"

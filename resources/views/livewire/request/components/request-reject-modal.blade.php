@@ -5,7 +5,7 @@
             <x-ui::subheading>Select at least one reason before rejecting this request.</x-ui::subheading>
         </div>
 
-        <x-ui::checkbox.group wire:model.live="rejectionReasons" label="Reason for rejection">
+        <x-ui::checkbox.group label="Reason for rejection">
             @foreach ([
                 'Schedule conflict',
                 'Facility unavailable',
@@ -14,7 +14,7 @@
                 'Does not meet facility policies',
                 'Other',
             ] as $reason)
-                <x-ui::checkbox value="{{ $reason }}" label="{{ $reason }}" />
+                <x-ui::checkbox wire:model.live="rejectionReasons" value="{{ $reason }}" label="{{ $reason }}" />
             @endforeach
         </x-ui::checkbox.group>
         @error('rejectionReasons') <p class="text-sm text-red-600">{{ $message }}</p> @enderror

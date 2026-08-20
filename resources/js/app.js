@@ -65,7 +65,9 @@ window.scheduleCalendar = function (initialEvents, livewireView, livewire) {
                     const details = info.event.extendedProps;
 
                     info.el.title = [
+                        `Event: ${details.event ?? info.event.title}`,
                         `Facility: ${details.facility ?? info.event.title}`,
+                        `Requester: ${details.requester ?? '—'}`,
                         `Purpose: ${details.purpose ?? '—'}`,
                         `Status: ${details.status ?? '—'}`,
                         `Date: ${formatDate(info.event.start)}`,

@@ -83,6 +83,26 @@
         text-transform: capitalize;
     }
 
+    #fc-calendar .fc-button-group {
+        gap: 0;
+        overflow: hidden;
+        border: 1px solid rgb(209 213 219);
+        border-radius: 0.625rem;
+        background: #fff;
+    }
+
+    #fc-calendar .fc-button-group > .fc-button {
+        min-width: 2.75rem;
+        margin: 0;
+        border: 0;
+        border-radius: 0;
+        padding-inline: 0.75rem;
+    }
+
+    #fc-calendar .fc-button-group > .fc-button + .fc-button {
+        border-left: 1px solid rgb(209 213 219);
+    }
+
     #fc-calendar .fc-button:hover,
     #fc-calendar .fc-button:focus {
         border-color: rgb(16 185 129);
@@ -183,6 +203,15 @@
         background-color: rgb(39 39 42);
         border-color: rgb(63 63 70);
         color: rgb(229 231 235);
+    }
+
+    .dark #fc-calendar .fc-button-group {
+        border-color: rgb(63 63 70);
+        background: rgb(39 39 42);
+    }
+
+    .dark #fc-calendar .fc-button-group > .fc-button + .fc-button {
+        border-left-color: rgb(63 63 70);
     }
 
     .dark #fc-calendar .fc-button:hover,
