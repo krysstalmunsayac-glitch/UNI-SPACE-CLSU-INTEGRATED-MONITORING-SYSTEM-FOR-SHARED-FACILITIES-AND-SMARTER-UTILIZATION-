@@ -2,7 +2,7 @@
     <div class="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,215,0,0.22),transparent_28%),linear-gradient(135deg,#009639,#1e6031)]"></div>
     <div class="relative z-10 flex min-h-full w-full flex-col items-center justify-between">
         <a href="{{ route('home') }}" wire:navigate class="flex flex-col items-center gap-3" aria-label="SIEL SPACE home">
-            <img src="{{ asset('images/silesyu-space-logo.png') }}" alt="SIEL SPACE" class="h-28 w-auto object-contain">
+            <img src="{{ asset('images/silesyu-space-logo.png') }}" alt="SIEL SPACE" class="h-20 max-w-xs object-contain">
         </a>
 
         <div class="max-w-sm">

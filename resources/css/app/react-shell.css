@@ -94,8 +94,8 @@
 
 .react-sidebar-brand > a {
     display: flex;
-    width: min(252px, 100%);
-    height: 82px;
+    width: min(220px, 100%);
+    height: 68px;
     min-width: 0;
     align-items: center;
     justify-content: center;
@@ -120,8 +120,8 @@
 
 .react-app-sidebar.is-collapsed .react-sidebar-brand > a {
     display: flex;
-    width: 68px;
-    height: 68px;
+    width: 54px;
+    height: 54px;
 }
 
 .react-app-sidebar.is-collapsed .react-sidebar-brand img {
