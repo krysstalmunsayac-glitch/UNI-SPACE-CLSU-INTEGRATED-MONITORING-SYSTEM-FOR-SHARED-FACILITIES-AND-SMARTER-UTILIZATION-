@@ -9,6 +9,7 @@
 
 @theme {
     --font-sans: 'Acumin Pro', 'Acumin Variable Concept', Arial, ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans-condensed: 'Acumin Pro Condensed', 'Acumin Pro ExtraCondensed', 'Acumin Pro', 'Acumin Variable Concept', Arial, ui-sans-serif, system-ui, sans-serif;
 
     --color-zinc-50: #fafafa;
     --color-zinc-100: #f5f5f5;
