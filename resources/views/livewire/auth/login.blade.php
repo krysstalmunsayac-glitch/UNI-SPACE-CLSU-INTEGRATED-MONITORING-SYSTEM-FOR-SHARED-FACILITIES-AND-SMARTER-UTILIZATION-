@@ -79,7 +79,7 @@ new #[Layout('components.layouts.auth')] class extends Component {
 <div class="flex flex-col gap-6">
     <a
         href="{{ route('home') }}"
-        class="fixed left-4 top-4 z-10 inline-flex items-center justify-center gap-2 rounded-full border border-emerald-700 bg-white px-5 py-2.5 text-xs font-black uppercase tracking-wide text-emerald-700 shadow-sm transition hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 dark:border-emerald-400 dark:bg-zinc-900 dark:text-emerald-400 dark:hover:bg-emerald-950 dark:focus:ring-offset-zinc-900 sm:left-6 sm:top-6"
+        class="fixed left-4 top-4 z-10 inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50 hover:text-emerald-900 focus:outline-none focus:ring-2 focus:ring-emerald-600/50 dark:text-emerald-300 dark:hover:bg-emerald-950/60 dark:hover:text-emerald-200 sm:left-6 sm:top-6"
     >
         <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="m15 18-6-6 6-6" />
