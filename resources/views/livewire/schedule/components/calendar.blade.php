@@ -28,6 +28,13 @@
             >
                 Month view
             </button>
+            <button
+                type="button"
+                class="admin-calendar-control"
+                x-on:click="calendar?.today(); calendar?.updateSize()"
+            >
+                Today
+            </button>
         </div>
 
         <p class="mt-5 text-xs leading-5 text-emerald-900/60 dark:text-zinc-400">
