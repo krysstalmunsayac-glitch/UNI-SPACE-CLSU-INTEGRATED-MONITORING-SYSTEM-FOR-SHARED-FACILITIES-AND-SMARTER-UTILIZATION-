@@ -1,13 +1,29 @@
 {
+  "_livewire.esm-CHiZG6Vl.js": {
+    "file": "assets/livewire.esm-CHiZG6Vl.js",
+    "name": "livewire.esm"
+  },
   "resources/css/app.css": {
-    "file": "assets/app-BcicIAZt.css",
+    "file": "assets/app-BCloxE0Z.css",
     "src": "resources/css/app.css",
     "isEntry": true
   },
   "resources/js/app.js": {
-    "file": "assets/app-DLPiPZWl.js",
+    "file": "assets/app-CjCyUuVI.js",
     "name": "app",
     "src": "resources/js/app.js",
-    "isEntry": true
+    "isEntry": true,
+    "imports": [
+      "_livewire.esm-CHiZG6Vl.js"
+    ]
+  },
+  "resources/js/auth.js": {
+    "file": "assets/auth-DnurHWsT.js",
+    "name": "auth",
+    "src": "resources/js/auth.js",
+    "isEntry": true,
+    "imports": [
+      "_livewire.esm-CHiZG6Vl.js"
+    ]
   }
 }

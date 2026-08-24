@@ -3,12 +3,14 @@
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Auth\VerifyPendingRegistrationController;
 use App\Http\Middleware\PreventBackHistory;
+use App\Http\Middleware\RemoveSensitiveLoginQuery;
 use App\Livewire\Actions\Logout;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
 
 Route::middleware('guest')->group(function () {
     Volt::route('login', 'auth.login')
+        ->middleware(RemoveSensitiveLoginQuery::class)
         ->name('login');
 
     Volt::route('register', 'auth.register')
