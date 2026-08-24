@@ -24,8 +24,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        config()->set('livewire.inject_assets', false);
-
         $this->app->singleton(UiManager::class);
         $this->app->alias(UiManager::class, 'ui');
 
