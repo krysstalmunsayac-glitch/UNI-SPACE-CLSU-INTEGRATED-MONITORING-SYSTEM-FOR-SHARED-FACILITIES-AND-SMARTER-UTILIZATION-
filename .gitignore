@@ -2,7 +2,6 @@
 /node_modules
 /public/hot
 /public/storage
-/public/vendor/livewire/
 /storage/*.key
 /storage/pail
 /vendor
