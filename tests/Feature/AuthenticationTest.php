@@ -78,6 +78,19 @@ test('authenticated users are routed to the dashboard for their role', function 
     'office admin' => ['admin', 'dashboard.officeadmin'],
 ]);
 
+test('the welcome page is not restored from browser history after signing in', function () {
+    $response = $this->get(route('home'));
+
+    $response->assertOk()
+        ->assertHeader('Pragma', 'no-cache');
+
+    expect($response->headers->get('Cache-Control'))
+        ->toContain('no-store')
+        ->toContain('no-cache')
+        ->toContain('must-revalidate')
+        ->toContain('max-age=0');
+});
+
 test('remember me rotates and stores a remember token', function () {
     $user = activeUser([
         'email' => 'remember@example.com',

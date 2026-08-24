@@ -1,11 +1,12 @@
 <?php
 
 use App\Http\Controllers\PublicSite\HomeController;
+use App\Http\Middleware\PreventBackHistory;
 use App\Support\SiteVersion;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)
-    ->middleware('user.pages')
+    ->middleware(['user.pages', PreventBackHistory::class])
     ->name('home');
 
 Route::redirect('/about', '/#about')
