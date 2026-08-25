@@ -13,7 +13,7 @@
         $isEndUser = auth()->check() && auth()->user()->hasrole('user');
         $profileRoute = $isEndUser ? route('profile.external') : route('settings.profile');
         $homeRoute = $isEndUser ? route('dashboard') : route('home');
-        $aboutRoute = route('home');
+        $aboutRoute = $homeRoute;
     @endphp
 
     <header
@@ -128,16 +128,16 @@
 
                 <button
                     type="button"
-                    data-mobile-navigation-toggle
                     class="inline-flex size-10 items-center justify-center rounded-xl border border-emerald-900/10 text-emerald-950 transition hover:bg-emerald-50 dark:border-white/10 dark:text-white dark:hover:bg-zinc-800 lg:hidden"
-                    aria-expanded="false"
+                    x-on:click="mobileMenuOpen = ! mobileMenuOpen"
+                    x-bind:aria-expanded="mobileMenuOpen"
                     aria-controls="mobile-navigation"
                     aria-label="Toggle navigation"
                 >
-                    <svg data-mobile-navigation-open-icon class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                    <svg x-show="! mobileMenuOpen" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
                         <path d="M4 6h16M4 12h16M4 18h16" />
                     </svg>
-                    <svg data-mobile-navigation-close-icon class="hidden size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                    <svg x-cloak x-show="mobileMenuOpen" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
                         <path d="M6 6l12 12M18 6 6 18" />
                     </svg>
                 </button>
@@ -146,7 +146,9 @@
 
         <nav
             id="mobile-navigation"
-            hidden
+            x-cloak
+            x-show="mobileMenuOpen"
+            x-transition.opacity.duration.150ms
             class="navigation-typeface border-t border-emerald-900/10 px-4 py-4 text-sm font-semibold text-emerald-950 shadow-lg dark:border-white/10 dark:text-zinc-100 lg:hidden"
         >
             <div class="grid gap-1">
@@ -241,34 +243,6 @@
     </footer>
 
     <script>
-        (() => {
-            const toggle = document.querySelector('[data-mobile-navigation-toggle]');
-            const navigation = document.getElementById('mobile-navigation');
-            const openIcon = toggle?.querySelector('[data-mobile-navigation-open-icon]');
-            const closeIcon = toggle?.querySelector('[data-mobile-navigation-close-icon]');
-
-            if (!toggle || !navigation) return;
-
-            const setMenuOpen = (open) => {
-                navigation.hidden = !open;
-                toggle.setAttribute('aria-expanded', String(open));
-                openIcon?.classList.toggle('hidden', open);
-                closeIcon?.classList.toggle('hidden', !open);
-            };
-
-            toggle.addEventListener('click', () => {
-                setMenuOpen(toggle.getAttribute('aria-expanded') !== 'true');
-            });
-
-            navigation.querySelectorAll('a').forEach(link => {
-                link.addEventListener('click', () => setMenuOpen(false));
-            });
-
-            window.addEventListener('keydown', event => {
-                if (event.key === 'Escape') setMenuOpen(false);
-            });
-        })();
-
         document.addEventListener('click', (event) => {
             const link = event.target.closest('a[href*="#"]');
             if (!link) return;
@@ -290,6 +264,7 @@
     </script>
 
     @stack('scripts')
+    @livewireScripts
     @include('partials.site-auto-refresh')
 </body>
 </html>

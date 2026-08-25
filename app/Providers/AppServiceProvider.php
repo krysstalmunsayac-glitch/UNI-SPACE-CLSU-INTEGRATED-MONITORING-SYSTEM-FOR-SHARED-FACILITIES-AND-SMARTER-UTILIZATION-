@@ -9,7 +9,6 @@ use App\Models\Requests;
 use App\Models\Schedule;
 use App\Models\User;
 use App\Observers\AdminContentChangeObserver;
-use App\Support\Ui;
 use App\Support\UiManager;
 use Illuminate\Foundation\AliasLoader;
 use Illuminate\Support\Facades\Blade;
@@ -27,7 +26,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(UiManager::class);
         $this->app->alias(UiManager::class, 'ui');
 
-        AliasLoader::getInstance()->alias('Ui', Ui::class);
+        AliasLoader::getInstance()->alias('Ui', \App\Support\Ui::class);
     }
 
     /**
@@ -47,8 +46,7 @@ class AppServiceProvider extends ServiceProvider
         );
 
         Component::macro('modal', function (string $name) {
-            return new class($name)
-            {
+            return new class($name) {
                 public function __construct(private string $name) {}
 
                 public function show(): void

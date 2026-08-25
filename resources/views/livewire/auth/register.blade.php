@@ -175,7 +175,6 @@ new #[Layout('components.layouts.auth')] class extends Component
                     id="password"
                     label="{{ __('Password') }}"
                     type="password"
-                    revealable
                     name="password"
                     required
                     minlength="8"
@@ -195,7 +194,6 @@ new #[Layout('components.layouts.auth')] class extends Component
                     id="password_confirmation"
                     label="{{ __('Confirm password') }}"
                     type="password"
-                    revealable
                     name="password_confirmation"
                     required
                     autocomplete="new-password"

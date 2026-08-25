@@ -10,8 +10,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Validate;
 use Livewire\Volt\Component;
 
-new #[Layout('components.layouts.auth')] class extends Component
-{
+new #[Layout('components.layouts.auth')] class extends Component {
     #[Validate('required|string|email')]
     public string $email = '';
 
@@ -20,22 +19,11 @@ new #[Layout('components.layouts.auth')] class extends Component
 
     public bool $remember = false;
 
-    public function mount(): void
-    {
-        $email = request()->query('email');
-
-        if (is_string($email) && filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $this->email = $email;
-        }
-    }
-
     /**
      * Handle an incoming authentication request.
      */
     public function login(): void
     {
-        $this->email = Str::lower(trim($this->email));
-
         $this->validate();
 
         $this->ensureIsNotRateLimited();
@@ -55,8 +43,7 @@ new #[Layout('components.layouts.auth')] class extends Component
         RateLimiter::clear($this->throttleKey());
         Session::regenerate();
 
-        // Use a full redirect so Livewire does not cache the credential form in browser history.
-        $this->redirectIntended(default: route('dashboard', absolute: false));
+        $this->redirectIntended(default: route('dashboard', absolute: false), navigate: true);
     }
 
     /**
@@ -115,7 +102,6 @@ new #[Layout('components.layouts.auth')] class extends Component
                 wire:model="password"
                 label="{{ __('Password') }}"
                 type="password"
-                revealable
                 name="password"
                 required
                 autocomplete="current-password"
