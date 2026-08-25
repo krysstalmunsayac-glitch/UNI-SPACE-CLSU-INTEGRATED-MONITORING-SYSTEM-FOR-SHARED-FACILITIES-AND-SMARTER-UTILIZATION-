@@ -10,12 +10,12 @@
         <button data-ui-control type="button" {{ $inputAttributes->class('h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 text-left text-sm text-zinc-500 shadow-sm dark:border-zinc-600 dark:bg-zinc-900') }}>{{ $attributes->get('placeholder') }}</button>
     @else
         <div @class(['relative', 'contents' => ! ($revealable && $type === 'password')])>
-            <input data-ui-control type="{{ $type }}" @if($name) name="{{ $name }}" @endif @if($hasError) aria-invalid="true" @endif {{ $inputAttributes->class(['h-10 min-w-0 w-full rounded-lg border bg-white px-3 text-sm text-zinc-900 shadow-sm outline-none transition dark:bg-zinc-900 dark:text-white', 'pr-11' => $revealable && $type === 'password', 'border-red-500 focus:border-red-600 focus:ring-2 focus:ring-red-500/20 dark:border-red-500' => $hasError, 'border-zinc-300 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20 dark:border-zinc-600' => ! $hasError]) }}>
+            <input data-ui-control type="{{ $type }}" @if($name) name="{{ $name }}" @endif @if($hasError) aria-invalid="true" @endif {{ $inputAttributes->class(['h-10 min-w-0 w-full rounded-lg border bg-white px-3 text-sm text-zinc-900 shadow-sm outline-none transition dark:bg-zinc-900 dark:text-white', 'pr-12' => $revealable && $type === 'password', 'border-red-500 focus:border-red-600 focus:ring-2 focus:ring-red-500/20 dark:border-red-500' => $hasError, 'border-zinc-300 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20 dark:border-zinc-600' => ! $hasError]) }}>
 
             @if($revealable && $type === 'password')
                 <button
                     type="button"
-                    class="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-lg text-zinc-500 transition hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-emerald-600 dark:text-zinc-400 dark:hover:text-emerald-300"
+                    class="absolute right-2 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-md text-zinc-500 transition hover:bg-zinc-100 hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-600 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-emerald-300"
                     aria-label="Show password"
                     aria-pressed="false"
                     onclick="const input = this.previousElementSibling; const showing = input.type === 'text'; input.type = showing ? 'password' : 'text'; this.setAttribute('aria-label', showing ? 'Show password' : 'Hide password'); this.setAttribute('aria-pressed', String(!showing)); this.querySelectorAll('svg').forEach((icon, index) => icon.classList.toggle('hidden', showing ? index === 1 : index === 0));"
