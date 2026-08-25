@@ -1,11 +1,12 @@
 <?php
 
 use App\Http\Controllers\PublicSite\HomeController;
+use App\Http\Middleware\RedirectIfAuthenticated;
 use App\Support\SiteVersion;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)
-    ->middleware('user.pages')
+    ->middleware([RedirectIfAuthenticated::class, 'user.pages'])
     ->name('home');
 
 Route::redirect('/about', '/#about')
