@@ -117,8 +117,6 @@
 @livewireScriptConfig
 @vite([
     'resources/css/app.css',
-    request()->routeIs('login', 'register', 'password.*', 'verification.*')
-        ? 'resources/js/auth.js'
-        : 'resources/js/app.js',
+    'resources/js/app.js',
 ])
 @stack('styles')
