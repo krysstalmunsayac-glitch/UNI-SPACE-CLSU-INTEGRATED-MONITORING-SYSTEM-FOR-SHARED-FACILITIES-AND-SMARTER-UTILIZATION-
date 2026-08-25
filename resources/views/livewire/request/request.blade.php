@@ -288,6 +288,12 @@ new #[Layout('components.layouts.app')] class extends Component
             return;
         }
 
+        if (! $request->Proposed_Date->isAfter(today())) {
+            Ui::toast(text: 'Outdated booking requests cannot be approved.', variant: 'warning');
+
+            return;
+        }
+
         $dailySchedules = $request->Daily_Schedules ?? [[
             'date' => $request->Proposed_Date->toDateString(),
             'start' => $request->Proposed_Start_Time->format('H:i'),
@@ -302,6 +308,10 @@ new #[Layout('components.layouts.app')] class extends Component
             $request = Requests::query()->whereKey($request->RID)->lockForUpdate()->firstOrFail();
 
             if ($request->Status !== 'Pending') {
+                return null;
+            }
+
+            if (! $request->Proposed_Date->isAfter(today())) {
                 return null;
             }
 

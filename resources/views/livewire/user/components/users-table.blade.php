@@ -92,12 +92,13 @@
                         <x-ui::table.cell>
                             <button
                                 type="button"
-                                wire:click="requestToggleActive({{ $user->id }})"
+                                @if ($user->id !== auth()->id()) wire:click="requestToggleActive({{ $user->id }})" @endif
                                 wire:loading.attr="disabled"
                                 wire:target="requestToggleActive({{ $user->id }})"
-                                class="group rounded-full transition hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 disabled:cursor-wait disabled:opacity-60 dark:focus:ring-offset-zinc-900"
-                                aria-label="{{ $user->is_active ? 'Deactivate' : 'Activate' }} {{ $user->name }} account"
-                                title="Click to {{ $user->is_active ? 'deactivate' : 'activate' }} this account"
+                                @disabled($user->id === auth()->id())
+                                class="group rounded-full transition enabled:hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70 dark:focus:ring-offset-zinc-900"
+                                aria-label="{{ $user->id === auth()->id() ? 'Your account status cannot be changed here' : ($user->is_active ? 'Deactivate' : 'Activate').' '.$user->name.' account' }}"
+                                title="{{ $user->id === auth()->id() ? 'You cannot deactivate your own account' : 'Click to '.($user->is_active ? 'deactivate' : 'activate').' this account' }}"
                             >
                                 <span
                                     @class([
@@ -138,26 +139,28 @@
                                         </x-ui::menu.item>
                                     @endif
 
-                                    <x-ui::menu.item
-                                        icon="power"
-                                        wire:click="requestToggleActive({{ $user->id }})"
-                                    >
-                                        {{ $user->is_active ? 'Deactivate' : 'Activate' }}
-                                    </x-ui::menu.item>
+                                    @if ($user->id !== auth()->id())
+                                        <x-ui::menu.item
+                                            icon="power"
+                                            wire:click="requestToggleActive({{ $user->id }})"
+                                        >
+                                            {{ $user->is_active ? 'Deactivate' : 'Activate' }}
+                                        </x-ui::menu.item>
 
-                                    <x-ui::menu.separator />
+                                        <x-ui::menu.separator />
 
-                                    <x-ui::menu.item
-                                        icon="archive-box"
-                                        variant="danger"
-                                        wire:click="delete({{ $user->id }})"
-                                        data-ui-confirm="Are you sure you want to archive {{ $user->name }}? Their account will be moved to Archived Users and can be restored later."
-                                        data-ui-confirm-title="Confirm archive"
-                                        data-ui-confirm-label="Archive user"
-                                        data-ui-confirm-variant="danger"
-                                    >
-                                        Archive
-                                    </x-ui::menu.item>
+                                        <x-ui::menu.item
+                                            icon="archive-box"
+                                            variant="danger"
+                                            wire:click="delete({{ $user->id }})"
+                                            data-ui-confirm="Are you sure you want to archive {{ $user->name }}? Their account will be moved to Archived Users and can be restored later."
+                                            data-ui-confirm-title="Confirm archive"
+                                            data-ui-confirm-label="Archive user"
+                                            data-ui-confirm-variant="danger"
+                                        >
+                                            Archive
+                                        </x-ui::menu.item>
+                                    @endif
 
                                 </x-ui::menu>
                             </x-ui::dropdown>

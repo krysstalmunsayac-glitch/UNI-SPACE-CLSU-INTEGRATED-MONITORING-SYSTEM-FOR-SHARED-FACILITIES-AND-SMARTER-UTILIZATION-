@@ -141,7 +141,14 @@
             <x-ui::switch
                 wire:model="is_active"
                 label="Active account"
+                :disabled="$editingId === auth()->id()"
             />
+
+            @if ($editingId === auth()->id())
+                <p class="-mt-4 text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                    You cannot deactivate your own account.
+                </p>
+            @endif
 
             <div class="flex gap-2">
                 @if($editingId)

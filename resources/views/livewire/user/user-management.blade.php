@@ -229,6 +229,14 @@ new #[Layout('components.layouts.app')] class extends Component
             'contact_number.regex' => 'Enter a valid PH mobile number: 09XXXXXXXXX or +639XXXXXXXXX.',
         ]);
 
+        if ($this->editingId === auth()->id() && ! $validated['is_active']) {
+            $this->is_active = true;
+            $this->addError('is_active', 'You cannot deactivate your own account.');
+            Ui::toast(text: 'You cannot deactivate your own account.', variant: 'danger');
+
+            return;
+        }
+
         if (
             (
                 ($this->editingId && $validated['user_type'] !== $this->originalUserType)
