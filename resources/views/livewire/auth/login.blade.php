@@ -115,6 +115,7 @@ new #[Layout('components.layouts.auth')] class extends Component
                 wire:model="password"
                 label="{{ __('Password') }}"
                 type="password"
+                revealable
                 name="password"
                 required
                 autocomplete="current-password"
