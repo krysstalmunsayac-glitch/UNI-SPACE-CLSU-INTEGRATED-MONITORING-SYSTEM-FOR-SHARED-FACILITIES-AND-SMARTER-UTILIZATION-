@@ -73,6 +73,9 @@
                     <a href="{{ route('login') }}" class="hidden rounded-xl border border-emerald-700 px-5 py-2 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-700 hover:text-white dark:border-emerald-300 dark:text-emerald-200 dark:hover:bg-emerald-300 dark:hover:text-emerald-950 lg:inline-flex">
                         Sign In
                     </a>
+                    <a href="{{ route('register') }}" class="hidden rounded-xl bg-emerald-700 px-5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-800 dark:bg-emerald-400 dark:text-emerald-950 dark:hover:bg-emerald-300 lg:inline-flex">
+                        Sign Up
+                    </a>
                 @else
                     <div class="hidden items-center gap-3 lg:flex">
                         <x-notification-button />
@@ -220,7 +223,10 @@
                 <a href="{{ route('home') }}#calendar" x-on:click="mobileMenuOpen = false; setActive('calendar')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'calendar' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">Calendar</a>
                 <a href="{{ route('home') }}#map" x-on:click="mobileMenuOpen = false; setActive('map')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'map' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">Map</a>
                 <a href="{{ route('home') }}#help" x-on:click="mobileMenuOpen = false; setActive('help')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'help' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">Help</a>
-                <a href="{{ route('login') }}" class="mt-2 rounded-xl bg-emerald-700 px-4 py-3 text-center font-bold text-white transition hover:bg-emerald-800 dark:bg-emerald-400 dark:text-emerald-950">Sign In</a>
+                <div class="mt-2 grid grid-cols-2 gap-3">
+                    <a href="{{ route('login') }}" class="rounded-xl border border-emerald-700 px-4 py-3 text-center font-bold text-emerald-800 transition hover:bg-emerald-700 hover:text-white dark:border-emerald-300 dark:text-emerald-200 dark:hover:bg-emerald-300 dark:hover:text-emerald-950">Sign In</a>
+                    <a href="{{ route('register') }}" class="rounded-xl bg-emerald-700 px-4 py-3 text-center font-bold text-white transition hover:bg-emerald-800 dark:bg-emerald-400 dark:text-emerald-950 dark:hover:bg-emerald-300">Sign Up</a>
+                </div>
             @endauth
             </div>
         </nav>
