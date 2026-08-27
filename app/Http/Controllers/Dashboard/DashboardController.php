@@ -24,6 +24,14 @@ class DashboardController extends Controller
     {
         Requests::markPastRequestsAsEnded();
 
+        $focusedFacilityId = $httpRequest->integer('map_facility');
+        if ($focusedFacilityId && ! Requests::withTrashed()
+            ->where('User_ID', Auth::id())
+            ->where('Facility_ID', $focusedFacilityId)
+            ->exists()) {
+            $focusedFacilityId = null;
+        }
+
         $requestMetrics = $this->requestDashboardMetrics(
             Requests::withTrashed()->where('User_ID', Auth::id())
         );
@@ -34,6 +42,13 @@ class DashboardController extends Controller
                 ->where('Status', 'Available')
                 ->orderBy('Facility_Name')
                 ->get(),
+            'mapFacilities' => Facilities::query()
+                ->orderBy('Facility_Name')
+                ->get([
+                    'FID', 'Facility_Name', 'Location', 'Status', 'facility_type',
+                    'Capacity', 'Latitude', 'Longitude',
+                ]),
+            'focusedFacilityId' => $focusedFacilityId,
             'events' => Events::query()->orderBy('Event_Title')->get(),
             'schedules' => $this->publicScheduleEvents(),
             ...$requestMetrics,

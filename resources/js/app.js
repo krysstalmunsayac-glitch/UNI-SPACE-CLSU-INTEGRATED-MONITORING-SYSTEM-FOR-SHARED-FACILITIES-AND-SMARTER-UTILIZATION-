@@ -271,8 +271,10 @@ window.facilityLocationPicker = function (livewire) {
             }
 
             if (updateLivewire) {
-                livewire.set('Latitude', Number(this.latitude));
-                livewire.set('Longitude', Number(this.longitude));
+                // Keep map clicks as pending form changes. Livewire sends these
+                // values with the next action (Update) instead of immediately.
+                livewire.set('Latitude', Number(this.latitude), false);
+                livewire.set('Longitude', Number(this.longitude), false);
             }
         },
 
@@ -305,8 +307,8 @@ window.facilityLocationPicker = function (livewire) {
             }
             this.latitude = null;
             this.longitude = null;
-            livewire.set('Latitude', null);
-            livewire.set('Longitude', null);
+            livewire.set('Latitude', null, false);
+            livewire.set('Longitude', null, false);
         },
     };
 };

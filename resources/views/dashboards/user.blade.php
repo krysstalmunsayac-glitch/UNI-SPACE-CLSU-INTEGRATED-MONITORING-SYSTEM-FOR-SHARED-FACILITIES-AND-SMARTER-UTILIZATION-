@@ -194,8 +194,8 @@
     </section>
 
     <section id="map" class="scroll-mt-28 border-t border-emerald-900/10 bg-emerald-50/50 py-20 dark:border-white/10 dark:bg-zinc-900">
-        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div class="grid gap-8 lg:grid-cols-[0.75fr_1.25fr] lg:items-stretch">
+        <div class="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8">
+            <div class="grid gap-6 lg:grid-cols-[420px_1fr] lg:items-stretch">
                 <div class="rounded-2xl bg-emerald-800 p-8 text-white">
                     <h2 class="text-4xl font-black">Campus map</h2>
                     <p class="mt-4 text-lg leading-8 text-emerald-50">
@@ -206,10 +206,38 @@
                         <p>Central Luzon State University</p>
                         <p>Science City of Munoz, Nueva Ecija</p>
                     </div>
+
+                    <div class="mt-8 space-y-4 rounded-xl border border-white/20 bg-white/10 p-4">
+                        <div>
+                            <label for="map-facility-type" class="text-xs font-black uppercase tracking-wider text-emerald-100">Facility type</label>
+                            <select id="map-facility-type" class="mt-2 w-full rounded-xl border border-white/20 bg-white px-3 py-2.5 text-sm font-bold text-emerald-950 outline-none focus:ring-4 focus:ring-white/20">
+                                <option value="all">All facility types</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="map-facility-filter" class="text-xs font-black uppercase tracking-wider text-emerald-100">Locate facility</label>
+                            <select id="map-facility-filter" class="mt-2 w-full rounded-xl border border-white/20 bg-white px-3 py-2.5 text-sm font-bold text-emerald-950 outline-none focus:ring-4 focus:ring-white/20">
+                                <option value="all">All Facilities</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="map-navigation-panel" class="mt-4 hidden rounded-xl border border-white/20 bg-white/10 p-4">
+                        <p class="text-xs font-black uppercase tracking-wider text-emerald-100">Selected facility</p>
+                        <p id="map-selected-facility" class="mt-2 text-lg font-black"></p>
+                        <p id="map-selected-location" class="mt-1 text-sm text-emerald-50"></p>
+                        <button id="get-facility-directions" type="button" class="mt-4 w-full rounded-xl bg-white px-4 py-3 text-sm font-black text-emerald-800 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60">
+                            Directions from CLSU Main Gate
+                        </button>
+                        <p id="map-location-status" class="mt-3 text-xs leading-5 text-emerald-50" aria-live="polite"></p>
+                        <a id="open-navigation-link" href="#" target="_blank" rel="noopener noreferrer" class="mt-3 hidden w-full items-center justify-center rounded-xl border border-white/40 px-4 py-2.5 text-center text-xs font-black text-white transition hover:bg-white/10">
+                            Open Walking Navigation
+                        </a>
+                    </div>
                 </div>
 
                 <div class="relative z-0 overflow-hidden rounded-2xl border border-emerald-900/10 bg-white shadow-xl shadow-emerald-950/10 dark:border-white/10 dark:bg-zinc-950">
-                    <div id="user-campus-map" class="relative z-0 flex h-[440px] w-full items-center justify-center bg-emerald-50 text-sm font-bold text-emerald-900 dark:bg-zinc-900 dark:text-emerald-200">
+                    <div id="user-campus-map" class="relative z-0 flex h-[560px] w-full items-center justify-center bg-emerald-50 text-sm font-bold text-emerald-900 dark:bg-zinc-900 dark:text-emerald-200 lg:h-[760px]">
                         Loading campus map...
                     </div>
                 </div>
@@ -312,6 +340,8 @@
                     mapElement.dataset.initialized = 'true';
 
                     const campusCenter = [15.7354, 120.9335];
+                    // CLSU Main Gate at the campus access-road junction with Maharlika Highway.
+                    const mainGateCoordinates = [15.7301879, 120.9300414];
                     const map = L.map(mapElement, {
                         scrollWheelZoom: false,
                     }).setView(campusCenter, 16);
@@ -322,15 +352,45 @@
                         attribution: '&copy; OpenStreetMap contributors',
                     }).addTo(map);
 
-                    const facilities = @js($facilities->map(fn ($facility) => [
+                    const mainGateIcon = L.divIcon({
+                        className: '',
+                        html: '<div style="display:grid;place-items:center;width:42px;height:42px;border:4px solid white;border-radius:9999px;background:#047857;color:white;font-size:22px;box-shadow:0 4px 14px rgba(0,0,0,.4)">&#9873;</div>',
+                        iconSize: [42, 42],
+                        iconAnchor: [21, 21],
+                        popupAnchor: [0, -24],
+                    });
+                    const mainGateMarker = L.marker(mainGateCoordinates, {
+                        icon: mainGateIcon,
+                        title: 'CLSU Main Gate',
+                        zIndexOffset: 2000,
+                    }).addTo(map)
+                        .bindPopup('<strong>CLSU Main Gate</strong><br><small>All campus routes start here</small>')
+                        .bindTooltip('CLSU Main Gate', { permanent: true, direction: 'top', offset: [0, -22], className: 'font-bold' });
+
+                    const facilities = @js($mapFacilities->map(fn ($facility) => [
                         'FID' => $facility->FID,
                         'Facility_Name' => $facility->Facility_Name,
                         'Location' => $facility->Location,
                         'Status' => $facility->Status,
+                        'facility_type' => $facility->facility_type,
+                        'Capacity' => $facility->Capacity,
                         'Latitude' => $facility->Latitude,
                         'Longitude' => $facility->Longitude,
                     ])->values());
+                    const focusedFacilityId = @js($focusedFacilityId);
                     const bounds = L.latLngBounds();
+                    const navigationPanel = document.getElementById('map-navigation-panel');
+                    const facilitySelect = document.getElementById('map-facility-filter');
+                    const facilityTypeSelect = document.getElementById('map-facility-type');
+                    const selectedFacilityName = document.getElementById('map-selected-facility');
+                    const selectedFacilityLocation = document.getElementById('map-selected-location');
+                    const directionsButton = document.getElementById('get-facility-directions');
+                    const locationStatus = document.getElementById('map-location-status');
+                    const navigationLink = document.getElementById('open-navigation-link');
+                    let focusedDestination = null;
+                    let focusHighlight = null;
+                    let guidanceLine = null;
+                    const facilityMarkers = new Map();
                     const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, character => ({
                         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;',
                     })[character]);
@@ -341,12 +401,144 @@
                         return [campusCenter[0] + Math.sin(angle) * radius, campusCenter[1] + Math.cos(angle) * radius];
                     };
                     const addFacilityMarker = (facility, coordinates, approximate = false) => {
-                        L.marker(coordinates).addTo(map).bindPopup(
+                        const marker = L.marker(coordinates, {
+                            title: facility.Facility_Name,
+                        }).addTo(map).bindPopup(
                             `<strong>${escapeHtml(facility.Facility_Name)}</strong><br>` +
                             `${escapeHtml(facility.Location || 'CLSU Main Campus')}<br>` +
+                            `<small>${escapeHtml(facility.facility_type || 'Facility')} · Capacity: ${escapeHtml(facility.Capacity || 'N/A')}</small><br>` +
                             `<small>${escapeHtml(facility.Status || '')}${approximate ? ' · Approximate campus pin' : ''}</small>`
                         );
                         bounds.extend(coordinates);
+                        facilityMarkers.set(Number(facility.FID), { facility, coordinates, approximate, marker });
+                    };
+
+                    const showDirections = async () => {
+                        if (!focusedDestination) {
+                            return;
+                        }
+
+                        if (directionsButton) directionsButton.disabled = true;
+                        guidanceLine?.remove();
+                        guidanceLine = null;
+                        if (locationStatus) locationStatus.textContent = 'Loading the walkable route from the CLSU Main Gate...';
+                        if (navigationLink) {
+                            const route = `${mainGateCoordinates[0]},${mainGateCoordinates[1]};${focusedDestination.coordinates[0]},${focusedDestination.coordinates[1]}`;
+                            navigationLink.href = `https://www.openstreetmap.org/directions?engine=fossgis_osrm_foot&route=${encodeURIComponent(route)}`;
+                            navigationLink.classList.remove('hidden');
+                            navigationLink.classList.add('inline-flex');
+                        }
+
+                        if (focusedDestination.approximate) {
+                            if (locationStatus) locationStatus.textContent = 'A route cannot be drawn until exact coordinates are saved for this facility.';
+                            if (directionsButton) directionsButton.disabled = false;
+                            return;
+                        }
+
+                        try {
+                            const [destinationLatitude, destinationLongitude] = focusedDestination.coordinates;
+                            const routeUrl = `https://routing.openstreetmap.de/routed-foot/route/v1/driving/${mainGateCoordinates[1]},${mainGateCoordinates[0]};${destinationLongitude},${destinationLatitude}?overview=full&geometries=geojson&steps=true`;
+                            const response = await fetch(routeUrl, { headers: { Accept: 'application/json' } });
+                            if (!response.ok) throw new Error(`Routing failed with status ${response.status}`);
+                            const route = (await response.json()).routes?.[0];
+                            if (!route?.geometry?.coordinates?.length) throw new Error('No pedestrian route returned');
+
+                            const routeCoordinates = route.geometry.coordinates.map(([longitude, latitude]) => [latitude, longitude]);
+                            guidanceLine = L.polyline(routeCoordinates, {
+                                color: '#2563eb',
+                                opacity: 0.9,
+                                weight: 6,
+                            }).addTo(map);
+                            map.fitBounds(guidanceLine.getBounds().pad(0.12), { maxZoom: 18 });
+                            if (locationStatus) {
+                                const routeDistance = route.distance < 1000
+                                    ? `${Math.round(route.distance)} m`
+                                    : `${(route.distance / 1000).toFixed(1)} km`;
+                                const routeMinutes = Math.max(1, Math.round(route.duration / 60));
+                                locationStatus.textContent = `Walkable route from the CLSU Main Gate: ${routeDistance}, about ${routeMinutes} minutes.`;
+                            }
+                        } catch {
+                            if (locationStatus) {
+                                locationStatus.textContent = 'A verified walkable pathway could not be loaded. No artificial straight-line route was drawn.';
+                            }
+                            map.fitBounds(L.latLngBounds([mainGateCoordinates, focusedDestination.coordinates]).pad(0.2), { maxZoom: 18 });
+                        } finally {
+                            if (directionsButton) directionsButton.disabled = false;
+                        }
+
+                    };
+
+                    directionsButton?.addEventListener('click', () => showDirections());
+                    const selectFacility = facilityId => {
+                        focusHighlight?.remove();
+                        focusHighlight = null;
+                        guidanceLine?.remove();
+                        guidanceLine = null;
+                        map.closePopup();
+
+                        if (facilityId === 'all') {
+                            focusedDestination = null;
+                            navigationPanel?.classList.add('hidden');
+                            navigationLink?.classList.add('hidden');
+                            navigationLink?.classList.remove('inline-flex');
+                            const selectedType = facilityTypeSelect?.value || 'all';
+                            const visibleBounds = L.latLngBounds();
+                            facilityMarkers.forEach(({ facility, coordinates, marker }) => {
+                                const matchesType = selectedType === 'all' || (facility.facility_type || 'Other') === selectedType;
+                                if (matchesType && !map.hasLayer(marker)) marker.addTo(map);
+                                if (!matchesType && map.hasLayer(marker)) map.removeLayer(marker);
+                                marker.setOpacity(1);
+                                marker.setZIndexOffset(0);
+                                if (matchesType) visibleBounds.extend(coordinates);
+                            });
+                            if (visibleBounds.isValid()) map.fitBounds(visibleBounds.pad(0.18), { maxZoom: 17 });
+                            return;
+                        }
+
+                        const selected = facilityMarkers.get(Number(facilityId));
+                        if (!selected) return;
+                        focusedDestination = selected;
+                        facilityMarkers.forEach(({ marker }, id) => {
+                            if (!map.hasLayer(marker)) marker.addTo(map);
+                            marker.setOpacity(id === Number(facilityId) ? 1 : 0.35);
+                            marker.setZIndexOffset(id === Number(facilityId) ? 1000 : 0);
+                        });
+                        focusHighlight = L.circle(selected.coordinates, {
+                            radius: 28,
+                            color: '#f59e0b',
+                            fillColor: '#fbbf24',
+                            fillOpacity: 0.3,
+                            weight: 5,
+                        }).addTo(map);
+                        navigationPanel?.classList.remove('hidden');
+                        if (selectedFacilityName) selectedFacilityName.textContent = selected.facility.Facility_Name;
+                        if (selectedFacilityLocation) selectedFacilityLocation.textContent = `${selected.facility.Location || 'CLSU Main Campus'} · ${selected.facility.facility_type || 'Facility'} · Capacity: ${selected.facility.Capacity || 'N/A'}`;
+                        map.setView(selected.coordinates, 19);
+                        selected.marker.openPopup();
+                        showDirections();
+                    };
+
+                    const populateFacilityFilters = () => {
+                        const availableFacilities = facilities.filter(facility => facility.Status === 'Available' || Number(facility.FID) === Number(focusedFacilityId));
+                        const facilityTypes = [...new Set(availableFacilities.map(facility => facility.facility_type || 'Other'))].sort();
+                        facilityTypes.forEach(type => facilityTypeSelect?.add(new Option(type, type)));
+
+                        const updateFacilityOptions = () => {
+                            if (!facilitySelect) return;
+                            const selectedType = facilityTypeSelect?.value || 'all';
+                            facilitySelect.replaceChildren(new Option('All Facilities', 'all'));
+                            availableFacilities
+                                .filter(facility => selectedType === 'all' || (facility.facility_type || 'Other') === selectedType)
+                                .sort((left, right) => left.Facility_Name.localeCompare(right.Facility_Name))
+                                .forEach(facility => facilitySelect.add(new Option(facility.Facility_Name, facility.FID)));
+                        };
+
+                        facilityTypeSelect?.addEventListener('change', () => {
+                            updateFacilityOptions();
+                            selectFacility('all');
+                        });
+                        facilitySelect?.addEventListener('change', event => selectFacility(event.target.value));
+                        updateFacilityOptions();
                     };
                     const locateFacilities = async () => {
                         for (const facility of facilities) {
@@ -398,7 +590,14 @@
                             await new Promise(resolve => setTimeout(resolve, 1050));
                         }
 
-                        if (bounds.isValid()) map.fitBounds(bounds.pad(0.18), { maxZoom: 17 });
+                        populateFacilityFilters();
+
+                        if (focusedFacilityId && facilityMarkers.has(Number(focusedFacilityId))) {
+                            if (facilitySelect) facilitySelect.value = String(focusedFacilityId);
+                            selectFacility(String(focusedFacilityId));
+                        } else {
+                            selectFacility('all');
+                        }
                     };
 
                     locateFacilities();

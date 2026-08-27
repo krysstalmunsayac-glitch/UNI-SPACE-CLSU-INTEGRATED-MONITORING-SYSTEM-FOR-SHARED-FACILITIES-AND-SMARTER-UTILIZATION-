@@ -141,6 +141,13 @@ new #[Layout('components.layouts.app')] class extends Component {
         $this->showModal = true;
     }
 
+    public function updatedShowModal(bool $showModal): void
+    {
+        if (! $showModal) {
+            $this->resetForm();
+        }
+    }
+
     public function edit(int $facilityId): void
     {
         $facility = Facilities::query()->findOrFail($facilityId);

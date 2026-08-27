@@ -255,7 +255,8 @@
 
             const url = new URL(link.href, window.location.href);
             const isCurrentPage = url.origin === window.location.origin
-                && url.pathname === window.location.pathname;
+                && url.pathname === window.location.pathname
+                && url.search === window.location.search;
             const target = url.hash ? document.querySelector(url.hash) : null;
 
             if (!isCurrentPage || !target) return;
@@ -265,7 +266,7 @@
                 behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
                 block: 'start',
             });
-            window.history.pushState(null, '', url.hash);
+            window.history.pushState(null, '', `${url.pathname}${url.search}${url.hash}`);
         });
     </script>
 

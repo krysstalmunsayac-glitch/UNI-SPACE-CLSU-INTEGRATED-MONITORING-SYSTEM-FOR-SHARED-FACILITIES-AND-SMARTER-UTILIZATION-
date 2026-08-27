@@ -214,6 +214,15 @@ new class extends Component {
                                             <p class="mt-2 text-xs">Update the fields below and save this same request. You do not need to create a new one.</p>
                                         </div>
                                     @endif
+                                    @if ($request->facility)
+                                        <a
+                                            href="{{ route('dashboard', ['map_facility' => $request->Facility_ID]) }}#map"
+                                            class="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-4 py-2.5 text-xs font-black text-white transition hover:bg-emerald-800 focus:outline-none focus:ring-4 focus:ring-emerald-600/20"
+                                        >
+                                            <span aria-hidden="true">&#128205;</span>
+                                            View on Map
+                                        </a>
+                                    @endif
                                 </div>
                             </div>
 
