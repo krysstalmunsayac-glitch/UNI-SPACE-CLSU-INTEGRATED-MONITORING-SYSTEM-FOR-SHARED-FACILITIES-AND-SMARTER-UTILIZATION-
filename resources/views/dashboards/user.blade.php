@@ -193,9 +193,32 @@
         </div>
     </section>
 
+    <style>
+        .campus-map-container {
+            max-width: 1600px;
+        }
+
+        .campus-map-canvas {
+            height: 560px;
+            min-height: 560px;
+        }
+
+        @media (min-width: 1024px) {
+            .campus-map-layout {
+                grid-template-columns: 420px minmax(0, 1fr);
+                align-items: stretch;
+            }
+
+            .campus-map-canvas {
+                height: 760px;
+                min-height: 760px;
+            }
+        }
+    </style>
+
     <section id="map" class="scroll-mt-28 border-t border-emerald-900/10 bg-emerald-50/50 py-20 dark:border-white/10 dark:bg-zinc-900">
-        <div class="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8">
-            <div class="grid gap-6 lg:grid-cols-[420px_1fr] lg:items-stretch">
+        <div class="campus-map-container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="campus-map-layout grid gap-6">
                 <div class="rounded-2xl bg-emerald-800 p-8 text-white">
                     <h2 class="text-4xl font-black">Campus map</h2>
                     <p class="mt-4 text-lg leading-8 text-emerald-50">
@@ -237,7 +260,7 @@
                 </div>
 
                 <div class="relative z-0 overflow-hidden rounded-2xl border border-emerald-900/10 bg-white shadow-xl shadow-emerald-950/10 dark:border-white/10 dark:bg-zinc-950">
-                    <div id="user-campus-map" class="relative z-0 flex h-[560px] w-full items-center justify-center bg-emerald-50 text-sm font-bold text-emerald-900 dark:bg-zinc-900 dark:text-emerald-200 lg:h-[760px]">
+                    <div id="user-campus-map" class="campus-map-canvas relative z-0 flex w-full items-center justify-center bg-emerald-50 text-sm font-bold text-emerald-900 dark:bg-zinc-900 dark:text-emerald-200">
                         Loading campus map...
                     </div>
                 </div>

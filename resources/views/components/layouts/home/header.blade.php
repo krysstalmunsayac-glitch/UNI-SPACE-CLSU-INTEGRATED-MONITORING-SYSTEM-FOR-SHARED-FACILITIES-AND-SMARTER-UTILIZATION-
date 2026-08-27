@@ -248,6 +248,8 @@
         </div>
     </footer>
 
+    @includeOnce('partials.confirmation-dialog')
+
     <script>
         document.addEventListener('click', (event) => {
             const link = event.target.closest('a[href*="#"]');

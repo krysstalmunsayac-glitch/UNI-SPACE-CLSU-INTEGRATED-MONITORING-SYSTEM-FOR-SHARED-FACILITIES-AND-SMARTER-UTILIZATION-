@@ -164,7 +164,7 @@ window.addEventListener('swal', async event => {
         timer,
         showConfirmButton,
         timerProgressBar: true,
-        position: 'top-end',
+        position: 'center',
         toast: false,
         customClass: {
             popup: 'rounded-2xl',
