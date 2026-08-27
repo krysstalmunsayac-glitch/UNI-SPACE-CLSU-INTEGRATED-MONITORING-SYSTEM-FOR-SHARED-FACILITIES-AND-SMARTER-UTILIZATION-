@@ -25,10 +25,9 @@
         </div>
     </div>
 
-    <div class="grid gap-3 border-b border-gray-100 px-5 py-4 sm:grid-cols-2 xl:grid-cols-5 dark:border-zinc-800">
+    <div class="grid gap-3 border-b border-gray-100 px-5 py-4 sm:grid-cols-2 xl:grid-cols-4 dark:border-zinc-800">
         @foreach ([
             ['label' => 'Total users', 'value' => $stats['total'], 'classes' => 'border-gray-100 bg-gray-50 text-gray-950 dark:border-zinc-800 dark:bg-zinc-900/70 dark:text-white'],
-            ['label' => 'Superadmins', 'value' => $stats['super_admins'], 'classes' => 'border-violet-100 bg-violet-50 text-violet-900 dark:border-violet-900/50 dark:bg-violet-950/20 dark:text-violet-100'],
             ['label' => 'Office admins', 'value' => $stats['office_admins'], 'classes' => 'border-blue-100 bg-blue-50 text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/20 dark:text-blue-100'],
             ['label' => 'End users', 'value' => $stats['end_users'], 'classes' => 'border-emerald-100 bg-emerald-50 text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/20 dark:text-emerald-100'],
             ['label' => 'Inactive', 'value' => $stats['inactive'], 'classes' => 'border-amber-100 bg-amber-50 text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-100'],
@@ -53,7 +52,6 @@
 
         <x-ui::select wire:model.live="roleFilter" label="Role">
             <x-ui::select.option value="">All roles</x-ui::select.option>
-            <x-ui::select.option value="super_admin">Superadmins</x-ui::select.option>
             <x-ui::select.option value="admin">Office admins</x-ui::select.option>
             <x-ui::select.option value="user">End users</x-ui::select.option>
         </x-ui::select>

@@ -450,7 +450,7 @@ class FacilitiesController extends Controller
         $start = Carbon::createFromFormat('H:i', $startTime);
         $end = Carbon::createFromFormat('H:i', $endTime);
 
-        if ($end->lessThanOrEqualTo($start) || $end->diffInMinutes($start) >= 120) {
+        if ($end->lessThanOrEqualTo($start) || $start->diffInMinutes($end) >= 120) {
             return;
         }
 

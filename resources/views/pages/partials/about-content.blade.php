@@ -65,12 +65,12 @@
             <img src="https://placehold.co/900x620/064e3b/ffffff?text=Team+Placeholder" alt="Team placeholder" class="h-full min-h-[320px] w-full rounded-2xl object-cover">
             <div class="flex flex-col justify-center">
                 <p class="text-sm font-black uppercase tracking-[0.2em] text-emerald-100">Who we serve</p>
-                <h2 class="mt-4 text-4xl font-black tracking-tight">For students, faculty, staff, and campus offices</h2>
+                <h2 class="mt-4 text-4xl font-black tracking-tight">For Students, Faculty, Staff, and Campus Offices</h2>
                 <p class="mt-5 text-lg leading-8 text-emerald-50">
                     SIEL SPACE keeps facility requests accessible to end users while giving office admins and super admins the tools they need to manage records responsibly.
                 </p>
                 <div class="mt-8 grid gap-3 sm:grid-cols-2">
-                    @foreach (['Student activities', 'Academic events', 'Office meetings', 'Campus programs'] as $useCase)
+                    @foreach (['Student Activities', 'Academic Events', 'Office Meetings', 'Campus Programs'] as $useCase)
                         <div class="rounded-xl bg-white/10 px-4 py-3 text-sm font-bold text-white ring-1 ring-white/15">{{ $useCase }}</div>
                     @endforeach
                 </div>
