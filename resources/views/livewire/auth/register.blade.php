@@ -1,12 +1,12 @@
 <?php
 
 use App\Models\User;
+use App\Models\PendingRegistration;
 use App\Notifications\VerifyPendingRegistration;
-use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
@@ -89,21 +89,25 @@ new #[Layout('components.layouts.auth')] class extends Component
         unset($validated['website']);
         $validated['password'] = Hash::make($validated['password']);
 
-        $verificationUrl = URL::temporarySignedRoute(
-            'registration.verify',
-            now()->addMinutes(60),
-            ['payload' => Crypt::encryptString(json_encode($validated, JSON_THROW_ON_ERROR))],
+        $pin = (string) random_int(100000, 999999);
+        $token = (string) Str::uuid();
+
+        PendingRegistration::query()->updateOrCreate(
+            ['email' => $validated['email']],
+            [
+                'token' => $token,
+                'registration_data' => $validated,
+                'pin_hash' => Hash::make($pin),
+                'pin_expires_at' => now()->addMinutes(10),
+                'resend_available_at' => now()->addMinute(),
+                'failed_attempts' => 0,
+            ],
         );
 
         Notification::route('mail', $validated['email'])
-            ->notify(new VerifyPendingRegistration($verificationUrl));
+            ->notify(new VerifyPendingRegistration($pin));
 
-        session()->flash(
-            'status',
-            'We sent you a verification email. Your account will only be created after you verify your email address.',
-        );
-
-        $this->redirect(route('login', absolute: false), navigate: true);
+        $this->redirect(route('registration.pin', $token, absolute: false), navigate: true);
     }
 }; ?>
 

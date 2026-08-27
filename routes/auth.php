@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\Auth\VerifyEmailController;
-use App\Http\Controllers\Auth\VerifyPendingRegistrationController;
 use App\Http\Middleware\PreventBackHistory;
 use App\Livewire\Actions\Logout;
 use Illuminate\Support\Facades\Route;
@@ -13,6 +12,9 @@ Route::middleware('guest')->group(function () {
 
     Volt::route('register', 'auth.register')
         ->name('register');
+
+    Volt::route('verify-registration/{token}', 'auth.verify-registration-pin')
+        ->name('registration.pin');
 
     Volt::route('forgot-password', 'auth.forgot-password')
         ->name('password.request');
@@ -36,7 +38,3 @@ Route::middleware(['auth'])->group(function () {
 
 Route::post('logout', Logout::class)
     ->name('logout');
-
-Route::get('verify-registration', VerifyPendingRegistrationController::class)
-    ->middleware(['signed', 'throttle:6,1'])
-    ->name('registration.verify');

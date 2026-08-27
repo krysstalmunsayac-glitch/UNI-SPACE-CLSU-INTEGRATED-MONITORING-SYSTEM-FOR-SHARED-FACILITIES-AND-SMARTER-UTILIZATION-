@@ -10,7 +10,7 @@ class VerifyPendingRegistration extends Notification
 {
     use Queueable;
 
-    public function __construct(private readonly string $verificationUrl) {}
+    public function __construct(private readonly string $pin) {}
 
     /**
      * @return array<int, string>
@@ -23,11 +23,11 @@ class VerifyPendingRegistration extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Verify your email address')
+            ->subject('Your SIEL SPACE verification PIN')
             ->greeting('Welcome!')
-            ->line('Please verify your email address to finish creating your account.')
-            ->action('Verify Email Address', $this->verificationUrl)
-            ->line('This verification link expires in 60 minutes.')
+            ->line('Enter this one-time PIN on the SIEL SPACE verification page to finish creating your account:')
+            ->line("**{$this->pin}**")
+            ->line('This PIN expires in 10 minutes and can only be used once.')
             ->line('If you did not create an account, no further action is required.');
     }
 }
