@@ -24,30 +24,9 @@ class DashboardController extends Controller
     {
         Requests::markPastRequestsAsEnded();
 
-        $requestSort = in_array($httpRequest->query('request_sort'), ['latest', 'oldest'], true)
-            ? $httpRequest->query('request_sort')
-            : 'latest';
-        $requestStatus = in_array($httpRequest->query('request_status'), ['Pending', 'Approved', 'Ended'], true)
-            ? $httpRequest->query('request_status')
-            : '';
-
         $requestMetrics = $this->requestDashboardMetrics(
             Requests::withTrashed()->where('User_ID', Auth::id())
         );
-
-        $userRequests = Requests::withTrashed()
-            ->where('User_ID', Auth::id())
-            ->where(function (Builder $query) {
-                $query->whereNull('deleted_at')
-                    ->orWhere('Status', 'Ended');
-            })
-            ->with(['facility', 'event', 'feedback'])
-            ->when($requestStatus, fn (Builder $query) => $query->where('Status', $requestStatus))
-            ->orderBy('Created_at', $requestSort === 'oldest' ? 'asc' : 'desc')
-            ->orderBy('RID', $requestSort === 'oldest' ? 'asc' : 'desc')
-            ->paginate(5, ['*'], 'requests_page')
-            ->withQueryString()
-            ->fragment('requests');
 
         return view('dashboards.user', [
             'facilities' => Facilities::query()
@@ -56,16 +35,6 @@ class DashboardController extends Controller
                 ->orderBy('Facility_Name')
                 ->get(),
             'events' => Events::query()->orderBy('Event_Title')->get(),
-            'requests' => $userRequests,
-            'requestSort' => $requestSort,
-            'requestStatus' => $requestStatus,
-            'totalUserRequests' => Requests::withTrashed()
-                ->where('User_ID', Auth::id())
-                ->where(function (Builder $query) {
-                    $query->whereNull('deleted_at')
-                        ->orWhere('Status', 'Ended');
-                })
-                ->count(),
             'schedules' => $this->publicScheduleEvents(),
             ...$requestMetrics,
         ]);

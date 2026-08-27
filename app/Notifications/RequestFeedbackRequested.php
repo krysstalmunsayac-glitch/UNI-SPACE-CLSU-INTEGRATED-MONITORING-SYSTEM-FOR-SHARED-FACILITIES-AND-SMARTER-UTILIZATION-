@@ -35,6 +35,8 @@ class RequestFeedbackRequested extends Notification
     {
         return [
             'request_id' => $this->request->RID,
+            'proposed_date' => $this->request->Proposed_Date?->format('M d, Y'),
+            'proposed_end_date' => $this->request->Proposed_End_Date?->format('M d, Y'),
             'facility' => $this->request->facility?->Facility_Name,
             'message' => 'Your event has ended. You may optionally rate the facility and share feedback.',
             'status' => 'Ended',

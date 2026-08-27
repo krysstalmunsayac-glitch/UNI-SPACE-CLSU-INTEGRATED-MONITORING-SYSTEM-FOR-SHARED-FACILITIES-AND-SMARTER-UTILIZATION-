@@ -419,7 +419,7 @@
                                                 <input type="time" x-model="sharedStartTime" x-on:input="applySharedTime()" x-bind:required="!customizeDailyTimes" class="h-11 w-full rounded-xl border border-emerald-900/10 bg-white px-3 text-sm text-emerald-950 shadow-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-950 dark:text-white">
                                             </label>
                                             <label class="block">
-                                                <span class="mb-2 block text-sm font-medium text-emerald-900 dark:text-zinc-300">End time</span>
+                                                <span class="mb-2 block text-sm font-medium text-emerald-900 dark:text-zinc-300">End time <span class="font-normal text-zinc-500">(2 hours minimum)</span></span>
                                                 <input type="time" x-model="sharedEndTime" x-on:input="applySharedTime()" x-bind:min="sharedStartTime" x-bind:required="!customizeDailyTimes" class="h-11 w-full rounded-xl border border-emerald-900/10 bg-white px-3 text-sm text-emerald-950 shadow-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-950 dark:text-white">
                                             </label>
                                         </div>
@@ -440,7 +440,7 @@
                                                         <input type="time" x-bind:name="customizeDailyTimes ? `Daily_Schedules[${index}][start]` : null" x-model="schedule.start" x-bind:required="customizeDailyTimes" class="h-11 w-full rounded-xl border border-emerald-900/10 bg-white px-3 text-sm text-emerald-950 shadow-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-950 dark:text-white">
                                                     </label>
                                                     <label class="block">
-                                                        <span class="mb-2 block text-sm font-medium text-emerald-900 dark:text-zinc-300">End time</span>
+                                                        <span class="mb-2 block text-sm font-medium text-emerald-900 dark:text-zinc-300">End time <span class="font-normal text-zinc-500">(2 hours minimum)</span></span>
                                                         <input type="time" x-bind:name="customizeDailyTimes ? `Daily_Schedules[${index}][end]` : null" x-model="schedule.end" x-bind:min="schedule.start" x-bind:required="customizeDailyTimes" class="h-11 w-full rounded-xl border border-emerald-900/10 bg-white px-3 text-sm text-emerald-950 shadow-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-950 dark:text-white">
                                                     </label>
                                                 </div>

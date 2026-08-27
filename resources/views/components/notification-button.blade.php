@@ -43,6 +43,19 @@
                         <p class="pr-5 text-sm font-semibold leading-5 text-zinc-900 transition group-hover:text-emerald-900! dark:text-white dark:group-hover:text-emerald-100!">
                             {{ $notification->data['message'] ?? 'You have a new notification.' }}
                         </p>
+                        @if (! empty($notification->data['request_id']))
+                            <p class="mt-1 text-xs font-semibold text-zinc-700 transition group-hover:text-emerald-900! dark:text-zinc-200 dark:group-hover:text-emerald-100!">
+                                Request ID: #{{ $notification->data['request_id'] }}
+                            </p>
+                        @endif
+                        @if (! empty($notification->data['proposed_date']))
+                            <p class="mt-1 text-xs text-zinc-600 transition group-hover:text-emerald-800! dark:text-zinc-300 dark:group-hover:text-emerald-200!">
+                                Date: {{ $notification->data['proposed_date'] }}
+                                @if (! empty($notification->data['proposed_end_date']) && $notification->data['proposed_end_date'] !== $notification->data['proposed_date'])
+                                    – {{ $notification->data['proposed_end_date'] }}
+                                @endif
+                            </p>
+                        @endif
                         @if (! empty($notification->data['facility']))
                             <p class="mt-1 truncate text-xs text-zinc-600 transition group-hover:text-emerald-800! dark:text-zinc-300 dark:group-hover:text-emerald-200!">
                                 {{ $notification->data['facility'] }}

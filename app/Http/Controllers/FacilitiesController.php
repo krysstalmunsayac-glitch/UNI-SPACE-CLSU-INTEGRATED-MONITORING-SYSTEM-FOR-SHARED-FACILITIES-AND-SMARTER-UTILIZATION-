@@ -9,6 +9,7 @@ use App\Models\Requests;
 use App\Models\User;
 use App\Notifications\NewRequestSubmitted;
 use App\Notifications\RequestCancelledByUser;
+use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -230,6 +231,11 @@ class FacilitiesController extends Controller
             'Proposed_Date.after_or_equal' => 'Reservations must be scheduled at least 3 days from today.',
         ]);
 
+        $this->validateBookingDuration(
+            $validated['Proposed_Start_Time'],
+            $validated['Proposed_End_Time'],
+        );
+
         $this->validateDailyRequestLimit($validated['Proposed_Date'], $validated['Proposed_End_Date'], $requestModel->RID);
 
         if ($requestModel->Facility_ID) {
@@ -428,9 +434,29 @@ class FacilitiesController extends Controller
                     "Daily_Schedules.{$index}.end" => 'The end time must be later than the start time.',
                 ]);
             }
+
+            $this->validateBookingDuration(
+                $schedule['start'],
+                $schedule['end'],
+                "Daily_Schedules.{$index}.end",
+            );
         }
 
         return $schedules;
+    }
+
+    private function validateBookingDuration(string $startTime, string $endTime, string $errorKey = 'Proposed_End_Time'): void
+    {
+        $start = Carbon::createFromFormat('H:i', $startTime);
+        $end = Carbon::createFromFormat('H:i', $endTime);
+
+        if ($end->lessThanOrEqualTo($start) || $end->diffInMinutes($start) >= 120) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            $errorKey => 'A booking must be at least 2 hours.',
+        ]);
     }
 
     private function validateDailyRequestLimit(string $startDate, string $endDate, ?int $ignoreRequestId = null, bool $lockForUpdate = false): void
@@ -485,6 +511,11 @@ class FacilitiesController extends Controller
         ], [
             'Proposed_Date.after_or_equal' => 'Reservations must be submitted at least 3 days before the event date.',
         ]);
+
+        $this->validateBookingDuration(
+            $validated['Proposed_Start_Time'],
+            $validated['Proposed_End_Time'],
+        );
 
         try {
             $requestModel = DB::transaction(function () use ($validated, $event): Requests {

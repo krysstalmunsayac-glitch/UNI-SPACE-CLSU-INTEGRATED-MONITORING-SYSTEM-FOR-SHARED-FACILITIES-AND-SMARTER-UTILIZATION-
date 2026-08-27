@@ -38,7 +38,7 @@
         </div>
 
         <p class="mt-5 text-xs leading-5 text-emerald-900/60 dark:text-zinc-400">
-            Click a date to add a schedule. Click an existing event to review or update it.
+            Click an existing event to review or update it.
         </p>
     </aside>
 

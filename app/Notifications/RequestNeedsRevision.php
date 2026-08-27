@@ -36,6 +36,8 @@ class RequestNeedsRevision extends Notification
     {
         return [
             'request_id' => $this->request->RID,
+            'proposed_date' => $this->request->Proposed_Date?->format('M d, Y'),
+            'proposed_end_date' => $this->request->Proposed_End_Date?->format('M d, Y'),
             'facility' => $this->request->facility?->Facility_Name,
             'user_id' => $this->request->User_ID,
             'message' => 'Your facility request needs additional information.',

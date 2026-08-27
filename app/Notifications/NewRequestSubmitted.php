@@ -43,6 +43,8 @@ class NewRequestSubmitted extends Notification
     {
         return [
             'request_id' => $this->request->RID,
+            'proposed_date' => $this->request->Proposed_Date?->format('M d, Y'),
+            'proposed_end_date' => $this->request->Proposed_End_Date?->format('M d, Y'),
             'facility' => $this->request->facility?->Facility_Name,
             'amenities' => $this->request->facility?->amenities
                 ->pluck('name')

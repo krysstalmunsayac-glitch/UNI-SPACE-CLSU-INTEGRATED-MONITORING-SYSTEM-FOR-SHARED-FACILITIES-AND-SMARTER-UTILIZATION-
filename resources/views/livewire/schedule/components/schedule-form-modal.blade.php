@@ -1,13 +1,13 @@
-    {{-- ===== CREATE / EDIT MODAL ===== --}}
+    {{-- ===== EDIT MODAL ===== --}}
     <x-ui::modal wire:model.self="showModal" class="md:w-[28rem]">
         <div class="space-y-6">
             <div>
                 <x-ui::heading size="lg">
-                    {{ $editingId ? 'Edit Schedule' : 'Add Schedule' }}
+                    Edit Schedule
                 </x-ui::heading>
 
                 <x-ui::subheading>
-                    {{ $editingId ? "Update this booking's details." : 'Create a new facility booking.' }}
+                    Update this booking's details.
                 </x-ui::subheading>
             </div>
 
@@ -73,7 +73,7 @@
                     variant="primary"
                     class="flex-1"
                 >
-                    {{ $editingId ? 'Update' : 'Create' }}
+                    Update
                 </x-ui::button>
 
                 @if ($editingId)

@@ -50,11 +50,6 @@ function scheduleCalendar(initialEvents, livewireView) {
                 allDaySlot: false,
                 events: this.events,
 
-                dateClick: (info) => {
-                    const date = info.dateStr.split('T')[0];
-                    @this.create(date);
-                },
-
                 eventClick: (info) => {
                     const scheduleId = info.event.extendedProps.scheduleId;
 

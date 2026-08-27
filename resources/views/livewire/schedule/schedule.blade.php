@@ -88,19 +88,21 @@ new #[Layout('components.layouts.app')] class extends Component {
         $this->resetValidation();
     }
 
+    /**
+     * Ignore create calls from browser tabs that still have the old calendar
+     * JavaScript loaded. Manual schedule creation is intentionally disabled.
+     */
     public function create(?string $date = null): void
     {
-        $this->selectedDate = $date;
-        $this->resetForm();
-        $this->showModal = true;
+        $this->showModal = false;
     }
 
     public function save(): void
     {
+        abort_if($this->editingId === null, 403, 'Creating schedules manually is not allowed.');
+
         $validated = $this->validate();
-        $schedule = $this->editingId
-            ? $this->getScopedSchedule((int) $this->editingId)
-            : null;
+        $schedule = $this->getScopedSchedule((int) $this->editingId);
 
         // Prevent the same request from being scheduled twice
         $duplicateRequestQuery = Schedule::where('Request_ID', $validated['Request_ID']);
@@ -138,37 +140,20 @@ new #[Layout('components.layouts.app')] class extends Component {
             }
         }
 
-        if ($schedule) {
-            $schedule->update($validated);
+        $schedule->update($validated);
 
-            $this->dispatch('calendar-refresh', events: $this->calendarEvents);
+        $this->dispatch('calendar-refresh', events: $this->calendarEvents);
 
-            Ui::toast(
-                text: 'Schedule updated successfully!',
-                variant: 'success'
-            );
+        Ui::toast(
+            text: 'Schedule updated successfully!',
+            variant: 'success'
+        );
 
-            $this->dispatch('swal', [
-                'title' => 'Schedule updated',
-                'text' => 'Schedule updated successfully!',
-                'icon' => 'success',
-            ]);
-        } else {
-            Schedule::create($validated);
-
-            $this->dispatch('calendar-refresh', events: $this->calendarEvents);
-
-            Ui::toast(
-                text: 'Schedule created successfully!',
-                variant: 'success'
-            );
-
-            $this->dispatch('swal', [
-                'title' => 'Schedule created',
-                'text' => 'Schedule created successfully!',
-                'icon' => 'success',
-            ]);
-        }
+        $this->dispatch('swal', [
+            'title' => 'Schedule updated',
+            'text' => 'Schedule updated successfully!',
+            'icon' => 'success',
+        ]);
 
         $this->showModal = false;
         $this->resetForm();
@@ -327,17 +312,13 @@ new #[Layout('components.layouts.app')] class extends Component {
             })
             ->orderByDesc('RID');
 
-        if ($this->editingId) {
-            $query->where(function ($query) {
-                $query->whereDoesntHave('schedules');
-
-                if ($this->Request_ID) {
-                    $query->orWhere('RID', $this->Request_ID);
-                }
-            });
-        } else {
+        $query->where(function ($query) {
             $query->whereDoesntHave('schedules');
-        }
+
+            if ($this->Request_ID) {
+                $query->orWhere('RID', $this->Request_ID);
+            }
+        });
 
         return $query->get();
     }
