@@ -233,21 +233,15 @@
                     <div class="mt-8 space-y-4 rounded-xl border border-white/20 bg-white/10 p-4">
                         <div>
                             <label for="map-facility-type" class="text-xs font-black uppercase tracking-wider text-emerald-100">Facility type</label>
-                            <div class="relative mt-2">
-                                <select id="map-facility-type" class="w-full appearance-none rounded-xl border border-white/20 bg-white py-2.5 pl-3 pr-11 text-sm font-bold text-emerald-950 outline-none focus:ring-4 focus:ring-white/20">
-                                    <option value="all">All facility types</option>
-                                </select>
-                                <x-ui::icon.chevron-down class="pointer-events-none absolute right-3.5 top-1/2 size-5 -translate-y-1/2 text-emerald-700" />
-                            </div>
+                            <select id="map-facility-type" class="mt-2 w-full rounded-xl border border-white/20 bg-white px-3 py-2.5 text-sm font-bold text-emerald-950 outline-none focus:ring-4 focus:ring-white/20">
+                                <option value="all">All facility types</option>
+                            </select>
                         </div>
                         <div>
                             <label for="map-facility-filter" class="text-xs font-black uppercase tracking-wider text-emerald-100">Locate facility</label>
-                            <div class="relative mt-2">
-                                <select id="map-facility-filter" class="w-full appearance-none rounded-xl border border-white/20 bg-white py-2.5 pl-3 pr-11 text-sm font-bold text-emerald-950 outline-none focus:ring-4 focus:ring-white/20">
-                                    <option value="all">All Facilities</option>
-                                </select>
-                                <x-ui::icon.chevron-down class="pointer-events-none absolute right-3.5 top-1/2 size-5 -translate-y-1/2 text-emerald-700" />
-                            </div>
+                            <select id="map-facility-filter" class="mt-2 w-full rounded-xl border border-white/20 bg-white px-3 py-2.5 text-sm font-bold text-emerald-950 outline-none focus:ring-4 focus:ring-white/20">
+                                <option value="all">All Facilities</option>
+                            </select>
                         </div>
                         <div>
                             <button id="get-facility-directions" type="button" disabled class="w-full rounded-xl bg-white px-4 py-3 text-sm font-black text-emerald-800 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60">

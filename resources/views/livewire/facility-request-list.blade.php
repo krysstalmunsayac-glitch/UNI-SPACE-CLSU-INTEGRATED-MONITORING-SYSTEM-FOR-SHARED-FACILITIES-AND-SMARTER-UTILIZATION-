@@ -180,7 +180,11 @@ new class extends Component {
                                     <span>{{ $request->Capacity ?? 'N/A' }} attendees</span>
                                 </div>
                             </div>
-                            <span class="pointer-events-none absolute right-6 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 transition-transform duration-200 group-open:rotate-180 dark:bg-emerald-500/10 dark:text-emerald-300" aria-hidden="true">
+                            <span
+                                class="pointer-events-none flex items-center justify-center rounded-full bg-emerald-50 text-emerald-700 transition-transform duration-200 group-open:rotate-180 dark:bg-emerald-500/10 dark:text-emerald-300"
+                                style="position: absolute; right: 1.5rem; top: 50%; width: 2.25rem; height: 2.25rem; transform: translateY(-50%);"
+                                aria-hidden="true"
+                            >
                                 <x-ui::icon.chevron-down class="size-5" />
                             </span>
                         </summary>
