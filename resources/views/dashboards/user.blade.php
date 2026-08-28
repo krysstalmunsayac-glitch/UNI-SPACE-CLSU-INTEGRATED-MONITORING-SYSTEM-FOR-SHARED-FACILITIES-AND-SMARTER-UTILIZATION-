@@ -244,7 +244,7 @@
                                 <select id="map-facility-type" class="w-full rounded-xl border border-white/20 bg-white py-2.5 pl-3 text-sm font-bold text-emerald-950 outline-none focus:ring-4 focus:ring-white/20" style="appearance: none; padding-right: 3rem;">
                                     <option value="all">All facility types</option>
                                 </select>
-                                <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position: absolute; right: 1rem; top: 50%; width: 1.1rem; height: 1.1rem; transform: translateY(-50%); color: #047857; pointer-events: none;">
+                                <svg class="map-select-chevron" data-select="map-facility-type" role="button" aria-label="Open facility type options" tabindex="0" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position: absolute; right: 1rem; top: 50%; width: 1.1rem; height: 1.1rem; transform: translateY(-50%); color: #047857; cursor: pointer;">
                                     <path d="m6 8 4 4 4-4" />
                                 </svg>
                             </div>
@@ -255,7 +255,7 @@
                                 <select id="map-facility-filter" class="w-full rounded-xl border border-white/20 bg-white py-2.5 pl-3 text-sm font-bold text-emerald-950 outline-none focus:ring-4 focus:ring-white/20" style="appearance: none; padding-right: 3rem;">
                                     <option value="all">All Facilities</option>
                                 </select>
-                                <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position: absolute; right: 1rem; top: 50%; width: 1.1rem; height: 1.1rem; transform: translateY(-50%); color: #047857; pointer-events: none;">
+                                <svg class="map-select-chevron" data-select="map-facility-filter" role="button" aria-label="Open facility options" tabindex="0" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position: absolute; right: 1rem; top: 50%; width: 1.1rem; height: 1.1rem; transform: translateY(-50%); color: #047857; cursor: pointer;">
                                     <path d="m6 8 4 4 4-4" />
                                 </svg>
                             </div>
@@ -384,6 +384,22 @@
                 const mapElement = document.getElementById('user-campus-map');
                 if (mapElement && window.L && !mapElement.dataset.initialized) {
                     mapElement.dataset.initialized = 'true';
+
+                    document.querySelectorAll('.map-select-chevron').forEach(chevron => {
+                        const openSelect = () => {
+                            const select = document.getElementById(chevron.dataset.select);
+                            if (!select) return;
+                            select.focus();
+                            if (typeof select.showPicker === 'function') select.showPicker();
+                        };
+                        chevron.addEventListener('click', openSelect);
+                        chevron.addEventListener('keydown', event => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                                event.preventDefault();
+                                openSelect();
+                            }
+                        });
+                    });
 
                     const campusCenter = [15.7354, 120.9335];
                     // CLSU Main Gate at the campus access-road junction with Maharlika Highway.
