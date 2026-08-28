@@ -502,5 +502,4 @@
             </div>
         </div>
     </x-ui::main>
-    @includeOnce('partials.confirmation-dialog')
 </x-layouts.home.header>

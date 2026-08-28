@@ -248,7 +248,7 @@
         </div>
     </footer>
 
-    @includeOnce('partials.confirmation-dialog')
+    @include('partials.confirmation-dialog')
 
     <script>
         document.addEventListener('click', (event) => {
