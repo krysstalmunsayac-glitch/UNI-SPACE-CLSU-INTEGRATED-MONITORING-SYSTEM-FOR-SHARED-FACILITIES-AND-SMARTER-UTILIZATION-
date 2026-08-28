@@ -194,6 +194,26 @@
     </section>
 
     <style>
+        .dashboard-reveal {
+            opacity: 0;
+            transform: translateY(1.25rem);
+            transition: opacity 700ms ease, transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+            will-change: opacity, transform;
+        }
+
+        .dashboard-reveal.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .dashboard-reveal {
+                opacity: 1;
+                transform: none;
+                transition: none;
+            }
+        }
+
         #map-facility-type:focus,
         #map-facility-filter:focus {
             outline: 3px solid rgba(255, 255, 255, 0.35);
@@ -320,6 +340,32 @@
     @push('scripts')
         <script>
             window.initUserDashboard = window.initUserDashboard || function () {
+                const revealElements = [
+                    ...document.querySelectorAll('#home > div, #about section > div, #facilities > div, #calendar > div, #requests > div, #map > div, #help > div'),
+                    ...document.querySelectorAll('.facility-card, #requests details, #help details'),
+                ];
+
+                if (!window.userDashboardRevealObserver && 'IntersectionObserver' in window && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                    window.userDashboardRevealObserver = new IntersectionObserver(entries => {
+                        entries.forEach(entry => {
+                            entry.target.classList.toggle('is-visible', entry.isIntersecting);
+                        });
+                    }, { threshold: 0.12, rootMargin: '0px 0px -48px' });
+                }
+
+                [...new Set(revealElements)].forEach((element, index) => {
+                    if (element.dataset.dashboardRevealObserved) return;
+                    element.dataset.dashboardRevealObserved = 'true';
+                    element.classList.add('dashboard-reveal');
+                    element.style.transitionDelay = `${Math.min(index % 4, 3) * 70}ms`;
+
+                    if (window.userDashboardRevealObserver) {
+                        window.userDashboardRevealObserver.observe(element);
+                    } else {
+                        element.classList.add('is-visible');
+                    }
+                });
+
                 const searchInput = document.getElementById('facility-search');
                 const capacityFilter = document.getElementById('capacity-filter');
                 const customCapacity = document.getElementById('capacity-custom');

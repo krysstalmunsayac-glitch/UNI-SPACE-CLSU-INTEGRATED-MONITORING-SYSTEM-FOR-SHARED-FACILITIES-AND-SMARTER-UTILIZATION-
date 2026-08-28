@@ -1,4 +1,26 @@
 <x-layouts.home.header>
+    <style>
+        .home-reveal {
+            opacity: 0;
+            transform: translateY(1.25rem);
+            transition: opacity 700ms ease, transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+            will-change: opacity, transform;
+        }
+
+        .home-reveal.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .home-reveal {
+                opacity: 1;
+                transform: none;
+                transition: none;
+            }
+        }
+    </style>
+
     <section id="home" class="scroll-mt-20 bg-gradient-to-b from-white to-emerald-50/40 dark:from-zinc-950 dark:to-emerald-950/10">
         <div class="mx-auto grid min-h-[520px] max-w-7xl items-center gap-10 px-4 py-20 sm:px-6 lg:grid-cols-[0.95fr_1.05fr] lg:px-8">
             <div class="mx-auto max-w-2xl lg:mx-0">
@@ -245,6 +267,29 @@
     @push('scripts')
         <script>
             document.addEventListener('DOMContentLoaded', () => {
+                const revealElements = [
+                    ...document.querySelectorAll('#home > div, #about section > div, #facilities > div, #calendar > div, #map > div, #help > div'),
+                    ...document.querySelectorAll('.facility-card, #help details'),
+                ];
+                const uniqueRevealElements = [...new Set(revealElements)];
+
+                uniqueRevealElements.forEach((element, index) => {
+                    element.classList.add('home-reveal');
+                    element.style.transitionDelay = `${Math.min(index % 4, 3) * 70}ms`;
+                });
+
+                if ('IntersectionObserver' in window && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                    const revealObserver = new IntersectionObserver(entries => {
+                        entries.forEach(entry => {
+                            entry.target.classList.toggle('is-visible', entry.isIntersecting);
+                        });
+                    }, { threshold: 0.12, rootMargin: '0px 0px -48px' });
+
+                    uniqueRevealElements.forEach(element => revealObserver.observe(element));
+                } else {
+                    uniqueRevealElements.forEach(element => element.classList.add('is-visible'));
+                }
+
                 const searchInput = document.getElementById('facility-search');
                 const capacityFilter = document.getElementById('capacity-filter');
                 const customCapacity = document.getElementById('capacity-custom');
