@@ -194,6 +194,13 @@
     </section>
 
     <style>
+        #map-facility-type:focus,
+        #map-facility-filter:focus {
+            outline: 3px solid rgba(255, 255, 255, 0.35);
+            outline-offset: 2px;
+            box-shadow: none;
+        }
+
         .campus-map-container {
             max-width: 1600px;
         }
