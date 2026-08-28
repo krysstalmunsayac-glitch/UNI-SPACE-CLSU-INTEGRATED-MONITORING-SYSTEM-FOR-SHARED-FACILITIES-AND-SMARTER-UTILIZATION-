@@ -216,7 +216,7 @@
         }
     </style>
 
-    <section id="map" class="scroll-mt-28 border-t border-emerald-900/10 bg-emerald-50/50 py-20 dark:border-white/10 dark:bg-zinc-900">
+    <section id="map" class="scroll-mt-28 border-t border-emerald-900/10 bg-emerald-50/50 py-20 dark:border-white/10 dark:bg-zinc-900" style="scroll-margin-top: 7rem;">
         <div class="campus-map-container mx-auto px-4 sm:px-6 lg:px-8">
             <div class="campus-map-layout grid gap-6">
                 <div class="rounded-2xl bg-emerald-800 p-8 text-white">

@@ -170,7 +170,7 @@ new class extends Component {
                                 </p>
                             </div>
 
-                            <div class="lg:min-w-[520px]">
+                            <div class="lg:min-w-[520px]" style="padding-right: 3.5rem;">
                                 <p class="mb-3 text-left text-xs font-black uppercase tracking-wide text-emerald-700 dark:text-emerald-300 lg:text-right">
                                     Requested {{ $request->Created_at?->format('M j, Y g:i A') ?? 'Date unavailable' }}
                                 </p>
