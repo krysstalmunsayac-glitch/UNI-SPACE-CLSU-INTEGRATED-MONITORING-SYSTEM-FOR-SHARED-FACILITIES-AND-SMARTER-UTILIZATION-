@@ -233,30 +233,42 @@
                     <div class="mt-8 space-y-4 rounded-xl border border-white/20 bg-white/10 p-4">
                         <div>
                             <label for="map-facility-type" class="text-xs font-black uppercase tracking-wider text-emerald-100">Facility type</label>
-                            <select id="map-facility-type" class="mt-2 w-full rounded-xl border border-white/20 bg-white px-3 py-2.5 text-sm font-bold text-emerald-950 outline-none focus:ring-4 focus:ring-white/20">
-                                <option value="all">All facility types</option>
-                            </select>
+                            <div class="relative mt-2">
+                                <select id="map-facility-type" class="w-full appearance-none rounded-xl border border-white/20 bg-white py-2.5 pl-3 pr-11 text-sm font-bold text-emerald-950 outline-none focus:ring-4 focus:ring-white/20">
+                                    <option value="all">All facility types</option>
+                                </select>
+                                <x-ui::icon.chevron-down class="pointer-events-none absolute right-3.5 top-1/2 size-5 -translate-y-1/2 text-emerald-700" />
+                            </div>
                         </div>
                         <div>
                             <label for="map-facility-filter" class="text-xs font-black uppercase tracking-wider text-emerald-100">Locate facility</label>
-                            <select id="map-facility-filter" class="mt-2 w-full rounded-xl border border-white/20 bg-white px-3 py-2.5 text-sm font-bold text-emerald-950 outline-none focus:ring-4 focus:ring-white/20">
-                                <option value="all">All Facilities</option>
-                            </select>
+                            <div class="relative mt-2">
+                                <select id="map-facility-filter" class="w-full appearance-none rounded-xl border border-white/20 bg-white py-2.5 pl-3 pr-11 text-sm font-bold text-emerald-950 outline-none focus:ring-4 focus:ring-white/20">
+                                    <option value="all">All Facilities</option>
+                                </select>
+                                <x-ui::icon.chevron-down class="pointer-events-none absolute right-3.5 top-1/2 size-5 -translate-y-1/2 text-emerald-700" />
+                            </div>
+                        </div>
+                        <div>
+                            <button id="get-facility-directions" type="button" disabled class="w-full rounded-xl bg-white px-4 py-3 text-sm font-black text-emerald-800 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60">
+                                Directions from CLSU Main Gate
+                            </button>
+                            <button id="get-my-location-directions" type="button" disabled class="mt-2 w-full rounded-xl border border-white/40 bg-white/10 px-4 py-3 text-sm font-black text-white transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-60">
+                                Directions from My Location
+                            </button>
+                            <p id="map-location-status" class="mt-2 text-xs leading-5 text-emerald-50" aria-live="polite">Select a facility to view directions.</p>
+                            <a id="open-navigation-link" href="#" target="_blank" rel="noopener noreferrer" class="mt-3 hidden w-full items-center justify-center rounded-xl border border-white/40 px-4 py-2.5 text-center text-xs font-black text-white transition hover:bg-white/10">
+                                Open Walking Navigation
+                            </a>
+                        </div>
+                        <div>
+                            <button id="dashboard-locate-me" type="button" class="w-full rounded-xl border border-white/40 bg-white/10 px-4 py-3 text-sm font-black text-white transition hover:bg-white/20 focus:outline-none focus:ring-4 focus:ring-white/20 disabled:cursor-wait disabled:opacity-60">
+                                <span aria-hidden="true">⌖</span> Use my location
+                            </button>
+                            <p id="dashboard-location-status" class="mt-2 text-xs leading-5 text-emerald-50" aria-live="polite"></p>
                         </div>
                     </div>
 
-                    <div id="map-navigation-panel" class="mt-4 hidden rounded-xl border border-white/20 bg-white/10 p-4">
-                        <p class="text-xs font-black uppercase tracking-wider text-emerald-100">Selected facility</p>
-                        <p id="map-selected-facility" class="mt-2 text-lg font-black"></p>
-                        <p id="map-selected-location" class="mt-1 text-sm text-emerald-50"></p>
-                        <button id="get-facility-directions" type="button" class="mt-4 w-full rounded-xl bg-white px-4 py-3 text-sm font-black text-emerald-800 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60">
-                            Directions from CLSU Main Gate
-                        </button>
-                        <p id="map-location-status" class="mt-3 text-xs leading-5 text-emerald-50" aria-live="polite"></p>
-                        <a id="open-navigation-link" href="#" target="_blank" rel="noopener noreferrer" class="mt-3 hidden w-full items-center justify-center rounded-xl border border-white/40 px-4 py-2.5 text-center text-xs font-black text-white transition hover:bg-white/10">
-                            Open Walking Navigation
-                        </a>
-                    </div>
                 </div>
 
                 <div class="relative z-0 overflow-hidden rounded-2xl border border-emerald-900/10 bg-white shadow-xl shadow-emerald-950/10 dark:border-white/10 dark:bg-zinc-950">
@@ -387,7 +399,7 @@
                         title: 'CLSU Main Gate',
                         zIndexOffset: 2000,
                     }).addTo(map)
-                        .bindPopup('<strong>CLSU Main Gate</strong><br><small>All campus routes start here</small>')
+                        .bindPopup('<strong>CLSU Main Gate</strong><br><small>Main campus entrance</small>')
                         .bindTooltip('CLSU Main Gate', { permanent: true, direction: 'top', offset: [0, -22], className: 'font-bold' });
 
                     const facilities = @js($mapFacilities->map(fn ($facility) => [
@@ -408,11 +420,21 @@
                     const selectedFacilityName = document.getElementById('map-selected-facility');
                     const selectedFacilityLocation = document.getElementById('map-selected-location');
                     const directionsButton = document.getElementById('get-facility-directions');
+                    const myLocationDirectionsButton = document.getElementById('get-my-location-directions');
                     const locationStatus = document.getElementById('map-location-status');
                     const navigationLink = document.getElementById('open-navigation-link');
+                    const locateMeButton = document.getElementById('dashboard-locate-me');
+                    const userLocationStatus = document.getElementById('dashboard-location-status');
                     let focusedDestination = null;
                     let focusHighlight = null;
                     let guidanceLine = null;
+                    let userCoordinates = null;
+                    let userLocationMarker = null;
+                    let userAccuracyCircle = null;
+                    let locationWatchId = null;
+                    let hasInitialLocation = false;
+                    let lastAutomaticRouteCoordinates = null;
+                    let lastAutomaticRouteAt = 0;
                     const facilityMarkers = new Map();
                     const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, character => ({
                         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;',
@@ -436,17 +458,25 @@
                         facilityMarkers.set(Number(facility.FID), { facility, coordinates, approximate, marker });
                     };
 
-                    const showDirections = async () => {
-                        if (!focusedDestination) {
+                    const showDirections = async (useMyLocation = false) => {
+                        if (!focusedDestination || !directionsButton) {
                             return;
                         }
 
+                        if (useMyLocation && !userCoordinates) {
+                            if (locationStatus) locationStatus.textContent = 'Enable live location before requesting directions from your position.';
+                            return;
+                        }
+
+                        const routeOrigin = useMyLocation ? userCoordinates : mainGateCoordinates;
+                        const routeOriginLabel = useMyLocation ? 'your location' : 'the CLSU Main Gate';
                         if (directionsButton) directionsButton.disabled = true;
+                        if (myLocationDirectionsButton) myLocationDirectionsButton.disabled = true;
                         guidanceLine?.remove();
                         guidanceLine = null;
-                        if (locationStatus) locationStatus.textContent = 'Loading the walkable route from the CLSU Main Gate...';
+                        if (locationStatus) locationStatus.textContent = `Loading the walkable route from ${routeOriginLabel}...`;
                         if (navigationLink) {
-                            const route = `${mainGateCoordinates[0]},${mainGateCoordinates[1]};${focusedDestination.coordinates[0]},${focusedDestination.coordinates[1]}`;
+                            const route = `${routeOrigin[0]},${routeOrigin[1]};${focusedDestination.coordinates[0]},${focusedDestination.coordinates[1]}`;
                             navigationLink.href = `https://www.openstreetmap.org/directions?engine=fossgis_osrm_foot&route=${encodeURIComponent(route)}`;
                             navigationLink.classList.remove('hidden');
                             navigationLink.classList.add('inline-flex');
@@ -460,7 +490,7 @@
 
                         try {
                             const [destinationLatitude, destinationLongitude] = focusedDestination.coordinates;
-                            const routeUrl = `https://routing.openstreetmap.de/routed-foot/route/v1/driving/${mainGateCoordinates[1]},${mainGateCoordinates[0]};${destinationLongitude},${destinationLatitude}?overview=full&geometries=geojson&steps=true`;
+                            const routeUrl = `https://routing.openstreetmap.de/routed-foot/route/v1/driving/${routeOrigin[1]},${routeOrigin[0]};${destinationLongitude},${destinationLatitude}?overview=full&geometries=geojson&steps=true`;
                             const response = await fetch(routeUrl, { headers: { Accept: 'application/json' } });
                             if (!response.ok) throw new Error(`Routing failed with status ${response.status}`);
                             const route = (await response.json()).routes?.[0];
@@ -478,20 +508,110 @@
                                     ? `${Math.round(route.distance)} m`
                                     : `${(route.distance / 1000).toFixed(1)} km`;
                                 const routeMinutes = Math.max(1, Math.round(route.duration / 60));
-                                locationStatus.textContent = `Walkable route from the CLSU Main Gate: ${routeDistance}, about ${routeMinutes} minutes.`;
+                                locationStatus.textContent = `Walkable route from ${routeOriginLabel}: ${routeDistance}, about ${routeMinutes} minutes.`;
                             }
                         } catch {
                             if (locationStatus) {
                                 locationStatus.textContent = 'A verified walkable pathway could not be loaded. No artificial straight-line route was drawn.';
                             }
-                            map.fitBounds(L.latLngBounds([mainGateCoordinates, focusedDestination.coordinates]).pad(0.2), { maxZoom: 18 });
+                            map.fitBounds(L.latLngBounds([routeOrigin, focusedDestination.coordinates]).pad(0.2), { maxZoom: 18 });
                         } finally {
                             if (directionsButton) directionsButton.disabled = false;
+                            if (myLocationDirectionsButton) myLocationDirectionsButton.disabled = !userCoordinates;
                         }
 
                     };
 
-                    directionsButton?.addEventListener('click', () => showDirections());
+                    locateMeButton?.addEventListener('click', () => {
+                        if (!navigator.geolocation) {
+                            if (userLocationStatus) userLocationStatus.textContent = 'Location services are not supported by this browser.';
+                            return;
+                        }
+
+                        if (locationWatchId !== null) {
+                            navigator.geolocation.clearWatch(locationWatchId);
+                            locationWatchId = null;
+                            locateMeButton.innerHTML = '<span aria-hidden="true">⌖</span> Follow my location';
+                            if (userLocationStatus) userLocationStatus.textContent = 'Live location tracking paused.';
+                            return;
+                        }
+
+                        locateMeButton.disabled = true;
+                        if (userLocationStatus) userLocationStatus.textContent = 'Finding your current location...';
+                        hasInitialLocation = false;
+
+                        locationWatchId = navigator.geolocation.watchPosition(
+                            ({ coords }) => {
+                                userCoordinates = [coords.latitude, coords.longitude];
+
+                                if (userAccuracyCircle) {
+                                    userAccuracyCircle.setLatLng(userCoordinates).setRadius(coords.accuracy);
+                                } else {
+                                    userAccuracyCircle = L.circle(userCoordinates, {
+                                        radius: coords.accuracy,
+                                        color: '#047857',
+                                        fillColor: '#10b981',
+                                        fillOpacity: 0.12,
+                                        weight: 2,
+                                    }).addTo(map);
+                                }
+
+                                if (userLocationMarker) {
+                                    userLocationMarker.setLatLng(userCoordinates);
+                                } else {
+                                    userLocationMarker = L.circleMarker(userCoordinates, {
+                                        radius: 9,
+                                        color: '#ffffff',
+                                        fillColor: '#047857',
+                                        fillOpacity: 1,
+                                        weight: 3,
+                                    }).addTo(map).bindPopup('<strong>Your live location</strong>').openPopup();
+                                }
+
+                                locateMeButton.innerHTML = '<span aria-hidden="true">●</span> Stop following';
+                                locateMeButton.disabled = false;
+                                if (myLocationDirectionsButton && focusedDestination && !focusedDestination.approximate) {
+                                    myLocationDirectionsButton.disabled = false;
+                                }
+                                if (userLocationStatus) userLocationStatus.textContent = `Following your location within approximately ${Math.round(coords.accuracy)} meters.`;
+
+                                map.setView(userCoordinates, Math.max(map.getZoom(), 18), { animate: true });
+
+                                const now = Date.now();
+                                const movedDistance = lastAutomaticRouteCoordinates
+                                    ? map.distance(lastAutomaticRouteCoordinates, userCoordinates)
+                                    : Infinity;
+                                if (
+                                    focusedDestination
+                                    && !focusedDestination.approximate
+                                    && movedDistance >= 15
+                                    && now - lastAutomaticRouteAt >= 15000
+                                ) {
+                                    lastAutomaticRouteCoordinates = [...userCoordinates];
+                                    lastAutomaticRouteAt = now;
+                                    showDirections(true);
+                                }
+
+                                hasInitialLocation = true;
+                            },
+                            (error) => {
+                                const messages = {
+                                    1: 'Location permission was denied. Allow it in your browser and try again.',
+                                    2: 'Your location is currently unavailable. Please try again.',
+                                    3: 'Finding your location took too long. Please try again.',
+                                };
+                                if (userLocationStatus) userLocationStatus.textContent = messages[error.code] || 'Your location could not be found.';
+                                locateMeButton.disabled = false;
+                                locateMeButton.innerHTML = '<span aria-hidden="true">⌖</span> Follow my location';
+                                if (locationWatchId !== null) navigator.geolocation.clearWatch(locationWatchId);
+                                locationWatchId = null;
+                            },
+                            { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 },
+                        );
+                    });
+
+                    directionsButton?.addEventListener('click', () => showDirections(false));
+                    myLocationDirectionsButton?.addEventListener('click', () => showDirections(true));
                     const selectFacility = facilityId => {
                         focusHighlight?.remove();
                         focusHighlight = null;
@@ -501,6 +621,9 @@
 
                         if (facilityId === 'all') {
                             focusedDestination = null;
+                            if (directionsButton) directionsButton.disabled = true;
+                            if (myLocationDirectionsButton) myLocationDirectionsButton.disabled = true;
+                            if (locationStatus) locationStatus.textContent = 'Select a facility to view directions.';
                             navigationPanel?.classList.add('hidden');
                             navigationLink?.classList.add('hidden');
                             navigationLink?.classList.remove('inline-flex');
@@ -521,6 +644,15 @@
                         const selected = facilityMarkers.get(Number(facilityId));
                         if (!selected) return;
                         focusedDestination = selected;
+                        navigationLink?.classList.add('hidden');
+                        navigationLink?.classList.remove('inline-flex');
+                        if (directionsButton) directionsButton.disabled = selected.approximate;
+                        if (myLocationDirectionsButton) myLocationDirectionsButton.disabled = selected.approximate || !userCoordinates;
+                        if (locationStatus) {
+                            locationStatus.textContent = selected.approximate
+                                ? 'Directions require an exact saved facility location.'
+                                : 'Ready to show directions from the CLSU Main Gate.';
+                        }
                         facilityMarkers.forEach(({ marker }, id) => {
                             if (!map.hasLayer(marker)) marker.addTo(map);
                             marker.setOpacity(id === Number(facilityId) ? 1 : 0.35);
@@ -533,12 +665,19 @@
                             fillOpacity: 0.3,
                             weight: 5,
                         }).addTo(map);
-                        navigationPanel?.classList.remove('hidden');
                         if (selectedFacilityName) selectedFacilityName.textContent = selected.facility.Facility_Name;
                         if (selectedFacilityLocation) selectedFacilityLocation.textContent = `${selected.facility.Location || 'CLSU Main Campus'} · ${selected.facility.facility_type || 'Facility'} · Capacity: ${selected.facility.Capacity || 'N/A'}`;
                         map.setView(selected.coordinates, 19);
                         selected.marker.openPopup();
-                        showDirections();
+                        if (!selected.approximate) {
+                            if (userCoordinates) {
+                                lastAutomaticRouteCoordinates = [...userCoordinates];
+                                lastAutomaticRouteAt = Date.now();
+                                showDirections(true);
+                            } else {
+                                showDirections(false);
+                            }
+                        }
                     };
 
                     const populateFacilityFilters = () => {

@@ -158,7 +158,7 @@ new class extends Component {
                         @if (request()->integer('request') === $request->RID) open @endif
                         class="group scroll-mt-24 overflow-hidden rounded-2xl border border-emerald-900/10 bg-white shadow-sm dark:border-white/10 dark:bg-zinc-950"
                     >
-                        <summary class="flex cursor-pointer list-none flex-col gap-5 p-6 lg:flex-row lg:items-center lg:justify-between">
+                        <summary class="relative flex cursor-pointer list-none flex-col gap-5 p-6 pr-16 lg:flex-row lg:items-center lg:justify-between">
                             <div>
                                 <div class="flex flex-wrap items-center gap-3">
                                     <span class="rounded-full px-3 py-1 text-xs font-black uppercase tracking-wide {{ $statusClass }}">{{ $statusLabel }}</span>
@@ -180,6 +180,9 @@ new class extends Component {
                                     <span>{{ $request->Capacity ?? 'N/A' }} attendees</span>
                                 </div>
                             </div>
+                            <span class="pointer-events-none absolute right-6 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 transition-transform duration-200 group-open:rotate-180 dark:bg-emerald-500/10 dark:text-emerald-300" aria-hidden="true">
+                                <x-ui::icon.chevron-down class="size-5" />
+                            </span>
                         </summary>
 
                         <div class="border-t border-emerald-900/10 p-6 dark:border-white/10">
@@ -219,7 +222,7 @@ new class extends Component {
                                             href="{{ route('dashboard', ['map_facility' => $request->Facility_ID]) }}#map"
                                             class="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-4 py-2.5 text-xs font-black text-white transition hover:bg-emerald-800 focus:outline-none focus:ring-4 focus:ring-emerald-600/20"
                                         >
-                                            <span aria-hidden="true">&#128205;</span>
+                                            <x-ui::icon.map-pin class="size-4" />
                                             View on Map
                                         </a>
                                     @endif

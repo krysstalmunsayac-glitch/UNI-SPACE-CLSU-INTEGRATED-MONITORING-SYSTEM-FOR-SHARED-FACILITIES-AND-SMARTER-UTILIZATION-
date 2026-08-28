@@ -12,9 +12,9 @@
             </div>
 
             <div class="grid gap-4 sm:grid-cols-2">
-                <img src="https://placehold.co/640x780/e8f5ee/14532d?text=Campus+Facility" alt="Campus facility placeholder" class="h-full min-h-[360px] w-full rounded-2xl object-cover shadow-xl shadow-emerald-950/10 sm:row-span-2">
-                <img src="https://placehold.co/520x360/dcfce7/166534?text=Study+Space" alt="Study space placeholder" class="h-44 w-full rounded-2xl object-cover shadow-lg shadow-emerald-950/10 sm:h-full">
-                <img src="https://placehold.co/520x360/fef3c7/14532d?text=Event+Hall" alt="Event hall placeholder" class="h-44 w-full rounded-2xl object-cover shadow-lg shadow-emerald-950/10 sm:h-full">
+                <img src="{{ asset('images/about/campus-facility.png') }}" alt="Exterior of the CLSU auditorium" class="h-full min-h-[360px] w-full rounded-2xl object-cover shadow-xl shadow-emerald-950/10 sm:row-span-2">
+                <img src="{{ asset('images/about/study-space.png') }}" alt="Elevated view of the CLSU auditorium seating and stage" class="h-44 w-full rounded-2xl object-cover shadow-lg shadow-emerald-950/10 sm:h-full">
+                <img src="{{ asset('images/about/event-hall.png') }}" alt="Center aisle view of the CLSU auditorium" class="h-44 w-full rounded-2xl object-cover shadow-lg shadow-emerald-950/10 sm:h-full">
             </div>
         </div>
     </section>
