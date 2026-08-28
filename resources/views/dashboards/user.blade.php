@@ -194,6 +194,10 @@
     </section>
 
     <style>
+        #about {
+            overflow-x: clip;
+        }
+
         .dashboard-reveal {
             opacity: 0;
             transform: translateY(1.25rem);
@@ -204,6 +208,19 @@
         .dashboard-reveal.is-visible {
             opacity: 1;
             transform: translateY(0);
+        }
+
+        .dashboard-reveal.about-from-left {
+            transform: translateX(-1.5rem);
+        }
+
+        .dashboard-reveal.about-from-right {
+            transform: translateX(1.5rem);
+        }
+
+        .dashboard-reveal.about-from-left.is-visible,
+        .dashboard-reveal.about-from-right.is-visible {
+            transform: translateX(0);
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -342,7 +359,7 @@
             window.initUserDashboard = window.initUserDashboard || function () {
                 const revealElements = [
                     ...document.querySelectorAll('#home > div, #about section > div, #facilities > div, #calendar > div, #requests > div, #map > div, #help > div'),
-                    ...document.querySelectorAll('.facility-card, #requests details, #help details'),
+                    ...document.querySelectorAll('#about > section:first-child > div > div, #about article, .facility-card, #requests details, #help details'),
                 ];
 
                 if (!window.userDashboardRevealObserver && 'IntersectionObserver' in window && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -357,6 +374,13 @@
                     if (element.dataset.dashboardRevealObserved) return;
                     element.dataset.dashboardRevealObserved = 'true';
                     element.classList.add('dashboard-reveal');
+                    if (element.matches('#about article')) {
+                        const aboutCards = [...document.querySelectorAll('#about article')];
+                        element.classList.add(aboutCards.indexOf(element) % 2 === 0 ? 'about-from-left' : 'about-from-right');
+                    } else if (element.matches('#about > section:first-child > div > div')) {
+                        const aboutIntroColumns = [...document.querySelectorAll('#about > section:first-child > div > div')];
+                        element.classList.add(aboutIntroColumns.indexOf(element) === 0 ? 'about-from-left' : 'about-from-right');
+                    }
                     element.style.transitionDelay = `${Math.min(index % 4, 3) * 70}ms`;
 
                     if (window.userDashboardRevealObserver) {
