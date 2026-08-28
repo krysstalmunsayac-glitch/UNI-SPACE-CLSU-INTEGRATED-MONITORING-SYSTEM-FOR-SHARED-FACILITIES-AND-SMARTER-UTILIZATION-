@@ -233,15 +233,25 @@
                     <div class="mt-8 space-y-4 rounded-xl border border-white/20 bg-white/10 p-4">
                         <div>
                             <label for="map-facility-type" class="text-xs font-black uppercase tracking-wider text-emerald-100">Facility type</label>
-                            <select id="map-facility-type" class="mt-2 w-full rounded-xl border border-white/20 bg-white px-3 py-2.5 text-sm font-bold text-emerald-950 outline-none focus:ring-4 focus:ring-white/20">
-                                <option value="all">All facility types</option>
-                            </select>
+                            <div class="mt-2" style="position: relative;">
+                                <select id="map-facility-type" class="w-full rounded-xl border border-white/20 bg-white py-2.5 pl-3 text-sm font-bold text-emerald-950 outline-none focus:ring-4 focus:ring-white/20" style="appearance: none; padding-right: 3rem;">
+                                    <option value="all">All facility types</option>
+                                </select>
+                                <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position: absolute; right: 1rem; top: 50%; width: 1.1rem; height: 1.1rem; transform: translateY(-50%); color: #047857; pointer-events: none;">
+                                    <path d="m6 8 4 4 4-4" />
+                                </svg>
+                            </div>
                         </div>
                         <div>
                             <label for="map-facility-filter" class="text-xs font-black uppercase tracking-wider text-emerald-100">Locate facility</label>
-                            <select id="map-facility-filter" class="mt-2 w-full rounded-xl border border-white/20 bg-white px-3 py-2.5 text-sm font-bold text-emerald-950 outline-none focus:ring-4 focus:ring-white/20">
-                                <option value="all">All Facilities</option>
-                            </select>
+                            <div class="mt-2" style="position: relative;">
+                                <select id="map-facility-filter" class="w-full rounded-xl border border-white/20 bg-white py-2.5 pl-3 text-sm font-bold text-emerald-950 outline-none focus:ring-4 focus:ring-white/20" style="appearance: none; padding-right: 3rem;">
+                                    <option value="all">All Facilities</option>
+                                </select>
+                                <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position: absolute; right: 1rem; top: 50%; width: 1.1rem; height: 1.1rem; transform: translateY(-50%); color: #047857; pointer-events: none;">
+                                    <path d="m6 8 4 4 4-4" />
+                                </svg>
+                            </div>
                         </div>
                         <div>
                             <button id="get-facility-directions" type="button" disabled class="w-full rounded-xl bg-white px-4 py-3 text-sm font-black text-emerald-800 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60">
