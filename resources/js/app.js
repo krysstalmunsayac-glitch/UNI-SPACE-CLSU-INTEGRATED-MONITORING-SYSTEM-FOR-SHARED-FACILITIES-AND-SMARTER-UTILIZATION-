@@ -4,8 +4,6 @@ import { Calendar } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import timeGridPlugin from '@fullcalendar/timegrid';
-import Swal from 'sweetalert2';
-import 'sweetalert2/dist/sweetalert2.min.css';
 
 window.ScheduleCalendar = {
     Calendar,
@@ -129,39 +127,25 @@ window.scheduleCalendar = function (initialEvents, livewireView, livewire) {
     };
 };
 
-window.confirmLogout = async () => {
-    const result = await Swal.fire({
-        title: 'Are you sure?',
-        text: 'Do you want to log out of your account?',
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonText: 'Yes, log out',
-        cancelButtonText: 'Cancel',
-        confirmButtonColor: '#047857',
-        reverseButtons: true,
-        customClass: {
-            popup: 'rounded-2xl',
-        },
+let sweetAlertPromise;
+
+const loadSweetAlert = () => {
+    if (window.Swal) return Promise.resolve(window.Swal);
+    if (sweetAlertPromise) return sweetAlertPromise;
+
+    sweetAlertPromise = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+        script.async = true;
+        script.onload = () => resolve(window.Swal);
+        script.onerror = reject;
+        document.head.appendChild(script);
     });
 
-    return result.isConfirmed;
+    return sweetAlertPromise;
 };
 
-document.addEventListener('submit', async event => {
-    const form = event.target;
-    if (!(form instanceof HTMLFormElement)) return;
-
-    const action = new URL(form.action, window.location.origin);
-    if (action.pathname !== '/logout') return;
-
-    event.preventDefault();
-
-    if (await window.confirmLogout()) {
-        form.submit();
-    }
-});
-
-window.addEventListener('swal', event => {
+window.addEventListener('swal', async event => {
     const {
         title = 'Success',
         text = '',
@@ -169,6 +153,9 @@ window.addEventListener('swal', event => {
         timer = 2500,
         showConfirmButton = false,
     } = event?.detail ?? {};
+
+    const Swal = await loadSweetAlert().catch(() => null);
+    if (!Swal) return;
 
     Swal.fire({
         title,
@@ -184,13 +171,6 @@ window.addEventListener('swal', event => {
         },
     });
 });
-
-if (window.pendingSweetAlert) {
-    window.dispatchEvent(new CustomEvent('swal', {
-        detail: window.pendingSweetAlert,
-    }));
-    delete window.pendingSweetAlert;
-}
 
 window.facilityLocationPicker = function (livewire) {
     return {
