@@ -298,7 +298,12 @@ class FacilitiesController extends Controller
 
         return redirect()
             ->route('dashboard')
-            ->with('success', 'Your request details were updated and resubmitted successfully.');
+            ->with('success', 'Your request details were updated and resubmitted successfully.')
+            ->with('sweet_alert', [
+                'title' => 'Request updated',
+                'text' => 'Your request details were updated and resubmitted successfully.',
+                'icon' => 'success',
+            ]);
     }
 
     public function cancelWaitingList(Request $request, Requests $requestModel)
@@ -333,7 +338,12 @@ class FacilitiesController extends Controller
 
         return redirect()
             ->route('dashboard')
-            ->with('success', 'Your request has been cancelled. It will be archived automatically after 10 days.');
+            ->with('success', 'Your request has been cancelled. It will be archived automatically after 10 days.')
+            ->with('sweet_alert', [
+                'title' => 'Request cancelled',
+                'text' => 'Your request has been cancelled successfully. It will be archived automatically after 10 days.',
+                'icon' => 'success',
+            ]);
     }
 
     /**
