@@ -43,9 +43,9 @@ new #[Layout('components.layouts.home')] class extends Component {
         </div>
 
         <form wire:submit="updatePassword" class="space-y-6 rounded-3xl border border-emerald-900/10 bg-white p-6 shadow-xl shadow-emerald-950/5 dark:border-white/10 dark:bg-zinc-900 sm:p-8">
-            <x-ui::input wire:model="current_password" label="Current password" type="password" required autocomplete="current-password" />
-            <x-ui::input wire:model="password" label="New password" type="password" required autocomplete="new-password" />
-            <x-ui::input wire:model="password_confirmation" label="Confirm new password" type="password" required autocomplete="new-password" />
+            <x-ui::input wire:model="current_password" label="Current password" type="password" revealable required autocomplete="current-password" />
+            <x-ui::input wire:model="password" label="New password" type="password" revealable required autocomplete="new-password" />
+            <x-ui::input wire:model="password_confirmation" label="Confirm new password" type="password" revealable required autocomplete="new-password" />
 
             <div class="flex flex-wrap items-center gap-4 border-t border-emerald-900/10 pt-6 dark:border-white/10">
                 <x-ui::button variant="primary" type="submit">Update password</x-ui::button>
