@@ -6,3 +6,8 @@
 @import './app/react-shell.css';
 @import './app/navigation.css';
 @import './app/settings.css';
+
+/* Keep SweetAlert confirmations above sticky headers, menus, and modals. */
+.swal2-container {
+    z-index: 10000 !important;
+}
