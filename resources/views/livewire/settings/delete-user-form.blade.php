@@ -25,7 +25,7 @@ new class extends Component {
 <section class="mt-10 space-y-6">
     <div class="relative mb-5">
         <x-ui::heading>{{ __('Delete Account') }}</x-ui::heading>
-        <x-ui::subheading>{{ __('Delete your account and all of its resources') }}</x-ui::subheading>
+        <x-ui::subheading>{{ __('Deactivate your account for 90 days before permanent deletion') }}</x-ui::subheading>
     </div>
 
     <x-ui::modal.trigger name="confirm-user-deletion">
@@ -40,7 +40,7 @@ new class extends Component {
                 <x-ui::heading size="lg">{{ __('Are you sure you want to delete your account?') }}</x-ui::heading>
 
                 <x-ui::subheading>
-                    {{ __('Once your account is deleted, all of its resources and data will be permanently deleted. Please enter your password to confirm you would like to permanently delete your account.') }}
+                    {{ __('Your account will be deactivated immediately and retained for 90 days before it is permanently deleted. Please enter your password to confirm account deletion.') }}
                 </x-ui::subheading>
             </div>
 

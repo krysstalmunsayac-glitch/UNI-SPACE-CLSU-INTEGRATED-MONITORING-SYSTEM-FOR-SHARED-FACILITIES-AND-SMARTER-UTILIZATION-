@@ -133,5 +133,9 @@ new #[Layout('components.layouts.home')] class extends Component {
                 </div>
             </div>
         </form>
+
+        <div class="mt-8 rounded-3xl border border-red-200 bg-white p-6 shadow-xl shadow-emerald-950/5 dark:border-red-900/50 dark:bg-zinc-900 sm:p-10">
+            <livewire:settings.delete-user-form />
+        </div>
     </div>
 </section>

@@ -126,11 +126,6 @@ new #[Layout('components.layouts.app')] class extends Component {
         $this->dispatch('$refresh');
     }
 
-    public function forceDeleteUser(int $id): void
-    {
-        User::withTrashed()->findOrFail($id)->forceDelete();
-        $this->dispatch('$refresh');
-    }
 }; ?>
 
 <div class="space-y-6">
@@ -228,10 +223,12 @@ new #[Layout('components.layouts.app')] class extends Component {
                             <div>
                                 <p class="font-medium text-gray-900 dark:text-white">User #{{ $user->id }}</p>
                                 <p class="text-sm text-gray-600 dark:text-gray-400">{{ $user->name }}</p>
+                                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                    Permanently removed automatically {{ $user->deleted_at->addDays(90)->format('M j, Y') }}
+                                </p>
                             </div>
                             <div class="flex gap-2">
                                 <x-ui::button size="sm" variant="ghost" wire:click="restoreUser({{ $user->id }})">Restore</x-ui::button>
-                                <x-ui::button size="sm" variant="danger" wire:click="forceDeleteUser({{ $user->id }})" data-ui-confirm="Delete this archived user permanently?">Delete</x-ui::button>
                             </div>
                         </div>
                     </div>

@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Requests;
+use App\Models\User;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -21,6 +22,17 @@ Artisan::command('requests:archive-cancelled', function () {
 
     $this->info("Archived {$archivedCount} cancelled request(s).");
 })->purpose('Archive requests 10 days after cancellation');
+
+Artisan::command('users:purge-deleted', function () {
+    $purgedCount = User::onlyTrashed()
+        ->where('deleted_at', '<=', now()->subDays(90))
+        ->get()
+        ->each
+        ->forceDelete()
+        ->count();
+
+    $this->info("Permanently deleted {$purgedCount} account(s) after the 90-day retention period.");
+})->purpose('Permanently delete accounts after the 90-day soft-delete retention period');
 
 Artisan::command('requests:migrate-attachments-private', function () {
     $public = Storage::disk('public');
@@ -64,3 +76,4 @@ Artisan::command('requests:migrate-attachments-private', function () {
 
 Schedule::command('requests:mark-ended')->everyMinute();
 Schedule::command('requests:archive-cancelled')->hourly();
+Schedule::command('users:purge-deleted')->daily();
