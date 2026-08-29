@@ -4,6 +4,8 @@ import { Calendar } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import timeGridPlugin from '@fullcalendar/timegrid';
+import Swal from 'sweetalert2';
+import 'sweetalert2/dist/sweetalert2.min.css';
 
 window.ScheduleCalendar = {
     Calendar,
@@ -127,31 +129,7 @@ window.scheduleCalendar = function (initialEvents, livewireView, livewire) {
     };
 };
 
-let sweetAlertPromise;
-
-const loadSweetAlert = () => {
-    if (window.Swal) return Promise.resolve(window.Swal);
-    if (sweetAlertPromise) return sweetAlertPromise;
-
-    sweetAlertPromise = new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
-        script.async = true;
-        script.onload = () => resolve(window.Swal);
-        script.onerror = reject;
-        document.head.appendChild(script);
-    });
-
-    return sweetAlertPromise;
-};
-
 window.confirmLogout = async () => {
-    const Swal = await loadSweetAlert().catch(() => null);
-
-    if (!Swal) {
-        return window.confirm('Are you sure you want to log out?');
-    }
-
     const result = await Swal.fire({
         title: 'Are you sure?',
         text: 'Do you want to log out of your account?',
@@ -183,7 +161,7 @@ document.addEventListener('submit', async event => {
     }
 });
 
-window.addEventListener('swal', async event => {
+window.addEventListener('swal', event => {
     const {
         title = 'Success',
         text = '',
@@ -191,9 +169,6 @@ window.addEventListener('swal', async event => {
         timer = 2500,
         showConfirmButton = false,
     } = event?.detail ?? {};
-
-    const Swal = await loadSweetAlert().catch(() => null);
-    if (!Swal) return;
 
     Swal.fire({
         title,
