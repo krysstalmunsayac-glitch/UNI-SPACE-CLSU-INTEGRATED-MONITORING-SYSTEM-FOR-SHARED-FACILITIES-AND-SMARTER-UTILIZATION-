@@ -180,8 +180,8 @@ new #[Layout('components.layouts.app')] class extends Component {
             </div>
         </form>
 
-        @unless (auth()->user()->isSuperAdmin())
+        @if (auth()->user()->hasrole('user'))
             <livewire:settings.delete-user-form />
-        @endunless
+        @endif
     </x-settings.layout>
 </section>
