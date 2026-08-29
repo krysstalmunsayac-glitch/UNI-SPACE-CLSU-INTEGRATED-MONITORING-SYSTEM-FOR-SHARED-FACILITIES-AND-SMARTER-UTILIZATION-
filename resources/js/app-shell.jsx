@@ -194,7 +194,7 @@ function AppShell({ props }) {
             <div className="react-sidebar-brand">
                 <a href={props.brandUrl} onClick={(event) => navigate(event, props.brandUrl)}>
                     <picture>
-                        <source media="(max-width: 63.999rem)" srcSet={props.collapsedLogoUrl ?? props.logoUrl}/>
+                        <source media="(max-width: 63.999rem)" srcSet={props.logoUrl}/>
                         <img
                             src={collapsed ? (props.collapsedLogoUrl ?? props.logoUrl) : props.logoUrl}
                             alt="SIEL SPACE"

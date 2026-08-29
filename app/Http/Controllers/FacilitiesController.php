@@ -194,7 +194,12 @@ class FacilitiesController extends Controller
 
         return redirect()
             ->route('dashboard')
-            ->with('success', 'Your request has been submitted successfully.');
+            ->with('success', 'Your request has been submitted successfully.')
+            ->with('sweet_alert', [
+                'title' => 'Request sent',
+                'text' => 'Your request has been submitted successfully.',
+                'icon' => 'success',
+            ]);
     }
 
     public function waitingList()
