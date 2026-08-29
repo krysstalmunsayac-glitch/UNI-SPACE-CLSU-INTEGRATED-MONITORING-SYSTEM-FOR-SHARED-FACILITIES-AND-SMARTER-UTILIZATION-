@@ -145,6 +145,44 @@ const loadSweetAlert = () => {
     return sweetAlertPromise;
 };
 
+window.confirmLogout = async () => {
+    const Swal = await loadSweetAlert().catch(() => null);
+
+    if (!Swal) {
+        return window.confirm('Are you sure you want to log out?');
+    }
+
+    const result = await Swal.fire({
+        title: 'Are you sure?',
+        text: 'Do you want to log out of your account?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, log out',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#047857',
+        reverseButtons: true,
+        customClass: {
+            popup: 'rounded-2xl',
+        },
+    });
+
+    return result.isConfirmed;
+};
+
+document.addEventListener('submit', async event => {
+    const form = event.target;
+    if (!(form instanceof HTMLFormElement)) return;
+
+    const action = new URL(form.action, window.location.origin);
+    if (action.pathname !== '/logout') return;
+
+    event.preventDefault();
+
+    if (await window.confirmLogout()) {
+        form.submit();
+    }
+});
+
 window.addEventListener('swal', async event => {
     const {
         title = 'Success',
@@ -171,6 +209,13 @@ window.addEventListener('swal', async event => {
         },
     });
 });
+
+if (window.pendingSweetAlert) {
+    window.dispatchEvent(new CustomEvent('swal', {
+        detail: window.pendingSweetAlert,
+    }));
+    delete window.pendingSweetAlert;
+}
 
 window.facilityLocationPicker = function (livewire) {
     return {

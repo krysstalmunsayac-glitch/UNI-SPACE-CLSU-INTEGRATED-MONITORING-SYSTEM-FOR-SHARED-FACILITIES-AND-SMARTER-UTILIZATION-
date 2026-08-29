@@ -51,6 +51,12 @@ new #[Layout('components.layouts.auth')] class extends Component {
             default => route('dashboard', absolute: false),
         };
 
+        Session::flash('sweet_alert', [
+            'title' => 'Welcome back!',
+            'text' => 'You have logged in successfully.',
+            'icon' => 'success',
+        ]);
+
         // Use a full-page redirect so account switches do not reuse stale
         // Livewire navigation state from the previously authenticated user.
         $this->redirect($dashboard);

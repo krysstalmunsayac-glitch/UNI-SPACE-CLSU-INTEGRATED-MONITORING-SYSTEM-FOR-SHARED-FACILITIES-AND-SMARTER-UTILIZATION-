@@ -114,4 +114,9 @@
 </style>
 
 @vite(['resources/css/app.css', 'resources/js/app.js'])
+@if (session()->has('sweet_alert'))
+    <script>
+        window.pendingSweetAlert = {{ Illuminate\Support\Js::from(session('sweet_alert')) }};
+    </script>
+@endif
 @stack('styles')

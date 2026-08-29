@@ -100,7 +100,9 @@ function AccountMenu({ user, csrfToken }) {
     const [open, setOpen] = useState(false);
     const ref = useRef(null);
     useOutsideClick(ref, () => setOpen(false));
-    const logout = () => {
+    const logout = async () => {
+        if (!await window.confirmLogout()) return;
+
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = user.logoutUrl;
