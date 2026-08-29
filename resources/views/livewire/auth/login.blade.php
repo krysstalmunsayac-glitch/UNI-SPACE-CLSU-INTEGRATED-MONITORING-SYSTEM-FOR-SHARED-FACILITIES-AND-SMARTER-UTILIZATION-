@@ -43,7 +43,17 @@ new #[Layout('components.layouts.auth')] class extends Component {
         RateLimiter::clear($this->throttleKey());
         Session::regenerate();
 
-        $this->redirectIntended(default: route('dashboard', absolute: false), navigate: true);
+        Session::forget('url.intended');
+
+        $dashboard = match (Auth::user()->user_type) {
+            'super_admin' => route('dashboard.superadmin', absolute: false),
+            'admin' => route('dashboard.officeadmin', absolute: false),
+            default => route('dashboard', absolute: false),
+        };
+
+        // Use a full-page redirect so account switches do not reuse stale
+        // Livewire navigation state from the previously authenticated user.
+        $this->redirect($dashboard);
     }
 
     /**
