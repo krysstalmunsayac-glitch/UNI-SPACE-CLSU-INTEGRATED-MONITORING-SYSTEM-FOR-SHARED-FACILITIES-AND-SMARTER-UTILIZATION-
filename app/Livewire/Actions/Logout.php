@@ -17,6 +17,11 @@ class Logout
         Session::invalidate();
         Session::regenerateToken();
 
-        return redirect('/');
+        return redirect('/')->with('sweet_alert', [
+            'title' => 'Logged out',
+            'text' => 'You have logged out successfully.',
+            'icon' => 'success',
+            'position' => 'center',
+        ]);
     }
 }

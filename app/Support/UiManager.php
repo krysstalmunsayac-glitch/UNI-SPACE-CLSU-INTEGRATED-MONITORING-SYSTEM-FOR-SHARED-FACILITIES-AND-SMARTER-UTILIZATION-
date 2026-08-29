@@ -24,6 +24,7 @@ class UiManager
                 default => 'success',
             },
             timer: $duration,
+            position: $position ?? 'center',
         );
     }
 
