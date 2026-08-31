@@ -196,7 +196,9 @@ class Requests extends Model
 
     public function feedback(): HasOne
     {
-        return $this->hasOne(Feedbacks::class, 'Request_ID', 'RID');
+        // A request may only ever have one feedback record. Include archived
+        // feedback so the application agrees with the database unique index.
+        return $this->hasOne(Feedbacks::class, 'Request_ID', 'RID')->withTrashed();
     }
 
     /**
