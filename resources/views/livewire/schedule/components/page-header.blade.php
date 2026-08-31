@@ -64,10 +64,6 @@
                 placeholder="All facilities"
                 class="w-full"
             >
-                <x-ui::select.option value="">
-                    All facilities
-                </x-ui::select.option>
-
                 @foreach ($this->facilitiesList as $facility)
                     <x-ui::select.option value="{{ $facility->FID }}">
                         {{ $facility->Facility_Name }}

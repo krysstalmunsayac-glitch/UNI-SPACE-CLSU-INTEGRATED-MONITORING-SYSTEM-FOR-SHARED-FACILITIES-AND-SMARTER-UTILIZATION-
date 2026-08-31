@@ -63,7 +63,7 @@ new #[Layout('components.layouts.app')] class extends Component
 
     public string $search = '';
 
-    public $sortBy = 'RID';
+    public $sortBy = 'priority';
 
     public $sortDirection = 'asc';
 
@@ -751,6 +751,7 @@ new #[Layout('components.layouts.app')] class extends Component
             ))
             ->when($this->search, fn ($query) => $query->where(function ($query) {
                 $query->whereHas('user', fn ($q) => $q->where('name', 'like', "%{$this->search}%"))
+                    ->orWhereHas('facility', fn ($q) => $q->where('Facility_Name', 'like', "%{$this->search}%"))
                     ->orWhere('Purpose', 'like', "%{$this->search}%")
                     ->orWhere('Status', 'like', "%{$this->search}%");
             }))
@@ -761,8 +762,20 @@ new #[Layout('components.layouts.app')] class extends Component
                 $this->statusFilter && $this->statusFilter !== 'Needs Revision',
                 fn ($query) => $query->where('Status', $this->statusFilter)
             )
-            ->orderBy($this->sortBy, $this->sortDirection)
-            ->orderBy('RID', $this->sortDirection)
+            ->when($this->sortBy === 'priority', fn ($query) => $query
+                ->orderByRaw("CASE Status
+                    WHEN 'Pending' THEN 0
+                    WHEN 'Approved' THEN 1
+                    WHEN 'Rejected' THEN 2
+                    WHEN 'Cancelled' THEN 3
+                    WHEN 'Ended' THEN 4
+                    ELSE 5
+                END")
+                ->orderBy('Proposed_Date')
+                ->orderBy('RID'))
+            ->when($this->sortBy !== 'priority', fn ($query) => $query
+                ->orderBy($this->sortBy, $this->sortDirection)
+                ->orderBy('RID', $this->sortDirection))
             ->paginate(8, pageName: 'requestsPage');
     }
 

@@ -12,17 +12,13 @@
             </div>
 
             <div>
-                <x-ui::select wire:model="Request_ID" label="Request" placeholder="Select a request">
-                    @foreach ($this->requestsList as $request)
-                        <x-ui::select.option value="{{ $request->RID }}">
-                            #{{ $request->RID }}
-                            —
-                            {{ $request->facility?->Facility_Name ?? '—' }}
-                            ({{ $request->Purpose ?? 'No purpose' }})
-                        </x-ui::select.option>
-                    @endforeach
-                </x-ui::select>
-
+                <p class="mb-1 text-sm font-medium text-zinc-700 dark:text-zinc-300">Request</p>
+                @php($originalRequest = $this->requestsList->firstWhere('RID', $Request_ID))
+                <div class="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
+                    #{{ $Request_ID }}
+                    — {{ $originalRequest?->facility?->Facility_Name ?? '—' }}
+                    ({{ $originalRequest?->Purpose ?? 'No purpose' }})
+                </div>
             </div>
 
             <div>
@@ -30,6 +26,7 @@
                     wire:model="Date"
                     type="date"
                     label="Date"
+                    min="{{ now()->toDateString() }}"
                 />
 
             </div>

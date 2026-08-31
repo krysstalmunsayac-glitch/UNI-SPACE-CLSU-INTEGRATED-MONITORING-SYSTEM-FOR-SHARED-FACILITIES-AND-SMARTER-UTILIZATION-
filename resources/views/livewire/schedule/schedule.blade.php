@@ -36,7 +36,7 @@ new #[Layout('components.layouts.app')] class extends Component {
     #[Validate('required|exists:requests,RID')]
     public ?int $Request_ID = null;
 
-    #[Validate('required|date')]
+    #[Validate('required|date|after_or_equal:today')]
     public string $Date = '';
 
     #[Validate('required')]
@@ -103,6 +103,15 @@ new #[Layout('components.layouts.app')] class extends Component {
 
         $validated = $this->validate();
         $schedule = $this->getScopedSchedule((int) $this->editingId);
+
+        // A schedule belongs to the request that created it. Do not allow a
+        // modified Livewire payload to move it to a different request.
+        if ((int) $validated['Request_ID'] !== (int) $schedule->Request_ID) {
+            $this->Request_ID = (int) $schedule->Request_ID;
+            $this->addError('Request_ID', 'The request assigned to a schedule cannot be changed.');
+
+            return;
+        }
 
         // Prevent the same request from being scheduled twice
         $duplicateRequestQuery = Schedule::where('Request_ID', $validated['Request_ID']);
