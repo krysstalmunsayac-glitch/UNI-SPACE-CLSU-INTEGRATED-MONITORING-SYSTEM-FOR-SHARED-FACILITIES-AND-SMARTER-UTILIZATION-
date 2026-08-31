@@ -76,7 +76,7 @@
                 @else
                     <div class="hidden items-center gap-3 lg:flex">
                         <x-notification-button />
-                        <a href="{{ $isEndUser ? route('waiting.list') : route('dashboard') }}" class="rounded-xl bg-emerald-700 px-5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-800 dark:bg-emerald-400 dark:text-emerald-950">
+                        <a href="{{ $isEndUser ? $homeRoute.'#requests' : route('dashboard') }}" class="rounded-xl bg-emerald-700 px-5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-800 dark:bg-emerald-400 dark:text-emerald-950">
                             {{ $isEndUser ? 'My Requests' : 'Dashboard' }}
                         </a>
                         <x-ui::dropdown position="bottom" align="end">
@@ -160,7 +160,7 @@
                     <a href="{{ $homeRoute }}#calendar" x-on:click="mobileMenuOpen = false; setActive('calendar')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'calendar' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">Calendar</a>
                     <a href="{{ $homeRoute }}#map" x-on:click="mobileMenuOpen = false; setActive('map')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'map' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">Map</a>
                     <a href="{{ $homeRoute }}#help" x-on:click="mobileMenuOpen = false; setActive('help')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'help' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">Help</a>
-                    <a href="{{ route('waiting.list') }}" x-on:click="mobileMenuOpen = false" @class(['rounded-lg px-3 py-2.5', $mobileNavLink, 'bg-emerald-50 '.$mobileNavActive => request()->routeIs('waiting.list')])>My Requests / Waiting List</a>
+                    <a href="{{ $homeRoute }}#requests" x-on:click="mobileMenuOpen = false; setActive('requests')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'requests' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">My Requests / Waiting List</a>
 
                     <div class="mt-2 flex items-center justify-between border-t border-emerald-900/10 pt-3 dark:border-white/10">
                         <x-notification-button />

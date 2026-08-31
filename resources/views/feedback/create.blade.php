@@ -29,13 +29,11 @@
                     </fieldset>
 
                     <label class="block" for="feedback-comment">
-                        <span class="text-sm font-black text-emerald-950 dark:text-white">Comments</span>
+                        <span class="text-sm font-black text-emerald-950 dark:text-white">Comments <span class="font-normal text-emerald-900/60 dark:text-zinc-400">(optional)</span></span>
                         <textarea
                             id="feedback-comment"
                             name="Comment"
                             rows="5"
-                            required
-                            minlength="5"
                             maxlength="1000"
                             placeholder="Share your experience with this facility..."
                             class="mt-3 w-full rounded-xl border border-emerald-900/15 bg-white px-4 py-3 text-sm text-emerald-950 outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-white/15 dark:bg-zinc-950 dark:text-white"
@@ -43,7 +41,7 @@
                         @error('Comment') <p class="mt-2 text-sm font-semibold text-red-600">{{ $message }}</p> @enderror
                     </label>
 
-                    <button type="submit" class="w-full rounded-xl bg-emerald-700 px-5 py-3 text-sm font-black text-white transition hover:bg-emerald-800">
+                    <button type="submit" class="w-full rounded-xl bg-emerald-700 px-5 py-3 text-sm font-black text-white transition hover:bg-emerald-800 disabled:opacity-60" data-ui-confirm="Submit this facility rating? Feedback can only be submitted once." data-ui-confirm-title="Confirm feedback submission" data-ui-confirm-label="Submit feedback">
                         Submit facility rating
                     </button>
                 </form>

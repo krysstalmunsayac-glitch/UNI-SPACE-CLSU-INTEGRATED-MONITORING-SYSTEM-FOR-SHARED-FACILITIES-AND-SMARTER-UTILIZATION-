@@ -318,16 +318,51 @@ class FacilitiesController extends Controller
                 ->with('warning', 'This request can no longer be cancelled.');
         }
 
+        $reasons = [
+            'Change of plans',
+            'Schedule conflict',
+            'Event postponed',
+            'Event cancelled',
+            'Facility no longer needed',
+            'Other',
+        ];
+
         $validated = $request->validate([
-            'Cancellation_Reason' => ['required', 'string', 'min:5', 'max:1000'],
+            'Cancellation_Reason' => ['required', Rule::in($reasons)],
+            'Other_Cancellation_Reason' => [
+                'nullable',
+                Rule::requiredIf(fn () => $request->input('Cancellation_Reason') === 'Other'),
+                'string',
+                'min:5',
+                'max:1000',
+            ],
+        ], [
+            'Cancellation_Reason.required' => 'Select a reason for cancelling this request.',
+            'Cancellation_Reason.in' => 'Select a valid cancellation reason.',
+            'Other_Cancellation_Reason.required' => 'Enter a specific cancellation reason.',
         ]);
 
-        $requestModel->schedules()->delete();
+        $cancellationReason = $validated['Cancellation_Reason'] === 'Other'
+            ? trim($validated['Other_Cancellation_Reason'])
+            : $validated['Cancellation_Reason'];
 
-        $requestModel->update([
-            'Status' => 'Cancelled',
-            'Cancellation_Reason' => $validated['Cancellation_Reason'],
-        ]);
+        $requestModel = DB::transaction(function () use ($requestModel, $cancellationReason): Requests {
+            $lockedRequest = Requests::query()->lockForUpdate()->findOrFail($requestModel->RID);
+
+            if (! in_array($lockedRequest->Status, ['Pending', 'Approved'], true)) {
+                throw ValidationException::withMessages([
+                    'Cancellation_Reason' => 'This request has already been cancelled or can no longer be cancelled.',
+                ]);
+            }
+
+            $lockedRequest->schedules()->delete();
+            $lockedRequest->update([
+                'Status' => 'Cancelled',
+                'Cancellation_Reason' => $cancellationReason,
+            ]);
+
+            return $lockedRequest;
+        }, 3);
 
         $requestModel->refresh()->load(['facility', 'user']);
 

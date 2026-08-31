@@ -17,7 +17,12 @@ new #[Layout('components.layouts.home')] class extends Component {
         try {
             $validated = $this->validate([
                 'current_password' => ['required', 'string', 'current_password'],
-                'password' => ['required', 'string', Password::defaults(), 'confirmed'],
+                'password' => [
+                    'required',
+                    'string',
+                    'confirmed',
+                    Password::min(8)->mixedCase()->numbers()->symbols(),
+                ],
             ]);
         } catch (ValidationException $exception) {
             $this->reset('current_password', 'password', 'password_confirmation');
@@ -44,11 +49,12 @@ new #[Layout('components.layouts.home')] class extends Component {
 
         <form wire:submit="updatePassword" class="space-y-6 rounded-3xl border border-emerald-900/10 bg-white p-6 shadow-xl shadow-emerald-950/5 dark:border-white/10 dark:bg-zinc-900 sm:p-8">
             <x-ui::input wire:model="current_password" label="Current password" type="password" revealable required autocomplete="current-password" />
-            <x-ui::input wire:model="password" label="New password" type="password" revealable required autocomplete="new-password" />
+            <x-ui::input wire:model="password" label="New password" type="password" revealable required minlength="8" pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^a-zA-Z0-9]).{8,}" title="Use at least 8 characters with uppercase, lowercase, number, and special character." autocomplete="new-password" />
+            <p class="text-xs font-semibold text-emerald-900/60 dark:text-zinc-400">Use at least 8 characters with uppercase, lowercase, a number, and a special character (such as !, @, #, or $).</p>
             <x-ui::input wire:model="password_confirmation" label="Confirm new password" type="password" revealable required autocomplete="new-password" />
 
             <div class="flex flex-wrap items-center gap-4 border-t border-emerald-900/10 pt-6 dark:border-white/10">
-                <x-ui::button variant="primary" type="submit">Update password</x-ui::button>
+                <x-ui::button variant="primary" type="submit" wire:loading.attr="disabled" wire:target="updatePassword" data-ui-confirm="Change your account password now?" data-ui-confirm-title="Confirm password update" data-ui-confirm-label="Update password">Update password</x-ui::button>
                 <a href="{{ route('profile.external') }}" class="rounded-xl border border-emerald-900/10 px-5 py-2.5 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-50 dark:border-white/10 dark:text-emerald-300 dark:hover:bg-zinc-800">Cancel</a>
                 <x-action-message on="password-updated" class="font-semibold text-emerald-700 dark:text-emerald-300">Password updated successfully.</x-action-message>
             </div>

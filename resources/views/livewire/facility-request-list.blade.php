@@ -73,7 +73,7 @@ new class extends Component {
 };
 ?>
 
-    <section id="requests" class="border-t border-emerald-900/10 bg-emerald-50/50 py-20 dark:border-white/10 dark:bg-zinc-900">
+    <section id="requests" class="scroll-mt-20 border-t border-emerald-900/10 bg-emerald-50/50 py-20 dark:border-white/10 dark:bg-zinc-900">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div>
@@ -294,24 +294,44 @@ new class extends Component {
                                     @error('attachment') <p class="mt-1 text-xs font-semibold text-red-600">{{ $message }}</p> @enderror
                                 </div>
                                 @if ($canCancel)
-                                    <div class="lg:col-span-2">
+                                    <div class="lg:col-span-2" x-data="{ cancellationReason: @js(old('Cancellation_Reason', '')) }">
                                         <label class="mb-2 block text-xs font-black uppercase tracking-wide text-emerald-700 dark:text-emerald-300" for="Cancellation_Reason_{{ $request->RID }}">
                                             Reason for cancellation
                                         </label>
-                                        <textarea
+                                        <select
                                             id="Cancellation_Reason_{{ $request->RID }}"
                                             name="Cancellation_Reason"
                                             form="cancel-request-{{ $request->RID }}"
-                                            rows="3"
                                             required
-                                            minlength="5"
-                                            maxlength="1000"
-                                            placeholder="Please explain why you are cancelling this {{ strtolower($request->Status) }} request."
+                                            x-model="cancellationReason"
                                             class="w-full rounded-xl border border-rose-200 bg-white px-4 py-3 text-sm text-emerald-950 outline-none focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 dark:border-rose-500/30 dark:bg-zinc-900 dark:text-white"
-                                        >{{ old('Cancellation_Reason') }}</textarea>
+                                        >
+                                            <option value="">Select a cancellation reason</option>
+                                            @foreach (['Change of plans', 'Schedule conflict', 'Event postponed', 'Event cancelled', 'Facility no longer needed', 'Other'] as $reason)
+                                                <option value="{{ $reason }}">{{ $reason }}</option>
+                                            @endforeach
+                                        </select>
                                         @error('Cancellation_Reason')
                                             <p class="mt-2 text-xs font-semibold text-red-600">{{ $message }}</p>
                                         @enderror
+
+                                        <div x-cloak x-show="cancellationReason === 'Other'" class="mt-3">
+                                            <label class="mb-2 block text-xs font-black uppercase tracking-wide text-emerald-700 dark:text-emerald-300" for="Other_Cancellation_Reason_{{ $request->RID }}">Specific reason</label>
+                                            <textarea
+                                                id="Other_Cancellation_Reason_{{ $request->RID }}"
+                                                name="Other_Cancellation_Reason"
+                                                form="cancel-request-{{ $request->RID }}"
+                                                rows="3"
+                                                minlength="5"
+                                                maxlength="1000"
+                                                x-bind:required="cancellationReason === 'Other'"
+                                                placeholder="Please provide a specific reason for cancelling this request."
+                                                class="w-full rounded-xl border border-rose-200 bg-white px-4 py-3 text-sm text-emerald-950 outline-none focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 dark:border-rose-500/30 dark:bg-zinc-900 dark:text-white"
+                                            >{{ old('Other_Cancellation_Reason') }}</textarea>
+                                            @error('Other_Cancellation_Reason')
+                                                <p class="mt-2 text-xs font-semibold text-red-600">{{ $message }}</p>
+                                            @enderror
+                                        </div>
                                     </div>
                                 @endif
                                 <div class="flex flex-wrap justify-end gap-3 lg:col-span-2">
@@ -324,12 +344,13 @@ new class extends Component {
                                             data-ui-confirm-title="Confirm cancellation"
                                             data-ui-confirm-label="Cancel request"
                                             data-ui-confirm-variant="danger"
+                                            onclick="this.form?.addEventListener('submit', () => { this.disabled = true; }, { once: true })"
                                         >
                                             Cancel request
                                         </button>
                                     @endif
 
-                                    <button type="submit" class="rounded-xl bg-emerald-700 px-5 py-3 text-sm font-black text-white transition hover:bg-emerald-800">
+                                    <button type="submit" class="rounded-xl bg-emerald-700 px-5 py-3 text-sm font-black text-white transition hover:bg-emerald-800 disabled:opacity-60" data-ui-confirm="Save these changes to this facility request?" data-ui-confirm-title="Confirm request update" data-ui-confirm-label="Save changes">
                                         Save changes
                                     </button>
                                 </div>
@@ -351,7 +372,7 @@ new class extends Component {
 
                 @if ($requests->hasPages())
                     <div class="pt-3">
-                        {{ $requests->links() }}
+                        {{ $requests->links(data: ['scrollTo' => '#requests']) }}
                     </div>
                 @endif
             </div>

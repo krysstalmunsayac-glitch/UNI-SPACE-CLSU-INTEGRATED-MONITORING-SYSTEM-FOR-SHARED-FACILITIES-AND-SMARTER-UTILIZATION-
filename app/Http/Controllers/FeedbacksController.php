@@ -6,6 +6,7 @@ use App\Models\Feedbacks;
 use App\Models\Requests;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class FeedbacksController extends Controller
@@ -58,21 +59,30 @@ class FeedbacksController extends Controller
 
         $validated = $request->validate([
             'Rating' => ['required', 'integer', 'between:1,5'],
-            'Comment' => ['required', 'string', 'min:5', 'max:1000'],
+            'Comment' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        abort_if($facilityRequest->feedback()->exists(), 409, 'Feedback has already been submitted for this request.');
+        DB::transaction(function () use ($facilityRequest, $request, $validated): void {
+            $lockedRequest = Requests::withTrashed()->lockForUpdate()->findOrFail($facilityRequest->RID);
 
-        Feedbacks::create([
-            'User_ID' => $request->user()->id,
-            'Request_ID' => $facilityRequest->RID,
-            'Facility_ID' => $facilityRequest->Facility_ID,
-            'Rating' => $validated['Rating'],
-            'Comment' => $validated['Comment'],
-        ]);
+            abort_if($lockedRequest->feedback()->exists(), 409, 'Feedback has already been submitted for this request.');
+
+            Feedbacks::create([
+                'User_ID' => $request->user()->id,
+                'Request_ID' => $lockedRequest->RID,
+                'Facility_ID' => $lockedRequest->Facility_ID,
+                'Rating' => $validated['Rating'],
+                'Comment' => filled($validated['Comment'] ?? null) ? trim($validated['Comment']) : null,
+            ]);
+        }, 3);
 
         return redirect(route('dashboard').'#requests')
-            ->with('success', 'Thank you! Your feedback was submitted.');
+            ->with('success', 'Thank you! Your feedback was submitted successfully.')
+            ->with('sweet_alert', [
+                'title' => 'Feedback submitted',
+                'text' => 'Thank you for sharing your facility rating.',
+                'icon' => 'success',
+            ]);
     }
 
     /**
