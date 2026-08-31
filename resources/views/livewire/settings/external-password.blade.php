@@ -36,6 +36,11 @@ new #[Layout('components.layouts.home')] class extends Component {
 
         $this->reset('current_password', 'password', 'password_confirmation');
         $this->dispatch('password-updated');
+        $this->dispatch('swal', [
+            'title' => 'Password updated',
+            'text' => 'Your new password is now active.',
+            'icon' => 'success',
+        ]);
     }
 }; ?>
 

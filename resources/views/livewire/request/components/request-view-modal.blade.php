@@ -138,7 +138,7 @@
     </div>
 
     <footer class="flex shrink-0 flex-wrap gap-2 border-t border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-950 sm:px-6">
-        @if (! $viewingArchived && ! in_array($Status, ['Approved', 'Cancelled', 'Ended'], true) && $viewingId)
+        @if (! $viewingArchived && $Status === 'Pending' && $viewingId)
             <x-ui::button wire:click="approve({{ $viewingId }})" data-ui-confirm="Approve this request?" variant="primary" icon="check" class="flex-1">
                 Approve
             </x-ui::button>
@@ -156,7 +156,7 @@
             >
                 Cancel
             </x-ui::button>
-        @elseif (! $viewingArchived && ! in_array($Status, ['Cancelled', 'Ended'], true) && $viewingId)
+        @elseif (! $viewingArchived && $Status === 'Pending' && $viewingId)
             <x-ui::button wire:click="openRejectModal({{ $viewingId }}); $set('showViewModal', false)" variant="danger" icon="x-mark" class="flex-1">
                 Reject
             </x-ui::button>

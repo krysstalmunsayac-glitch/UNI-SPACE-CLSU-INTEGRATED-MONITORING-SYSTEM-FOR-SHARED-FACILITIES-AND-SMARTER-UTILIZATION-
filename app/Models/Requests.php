@@ -61,6 +61,31 @@ class Requests extends Model
         'Review_Requested_At' => 'datetime',
     ];
 
+    /** @var array<string, list<string>> */
+    private const STATUS_TRANSITIONS = [
+        'Pending' => ['Approved', 'Rejected', 'Cancelled'],
+        'Approved' => ['Cancelled', 'Ended'],
+        'Rejected' => [],
+        'Cancelled' => [],
+        'Ended' => [],
+    ];
+
+    public function canTransitionTo(string $status): bool
+    {
+        return in_array($status, self::allowedTransitionsFrom($this->Status), true);
+    }
+
+    /** @return list<string> */
+    public static function allowedTransitionsFrom(string $status): array
+    {
+        return self::STATUS_TRANSITIONS[$status] ?? [];
+    }
+
+    public function canBeReviewed(): bool
+    {
+        return $this->Status === 'Pending';
+    }
+
     protected static function booted(): void
     {
         static::created(function (Requests $request): void {

@@ -282,7 +282,7 @@ new #[Layout('components.layouts.app')] class extends Component
     {
         $request = $this->getScopedRequest($requestId)->load(['facility', 'user']);
 
-        if (in_array($request->Status, ['Approved', 'Cancelled', 'Ended'], true)) {
+        if (! $request->canTransitionTo('Approved')) {
             Ui::toast(text: 'This request cannot be approved from its current status.', variant: 'warning');
 
             return;
@@ -307,7 +307,7 @@ new #[Layout('components.layouts.app')] class extends Component
 
             $request = Requests::query()->whereKey($request->RID)->lockForUpdate()->firstOrFail();
 
-            if ($request->Status !== 'Pending') {
+            if (! $request->canTransitionTo('Approved')) {
                 return null;
             }
 
@@ -389,7 +389,7 @@ new #[Layout('components.layouts.app')] class extends Component
     {
         $request = $this->getScopedRequest($requestId);
 
-        if (in_array($request->Status, ['Approved', 'Cancelled', 'Ended'], true)) {
+        if (! $request->canTransitionTo('Rejected')) {
             Ui::toast(text: 'This request can no longer be rejected.', variant: 'warning');
 
             return;
@@ -426,7 +426,7 @@ new #[Layout('components.layouts.app')] class extends Component
         }
 
         $request = $this->getScopedRequest($this->rejectingId);
-        abort_if(in_array($request->Status, ['Approved', 'Cancelled', 'Ended'], true), 409);
+        abort_unless($request->canTransitionTo('Rejected'), 409);
 
         $reasons = collect($this->rejectionReasons)
             ->reject(fn (string $reason) => $reason === 'Other')
@@ -485,7 +485,7 @@ new #[Layout('components.layouts.app')] class extends Component
         $request = $this->getScopedRequest($requestId)
             ->load(['user', 'event', 'facility.amenities']);
 
-        if (in_array($request->Status, ['Approved', 'Cancelled', 'Ended'], true)) {
+        if (! $request->canBeReviewed()) {
             Ui::toast(text: 'This request can no longer be returned for revision.', variant: 'warning');
 
             return;
@@ -508,7 +508,7 @@ new #[Layout('components.layouts.app')] class extends Component
         $request = $this->getScopedRequest($this->reviewingId)
             ->load(['user', 'facility']);
 
-        abort_if(in_array($request->Status, ['Approved', 'Cancelled'], true), 409);
+        abort_unless($request->canBeReviewed(), 409);
 
         $request->schedules()->delete();
         $request->update([
@@ -537,6 +537,12 @@ new #[Layout('components.layouts.app')] class extends Component
         $previousStatus = $request->Status;
         $wasApproved = $request->Status === 'Approved';
         $facilityId = $request->facility?->FID;
+
+        abort_if(
+            $this->Status !== $previousStatus && ! $request->canTransitionTo($this->Status),
+            409,
+            'This request status transition is not allowed.',
+        );
 
         if (
             $this->Status === 'Approved'
@@ -676,14 +682,14 @@ new #[Layout('components.layouts.app')] class extends Component
 
     public function restore(int $requestId): void
     {
-        Requests::withTrashed()->findOrFail($requestId)->restore();
+        Requests::onlyTrashed()->findOrFail($requestId)->restore();
         Ui::toast(text: 'Request restored successfully!', variant: 'success');
         $this->dispatch('$refresh');
     }
 
     public function forceDelete(int $requestId): void
     {
-        Requests::withTrashed()->findOrFail($requestId)->forceDelete();
+        Requests::onlyTrashed()->findOrFail($requestId)->forceDelete();
         Ui::toast(text: 'Request permanently deleted.', variant: 'danger');
         $this->dispatch('$refresh');
     }

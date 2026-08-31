@@ -275,6 +275,7 @@ new #[Layout('components.layouts.app')] class extends Component
     public function forceDelete(int $amenityId): void
     {
         $amenity = $this->getScopedAmenity($amenityId, withTrashed: true);
+        abort_unless($amenity->trashed(), 409, 'Only archived amenities can be permanently deleted.');
         $amenity->forceDelete();
 
         Ui::toast(text: 'Amenity permanently deleted.', variant: 'danger');

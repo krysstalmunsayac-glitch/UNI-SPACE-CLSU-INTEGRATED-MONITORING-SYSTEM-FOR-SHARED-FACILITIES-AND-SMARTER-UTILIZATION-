@@ -291,7 +291,12 @@ class FacilitiesController extends Controller
             'Purpose' => $validated['Purpose'],
             'Capacity' => $validated['Capacity'] ?? null,
             'attachment_path' => $attachmentPath,
-            'Status' => $requestModel->Status === 'Rejected' ? 'Pending' : $requestModel->Status,
+            'Status' => in_array($requestModel->Status, ['Rejected', 'Cancelled'], true)
+                ? 'Pending'
+                : $requestModel->Status,
+            'Cancellation_Reason' => $requestModel->Status === 'Cancelled'
+                ? null
+                : $requestModel->Cancellation_Reason,
             'Review_Notes' => null,
             'Review_Requested_At' => null,
         ]);

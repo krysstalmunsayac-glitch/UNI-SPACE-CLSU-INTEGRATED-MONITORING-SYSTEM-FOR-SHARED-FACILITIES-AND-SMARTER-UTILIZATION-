@@ -69,6 +69,7 @@ new #[Layout('components.layouts.app')] class extends Component {
     #[Computed]
     public function archivedEvents()
     {
+        abort_unless(auth()->user()?->isSuperAdmin(), 403);
         $query = Events::query()->onlyTrashed();
 
         return $query->orderByDesc('deleted_at')
@@ -78,6 +79,7 @@ new #[Layout('components.layouts.app')] class extends Component {
     #[Computed]
     public function archivedUsers()
     {
+        abort_unless(auth()->user()?->isSuperAdmin(), 403);
         $query = User::query()->onlyTrashed();
 
         return $query->orderByDesc('deleted_at')
@@ -86,44 +88,67 @@ new #[Layout('components.layouts.app')] class extends Component {
 
     public function restoreRequest(int $id): void
     {
-        Requests::withTrashed()->findOrFail($id)->restore();
+        $this->archivedRequest($id)->restore();
         $this->dispatch('$refresh');
     }
 
     public function restoreSchedule(int $id): void
     {
-        Schedule::withTrashed()->findOrFail($id)->restore();
+        $this->archivedSchedule($id)->restore();
         $this->dispatch('$refresh');
     }
 
     public function restoreEvent(int $id): void
     {
-        Events::withTrashed()->findOrFail($id)->restore();
+        abort_unless(auth()->user()?->isSuperAdmin(), 403);
+        Events::onlyTrashed()->findOrFail($id)->restore();
         $this->dispatch('$refresh');
     }
 
     public function restoreUser(int $id): void
     {
-        User::withTrashed()->findOrFail($id)->restore();
+        abort_unless(auth()->user()?->isSuperAdmin(), 403);
+        User::onlyTrashed()->findOrFail($id)->restore();
         $this->dispatch('$refresh');
     }
 
     public function forceDeleteRequest(int $id): void
     {
-        Requests::withTrashed()->findOrFail($id)->forceDelete();
+        $this->archivedRequest($id)->forceDelete();
         $this->dispatch('$refresh');
     }
 
     public function forceDeleteSchedule(int $id): void
     {
-        Schedule::withTrashed()->findOrFail($id)->forceDelete();
+        $this->archivedSchedule($id)->forceDelete();
         $this->dispatch('$refresh');
     }
 
     public function forceDeleteEvent(int $id): void
     {
-        Events::withTrashed()->findOrFail($id)->forceDelete();
+        abort_unless(auth()->user()?->isSuperAdmin(), 403);
+        Events::onlyTrashed()->findOrFail($id)->forceDelete();
         $this->dispatch('$refresh');
+    }
+
+    private function archivedRequest(int $id): Requests
+    {
+        return Requests::onlyTrashed()
+            ->when(auth()->user()?->isAdmin(), fn ($query) => $query->whereHas(
+                'facility.assignedAdmins',
+                fn ($facilityQuery) => $facilityQuery->where('users.id', auth()->id()),
+            ))
+            ->findOrFail($id);
+    }
+
+    private function archivedSchedule(int $id): Schedule
+    {
+        return Schedule::onlyTrashed()
+            ->when(auth()->user()?->isAdmin(), fn ($query) => $query->whereHas(
+                'request.facility.assignedAdmins',
+                fn ($adminQuery) => $adminQuery->where('users.id', auth()->id()),
+            ))
+            ->findOrFail($id);
     }
 
 }; ?>
@@ -190,7 +215,7 @@ new #[Layout('components.layouts.app')] class extends Component {
             </div>
             <div class="mt-4">{{ $this->archivedSchedules->links() }}</div>
         </div>
-
+        @if (auth()->user()->isSuperAdmin())
         <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Archived Events</h2>
             <div class="mt-4 space-y-3">
@@ -238,5 +263,6 @@ new #[Layout('components.layouts.app')] class extends Component {
             </div>
             <div class="mt-4">{{ $this->archivedUsers->links() }}</div>
         </div>
+        @endif
     </div>
 </div>

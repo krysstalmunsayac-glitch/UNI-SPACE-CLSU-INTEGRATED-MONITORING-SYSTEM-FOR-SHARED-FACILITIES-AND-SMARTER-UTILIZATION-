@@ -35,6 +35,11 @@ new #[Layout('components.layouts.app')] class extends Component {
         $this->reset('current_password', 'password', 'password_confirmation');
 
         $this->dispatch('password-updated');
+        $this->dispatch('swal', [
+            'title' => 'Password updated',
+            'text' => 'Your new password is now active.',
+            'icon' => 'success',
+        ]);
     }
 }; ?>
 
@@ -74,13 +79,13 @@ new #[Layout('components.layouts.app')] class extends Component {
                 autocomplete="new-password"
             />
 
-            <div class="flex items-center gap-4">
+            <div class="flex flex-col items-center gap-4 text-center">
                 <div class="flex items-center justify-end">
-                    <x-ui::button variant="primary" type="submit" class="w-full">{{ __('Save') }}</x-ui::button>
+                    <x-ui::button variant="primary" type="submit" class="w-full" wire:loading.attr="disabled" wire:target="updatePassword" data-ui-confirm="Change your account password now?" data-ui-confirm-title="Confirm password update" data-ui-confirm-label="Update password">{{ __('Update password') }}</x-ui::button>
                 </div>
 
-                <x-action-message class="me-3" on="password-updated">
-                    {{ __('Saved.') }}
+                <x-action-message on="password-updated" class="font-semibold text-emerald-700 dark:text-emerald-300">
+                    {{ __('Password updated successfully.') }}
                 </x-action-message>
             </div>
         </form>

@@ -218,7 +218,9 @@ new #[Layout('components.layouts.app')] class extends Component {
 
     public function forceDelete(int $scheduleId): void
     {
-        $this->getScopedSchedule($scheduleId, withTrashed: true)->forceDelete();
+        $schedule = $this->getScopedSchedule($scheduleId, withTrashed: true);
+        abort_unless($schedule->trashed(), 409, 'Only archived schedules can be permanently deleted.');
+        $schedule->forceDelete();
         Ui::toast(text: 'Schedule permanently deleted.', variant: 'danger');
         $this->dispatch('$refresh');
     }

@@ -39,10 +39,9 @@
             @endif
 
             <x-ui::select wire:model="Status" label="Status">
-                <x-ui::select.option value="Pending">Pending</x-ui::select.option>
-                <x-ui::select.option value="Approved">Approved</x-ui::select.option>
-                <x-ui::select.option value="Rejected">Rejected</x-ui::select.option>
-                <x-ui::select.option value="Cancelled">Cancelled</x-ui::select.option>
+                @foreach (array_unique([$Status, ...\App\Models\Requests::allowedTransitionsFrom($Status)]) as $statusOption)
+                    <x-ui::select.option value="{{ $statusOption }}">{{ $statusOption }}</x-ui::select.option>
+                @endforeach
             </x-ui::select>
 
             <div class="flex gap-2">

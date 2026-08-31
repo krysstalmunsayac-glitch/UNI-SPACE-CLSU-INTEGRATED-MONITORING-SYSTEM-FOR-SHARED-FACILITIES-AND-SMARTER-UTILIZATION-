@@ -79,11 +79,26 @@
                     wire:model="password"
                     type="password"
                     label="Password"
+                    revealable
+                    minlength="8"
+                    pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^a-zA-Z0-9]).{8,}"
+                    title="Use at least 8 characters with uppercase, lowercase, number, and special character."
                     :placeholder="$editingId
                         ? 'Leave blank to keep current password'
-                        : 'Minimum 8 characters'"
+                        : 'Strong password required'"
                 />
 
+            </div>
+
+            <div>
+                <x-ui::input
+                    wire:model="password_confirmation"
+                    type="password"
+                    label="Confirm password"
+                    revealable
+                    :required="! $editingId"
+                    placeholder="Repeat the password"
+                />
             </div>
 
             <div>
@@ -228,6 +243,8 @@
             <div class="flex gap-2">
                 <x-ui::button
                     wire:click="save(true)"
+                    wire:loading.attr="disabled"
+                    wire:target="save"
                     variant="primary"
                     class="flex-1"
                 >
@@ -280,6 +297,8 @@
             <div class="flex gap-2">
                 <x-ui::button
                     wire:click="save(true, true)"
+                    wire:loading.attr="disabled"
+                    wire:target="save"
                     :variant="$is_active ? 'primary' : 'danger'"
                     class="flex-1"
                 >

@@ -13,6 +13,7 @@ use App\Support\UiManager;
 use Illuminate\Foundation\AliasLoader;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Vite;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Component;
 
@@ -34,6 +35,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Password::defaults(fn () => Password::min(8)->mixedCase()->numbers()->symbols());
+
         Blade::anonymousComponentPath(resource_path('views/ui'), 'ui');
 
         // The stylesheet link is rendered immediately after Laravel's preload

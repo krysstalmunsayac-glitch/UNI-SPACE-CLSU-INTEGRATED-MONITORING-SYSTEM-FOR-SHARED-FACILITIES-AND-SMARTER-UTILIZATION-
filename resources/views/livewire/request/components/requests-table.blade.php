@@ -116,7 +116,7 @@
                                     <x-ui::menu.item icon="eye" wire:click="showRequest({{ $request->RID }})">
                                         View details
                                     </x-ui::menu.item>
-                                    @if (! in_array($request->Status, ['Approved', 'Cancelled', 'Ended'], true))
+                                    @if ($request->canBeReviewed())
                                         <x-ui::menu.item
                                             icon="document-magnifying-glass"
                                             class="text-amber-700 dark:text-amber-300"
@@ -125,7 +125,7 @@
                                             Request changes
                                         </x-ui::menu.item>
                                     @endif
-                                    @if (! in_array($request->Status, ['Approved', 'Cancelled', 'Ended'], true))
+                                    @if ($request->canTransitionTo('Approved'))
                                         <x-ui::menu.separator />
                                         <x-ui::menu.item
                                             icon="check"
@@ -151,7 +151,7 @@
                                         >
                                             Cancel request
                                         </x-ui::menu.item>
-                                    @elseif (! in_array($request->Status, ['Cancelled', 'Ended'], true))
+                                    @elseif ($request->canTransitionTo('Rejected'))
                                         <x-ui::menu.item
                                             icon="x-mark"
                                             class="text-red-600 dark:text-red-400"

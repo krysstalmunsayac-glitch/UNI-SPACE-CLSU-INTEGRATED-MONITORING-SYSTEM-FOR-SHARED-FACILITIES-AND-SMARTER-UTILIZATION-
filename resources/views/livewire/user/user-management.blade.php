@@ -6,6 +6,7 @@ use App\Support\Ui;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Validate;
@@ -62,6 +63,8 @@ new #[Layout('components.layouts.app')] class extends Component
     public string $email = '';
 
     public string $password = '';
+
+    public string $password_confirmation = '';
 
     public $profile_photo = null;
 
@@ -156,6 +159,7 @@ new #[Layout('components.layouts.app')] class extends Component
             'name',
             'email',
             'password',
+            'password_confirmation',
             'profile_photo',
             'contact_number',
             'office',
@@ -187,6 +191,7 @@ new #[Layout('components.layouts.app')] class extends Component
         $this->name = $user->name;
         $this->email = $user->email;
         $this->password = '';
+        $this->password_confirmation = '';
         $this->profile_photo = null;
         $this->existingProfilePhotoUrl = $user->avatar_url;
         $this->contact_number = $user->contact_number;
@@ -220,8 +225,8 @@ new #[Layout('components.layouts.app')] class extends Component
             'user_type' => ['required', Rule::in(['super_admin', 'admin', 'user'])],
             'is_active' => ['boolean'],
             'password' => $this->editingId
-                ? ['nullable', 'string', 'min:8']
-                : ['required', 'string', 'min:8'],
+                ? ['nullable', 'string', Password::defaults(), 'confirmed']
+                : ['required', 'string', Password::defaults(), 'confirmed'],
             'profile_photo' => ['nullable', 'image', 'max:2048'],
         ];
 
@@ -299,6 +304,9 @@ new #[Layout('components.layouts.app')] class extends Component
 
         if ($this->editingId) {
             $user = $this->managedUser($this->editingId);
+            $roleChanged = $validated['user_type'] !== $this->originalUserType;
+            $statusChanged = $validated['is_active'] !== $this->originalIsActive;
+            $passwordChanged = filled($validated['password'] ?? null);
 
             if ($photo) {
                 $newPhotoPath = $photo->store('profile-photos', 'public');
@@ -317,9 +325,24 @@ new #[Layout('components.layouts.app')] class extends Component
                 variant: 'success'
             );
 
+            $successTitle = $roleChanged
+                ? 'Role changed successfully'
+                : ($statusChanged
+                    ? ($validated['is_active'] ? 'Account activated' : 'Account deactivated')
+                    : ($passwordChanged ? 'Password updated' : 'User updated'));
+            $successText = $roleChanged
+                ? "{$user->name} is now {$user->roleLabel()}."
+                : ($statusChanged
+                    ? ($validated['is_active']
+                        ? "{$user->name} can now access the system."
+                        : "{$user->name} can no longer access the system.")
+                    : ($passwordChanged
+                        ? "{$user->name}'s password was updated successfully."
+                        : 'User details were updated successfully.'));
+
             $this->dispatch('swal', [
-                'title' => 'User updated',
-                'text' => 'User updated successfully!',
+                'title' => $successTitle,
+                'text' => $successText,
                 'icon' => 'success',
             ]);
         } else {
@@ -438,6 +461,14 @@ new #[Layout('components.layouts.app')] class extends Component
                 : 'User deactivated.',
             variant: 'success'
         );
+
+        $this->dispatch('swal', [
+            'title' => $user->is_active ? 'Account activated' : 'Account deactivated',
+            'text' => $user->is_active
+                ? "{$user->name} can now access the system."
+                : "{$user->name} can no longer access the system.",
+            'icon' => 'success',
+        ]);
 
         $this->showQuickStatusConfirmation = false;
         $this->pendingStatusUserId = null;
@@ -743,6 +774,8 @@ new #[Layout('components.layouts.app')] class extends Component
                     <div class="flex gap-2">
                         <x-ui::button
                             wire:click="confirmToggleActive"
+                            wire:loading.attr="disabled"
+                            wire:target="confirmToggleActive"
                             :variant="$pendingStatusWillActivate ? 'primary' : 'danger'"
                             class="flex-1"
                         >
