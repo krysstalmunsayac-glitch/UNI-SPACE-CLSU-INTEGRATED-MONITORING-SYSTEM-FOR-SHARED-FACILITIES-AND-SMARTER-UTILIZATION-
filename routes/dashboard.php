@@ -1,7 +1,7 @@
 <?php
 
-use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\Admin\ReportExportController;
+use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\FeedbacksController;
 use App\Http\Middleware\PreventBackHistory;
 use Illuminate\Support\Facades\Route;
@@ -46,6 +46,9 @@ Route::middleware([
     */
 
     Route::middleware('role:super_admin')->group(function () {
+        Route::get('/dashboard/analytics.pdf', [DashboardController::class, 'analyticsPdf'])
+            ->name('dashboard.analytics.pdf');
+
         Volt::route('/user-management', 'user.user-management')
             ->name('UserManagement');
 

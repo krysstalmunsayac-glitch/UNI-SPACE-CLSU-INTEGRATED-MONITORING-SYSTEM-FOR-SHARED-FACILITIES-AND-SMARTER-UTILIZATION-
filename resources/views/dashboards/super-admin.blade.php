@@ -7,28 +7,32 @@
         $recentRequests = $recentRequests ?? collect();
 
         $summaryCards = [
-            ['label' => 'Total Users', 'value' => $totalUsers, 'note' => 'Registered accounts', 'tone' => 'slate'],
-            ['label' => 'Total Requests', 'value' => $totalRequests, 'note' => 'Submitted records', 'tone' => 'slate'],
-            ['label' => 'Pending', 'value' => $pendingRequests, 'note' => 'Awaiting review', 'tone' => 'emerald'],
-            ['label' => 'Approved', 'value' => $approvedRequests, 'note' => 'Ready for scheduling', 'tone' => 'emerald'],
-            ['label' => 'Rejected', 'value' => $dashboardStatusCounts['Rejected'] ?? 0, 'note' => 'Not approved in range', 'tone' => 'rose'],
-            ['label' => 'Cancelled', 'value' => $dashboardStatusCounts['Cancelled'] ?? 0, 'note' => 'Cancelled in range', 'tone' => 'amber'],
+            ['label' => 'Total Users', 'value' => $totalUsers, 'note' => 'Registered user accounts', 'tone' => 'slate'],
+            ['label' => 'Total Facilities', 'value' => $facilityCount ?? 0, 'note' => 'Managed shared spaces', 'tone' => 'slate'],
+            ['label' => 'Total Requests', 'value' => $totalRequests, 'note' => 'Submitted in selected dates', 'tone' => 'slate'],
+            ['label' => 'Pending', 'value' => $pendingRequests, 'note' => 'Awaiting review', 'tone' => 'amber'],
+            ['label' => 'Approved', 'value' => $approvedRequests, 'note' => 'Approved in selected dates', 'tone' => 'emerald'],
+            ['label' => 'Rejected', 'value' => $dashboardStatusCounts['Rejected'] ?? 0, 'note' => 'Rejected in selected dates', 'tone' => 'rose'],
+            ['label' => 'Cancelled', 'value' => $dashboardStatusCounts['Cancelled'] ?? 0, 'note' => 'Cancelled in selected dates', 'tone' => 'amber'],
+            ['label' => 'Facility Utilization', 'value' => ($overallFacilityUtilizationRate ?? 0).'%', 'note' => $availabilityBaseline ?? '', 'tone' => 'emerald'],
+            ['label' => 'Approval Rate', 'value' => isset($approvalRate) ? $approvalRate.'%' : '—', 'note' => 'Approved vs rejected', 'tone' => 'emerald'],
+            ['label' => 'Avg. Review Time', 'value' => isset($averageReviewHours) ? $averageReviewHours.'h' : '—', 'note' => ($reviewedRequestCount ?? 0).' reviewed requests', 'tone' => 'slate'],
         ];
     @endphp
 
     <div class="admin-dashboard-canvas bg-slate-50 text-slate-950 dark:bg-zinc-950 dark:text-white">
-        <div class="mx-auto max-w-7xl space-y-6">
+        <div class="mx-auto w-full max-w-[1600px] space-y-6">
             <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                <div class="grid gap-5 border-b border-slate-100 p-6 lg:grid-cols-[1fr_auto] lg:items-end dark:border-zinc-800">
+                <div class="grid gap-4 border-b border-slate-100 p-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center dark:border-zinc-800">
                     <div>
                         <p class="text-sm font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Super Admin Dashboard</p>
-                        <h1 class="mt-2 text-3xl font-bold tracking-tight">System Overview</h1>
-                        <p class="mt-2 max-w-2xl text-sm text-slate-500 dark:text-zinc-400">
+                        <h1 class="mt-1 text-3xl font-bold tracking-tight">System Overview</h1>
+                        <p class="mt-1 max-w-2xl text-sm text-slate-500 dark:text-zinc-400">
                             Review platform activity, user growth, facility demand, and request outcomes from one workspace.
                         </p>
                     </div>
 
-                    <div class="flex flex-wrap gap-2">
+                    <div class="flex flex-wrap gap-2 lg:justify-end">
                         <a href="{{ route('Request') }}" class="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800 dark:bg-emerald-400 dark:text-emerald-950">
                             View Requests
                         </a>
@@ -38,10 +42,10 @@
                     </div>
                 </div>
 
-                <div class="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                <div class="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
                     @foreach ($summaryCards as $card)
                         <article @class([
-                            'rounded-xl border p-4',
+                            'flex min-h-32 flex-col rounded-xl border p-4',
                             'border-slate-200 bg-slate-50 dark:border-zinc-800 dark:bg-zinc-950' => $card['tone'] === 'slate',
                             'border-emerald-100 bg-emerald-50 dark:border-emerald-900/40 dark:bg-emerald-950/20' => $card['tone'] === 'emerald',
                             'border-rose-100 bg-rose-50 dark:border-rose-900/40 dark:bg-rose-950/20' => $card['tone'] === 'rose',
@@ -54,8 +58,8 @@
                                 'text-rose-700 dark:text-rose-300' => $card['tone'] === 'rose',
                                 'text-amber-700 dark:text-amber-300' => $card['tone'] === 'amber',
                             ])>{{ $card['label'] }}</p>
-                            <div class="mt-3 text-3xl font-bold">{{ $card['value'] }}</div>
-                            <p class="mt-1 text-sm text-slate-500 dark:text-zinc-400">{{ $card['note'] }}</p>
+                            <div class="mt-2 text-3xl font-bold leading-none">{{ $card['value'] }}</div>
+                            <p class="mt-auto pt-2 text-sm leading-snug text-slate-500 dark:text-zinc-400">{{ $card['note'] }}</p>
                         </article>
                     @endforeach
                 </div>

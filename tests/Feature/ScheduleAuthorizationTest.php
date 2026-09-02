@@ -52,6 +52,19 @@ it('prevents an office admin from updating another facility schedule', function 
     expect($otherSchedule->fresh()->Request_ID)->toBe($otherSchedule->Request_ID);
 });
 
+it('keeps a schedule locked to its original request', function () {
+    $schedule = scheduleForFacility($this->assignedFacility, 'Original request');
+    $otherSchedule = scheduleForFacility($this->assignedFacility, 'Different request');
+
+    Volt::test('schedule.schedule')
+        ->call('edit', $schedule->SID)
+        ->set('Request_ID', $otherSchedule->Request_ID)
+        ->call('save')
+        ->assertHasErrors(['Request_ID']);
+
+    expect($schedule->fresh()->Request_ID)->toBe($schedule->Request_ID);
+});
+
 it('prevents an office admin from restoring another facility schedule', function () {
     $schedule = scheduleForFacility($this->otherFacility);
     $schedule->delete();

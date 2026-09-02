@@ -8,6 +8,9 @@
         <input type="date" name="date_to" value="{{ $analyticsDateTo }}" min="{{ $analyticsDateFrom }}" max="{{ today()->toDateString() }}" class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white">
     </label>
     <button type="submit" class="h-10 rounded-lg bg-emerald-700 px-5 text-sm font-bold text-white transition hover:bg-emerald-800 dark:bg-emerald-400 dark:text-emerald-950">Apply range</button>
+    @if (auth()->user()?->isSuperAdmin())
+        <a href="{{ route('dashboard.analytics.pdf', ['date_from' => $analyticsDateFrom, 'date_to' => $analyticsDateTo]) }}" class="inline-flex h-10 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-4 text-sm font-bold text-emerald-700 transition hover:bg-emerald-100 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300">Download PDF</a>
+    @endif
     <a href="{{ url()->current() }}" class="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 px-4 text-sm font-bold text-slate-600 transition hover:border-emerald-300 hover:text-emerald-700 dark:border-zinc-700 dark:text-zinc-300">Reset</a>
 </form>
 @error('date_from') <p class="mt-2 text-sm text-rose-600">{{ $message }}</p> @enderror

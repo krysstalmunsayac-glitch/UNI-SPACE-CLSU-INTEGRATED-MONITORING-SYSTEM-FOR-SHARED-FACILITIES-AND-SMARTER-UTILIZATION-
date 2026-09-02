@@ -6,6 +6,129 @@ use Illuminate\Support\Collection;
 
 class AdminReportExporter
 {
+    public function analyticsPdf(array $data, string $scopeLabel, string $dateLabel): string
+    {
+        $pdf = new class('L', 'mm', 'A4') extends \FPDF
+        {
+            public string $scope = '';
+
+            public string $period = '';
+
+            public function Header(): void
+            {
+                $this->SetFont('Arial', 'B', 17);
+                $this->SetTextColor(5, 105, 75);
+                $this->Cell(0, 8, 'SIEL SPACE - FACILITY ANALYTICS REPORT', 0, 1);
+                $this->SetFont('Arial', '', 8);
+                $this->SetTextColor(80, 90, 100);
+                $this->Cell(0, 5, 'Period: '.$this->period.' | Scope: '.$this->scope.' | Generated: '.now()->format('Y-m-d H:i'), 0, 1);
+                $this->Ln(3);
+            }
+
+            public function Footer(): void
+            {
+                $this->SetY(-10);
+                $this->SetFont('Arial', '', 7);
+                $this->SetTextColor(100, 100, 100);
+                $this->Cell(0, 5, 'SIEL SPACE | Page '.$this->PageNo().'/{nb}', 0, 0, 'C');
+            }
+
+            public function section(string $title, string $description): void
+            {
+                if ($this->GetY() > 175) {
+                    $this->AddPage();
+                }
+                $this->SetFont('Arial', 'B', 12);
+                $this->SetTextColor(20, 30, 35);
+                $this->Cell(0, 7, $title, 0, 1);
+                $this->SetFont('Arial', '', 8);
+                $this->SetTextColor(90, 100, 110);
+                $this->MultiCell(0, 4, $description);
+                $this->Ln(2);
+            }
+
+            public function bars(array $rows, string $valueKey, float $maximum, string $suffix = ''): void
+            {
+                $maximum = max(1, $maximum);
+                foreach ($rows as $row) {
+                    if ($this->GetY() > 190) {
+                        $this->AddPage();
+                    }
+                    $label = (string) ($row['facility'] ?? $row['amenity'] ?? 'Unknown');
+                    $value = (float) ($row[$valueKey] ?? 0);
+                    $this->SetFont('Arial', '', 8);
+                    $this->SetTextColor(45, 55, 65);
+                    $this->Cell(62, 6, substr($label, 0, 34), 0, 0);
+                    $x = $this->GetX();
+                    $y = $this->GetY() + 1;
+                    $this->SetFillColor(232, 240, 237);
+                    $this->Rect($x, $y, 160, 4, 'F');
+                    $this->SetFillColor(16, 185, 129);
+                    $this->Rect($x, $y, 160 * min(1, $value / $maximum), 4, 'F');
+                    $this->SetX($x + 163);
+                    $this->Cell(28, 6, number_format($value, 1).$suffix, 0, 1, 'R');
+                }
+                $this->Ln(2);
+            }
+        };
+
+        $pdf->scope = $this->pdfText($scopeLabel);
+        $pdf->period = $this->pdfText($dateLabel);
+        $pdf->AliasNbPages();
+        $pdf->SetMargins(12, 10, 12);
+        $pdf->SetAutoPageBreak(true, 15);
+        $pdf->SetCompression(false);
+        $pdf->AddPage();
+
+        $pdf->section('Executive Summary', 'Key indicators for facility demand, utilization, request decisions, and administrative performance.');
+        $kpis = $data['kpis'];
+        foreach ($kpis as $label => $value) {
+            $pdf->SetFillColor(242, 247, 245);
+            $pdf->SetFont('Arial', 'B', 9);
+            $pdf->SetTextColor(5, 105, 75);
+            $pdf->Cell(54, 8, $this->pdfText($label), 1, 0, 'L', true);
+            $pdf->SetTextColor(25, 30, 35);
+            $pdf->Cell(38, 8, $this->pdfText((string) $value), 1, 0, 'R');
+        }
+        $pdf->Ln(12);
+
+        $utilization = $data['facilityUtilizationRates'] ?? [];
+        $pdf->section('Facility Time Utilization', 'Booked schedule hours divided by available hours using the 8:00 AM-6:00 PM daily baseline. Higher percentages indicate more intensive use of the available schedule.');
+        $pdf->bars($utilization, 'rate', 100, '%');
+
+        $pdf->section('Booking Demand Heatmap', 'Approved bookings by weekday and hourly slot. Larger values identify the periods with the greatest demand.');
+        $hours = range(8, 17);
+        $pdf->SetFont('Arial', 'B', 7);
+        $pdf->Cell(28, 6, 'Day', 1);
+        foreach ($hours as $hour) {
+            $pdf->Cell(22, 6, date('g A', mktime($hour)), 1, 0, 'C');
+        }
+        $pdf->Ln();
+        foreach (($data['bookingDemandHeatmap'] ?? []) as $day => $counts) {
+            $pdf->SetFont('Arial', '', 7);
+            $pdf->Cell(28, 6, $day, 1);
+            foreach ($hours as $hour) {
+                $count = (int) ($counts[$hour] ?? 0);
+                $pdf->SetFillColor($count ? 167 : 245, $count ? 243 : 248, $count ? 208 : 247);
+                $pdf->Cell(22, 6, (string) $count, 1, 0, 'C', true);
+            }
+            $pdf->Ln();
+        }
+
+        $pdf->AddPage();
+        $pdf->section('Capacity Utilization', 'Expected attendees divided by maximum facility capacity. This measures how well the physical size of each facility matches booking demand.');
+        $pdf->bars($data['capacityUtilization'] ?? [], 'rate', 100, '%');
+        $pdf->section('Cancellation Rate', 'Cancelled requests divided by all requests for each facility in the selected period.');
+        $pdf->bars($data['cancellationRates'] ?? [], 'rate', 100, '%');
+        $pdf->section('Facility Ratings', 'Average facility rating submitted through completed-request feedback, on a five-star scale.');
+        $pdf->bars($data['facilityRatings'] ?? [], 'rating', 5, ' / 5');
+        $pdf->section('Amenity Demand', 'Number of reservation requests that included each amenity. This supports purchasing and maintenance decisions.');
+        $amenities = $data['amenityDemand'] ?? [];
+        $pdf->bars($amenities, 'count', max(1, (float) collect($amenities)->max('count')), ' requests');
+
+        return $pdf->Output('S');
+    }
+
     public function facilitiesXlsx(Collection $facilities): string
     {
         return $this->xlsx(

@@ -1,12 +1,12 @@
 <x-layouts.app>
     @php
         $summaryCards = [
-            ['label' => 'Assigned Facilities', 'value' => $facilityCount ?? 0, 'note' => 'Facilities under your office', 'tone' => 'slate'],
-            ['label' => 'Selected Range', 'value' => $rangeRequests ?? 0, 'note' => 'Requests in selected dates', 'tone' => 'slate'],
-            ['label' => 'Pending', 'value' => $dashboardStatusCounts['Pending'] ?? 0, 'note' => 'Awaiting review in range', 'tone' => 'amber'],
-            ['label' => 'Approved', 'value' => $dashboardStatusCounts['Approved'] ?? 0, 'note' => 'Approved in range', 'tone' => 'emerald'],
-            ['label' => 'Rejected', 'value' => $dashboardStatusCounts['Rejected'] ?? 0, 'note' => 'Rejected in range', 'tone' => 'slate'],
-            ['label' => 'Cancelled', 'value' => $dashboardStatusCounts['Cancelled'] ?? 0, 'note' => 'Cancelled in range', 'tone' => 'slate'],
+            ['label' => 'Assigned Facilities', 'value' => $facilityCount ?? 0, 'note' => 'Spaces under your office', 'tone' => 'slate'],
+            ['label' => 'Total Requests', 'value' => $rangeRequests ?? 0, 'note' => 'Submitted in selected dates', 'tone' => 'slate'],
+            ['label' => 'Pending', 'value' => $dashboardStatusCounts['Pending'] ?? 0, 'note' => 'Awaiting review', 'tone' => 'amber'],
+            ['label' => 'Approved', 'value' => $dashboardStatusCounts['Approved'] ?? 0, 'note' => 'Approved in selected dates', 'tone' => 'emerald'],
+            ['label' => 'Rejected', 'value' => $dashboardStatusCounts['Rejected'] ?? 0, 'note' => 'Rejected in selected dates', 'tone' => 'rose'],
+            ['label' => 'Cancelled', 'value' => $dashboardStatusCounts['Cancelled'] ?? 0, 'note' => 'Cancelled in selected dates', 'tone' => 'amber'],
         ];
     @endphp
 
@@ -39,12 +39,14 @@
                             'border-slate-200 bg-slate-50 dark:border-zinc-800 dark:bg-zinc-950' => $card['tone'] === 'slate',
                             'border-emerald-100 bg-emerald-50 dark:border-emerald-900/40 dark:bg-emerald-950/20' => $card['tone'] === 'emerald',
                             'border-amber-100 bg-amber-50 dark:border-amber-900/40 dark:bg-amber-950/20' => $card['tone'] === 'amber',
+                            'border-rose-100 bg-rose-50 dark:border-rose-900/40 dark:bg-rose-950/20' => $card['tone'] === 'rose',
                         ])>
                             <p @class([
                                 'text-xs font-bold uppercase tracking-wide',
                                 'text-slate-500 dark:text-zinc-400' => $card['tone'] === 'slate',
                                 'text-emerald-700 dark:text-emerald-300' => $card['tone'] === 'emerald',
                                 'text-amber-700 dark:text-amber-300' => $card['tone'] === 'amber',
+                                'text-rose-700 dark:text-rose-300' => $card['tone'] === 'rose',
                             ])>{{ $card['label'] }}</p>
                             <div class="mt-3 text-3xl font-bold">{{ $card['value'] }}</div>
                             <p class="mt-1 text-sm text-slate-500 dark:text-zinc-400">{{ $card['note'] }}</p>
