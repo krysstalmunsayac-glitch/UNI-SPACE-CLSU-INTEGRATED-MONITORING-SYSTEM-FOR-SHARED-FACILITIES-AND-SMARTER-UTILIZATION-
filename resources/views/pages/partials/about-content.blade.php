@@ -62,7 +62,7 @@
 
     <section class="border-y border-emerald-900/10 bg-emerald-800 py-20 text-white dark:border-white/10">
         <div class="mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
-            <img src="{{ asset('images/clsu-team.jpg') }}" alt="Central Luzon State University Gymnatorium entrance" class="h-full min-h-[320px] w-full rounded-2xl object-cover">
+            <img src="{{ asset('images/clsu-team.jpg') }}" alt="Central Luzon State University entrance illuminated at night" class="h-full min-h-[320px] w-full rounded-2xl object-cover">
             <div class="flex flex-col justify-center">
                 <p class="text-sm font-black uppercase tracking-[0.2em] text-emerald-100">Who we serve</p>
                 <h2 class="mt-4 text-4xl font-black tracking-tight">For Students, Faculty, Staff, and Campus Offices</h2>

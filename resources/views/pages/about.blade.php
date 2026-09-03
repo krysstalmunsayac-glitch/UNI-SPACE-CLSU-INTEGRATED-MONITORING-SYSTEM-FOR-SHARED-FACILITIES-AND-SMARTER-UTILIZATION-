@@ -79,7 +79,7 @@
         <div class="mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
             <img
                 src="{{ asset('images/clsu-team.jpg') }}"
-                alt="Central Luzon State University Gymnatorium entrance"
+                alt="Central Luzon State University entrance illuminated at night"
                 class="h-full min-h-[320px] w-full rounded-2xl object-cover"
             >
             <div class="flex flex-col justify-center">
