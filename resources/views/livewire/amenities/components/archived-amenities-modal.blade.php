@@ -56,8 +56,11 @@
                             </x-ui::table.row>
                         @empty
                             <x-ui::table.row>
-                                <x-ui::table.cell colspan="6" class="py-8 text-center">
-                                    No archived amenities found.
+                                <x-ui::table.cell colspan="6" class="py-10 text-center">
+                                    <div class="space-y-2">
+                                        <x-ui::icon.archive-box class="mx-auto size-8 text-zinc-400" />
+                                        <p class="text-sm text-zinc-500">No archived amenities found.</p>
+                                    </div>
                                 </x-ui::table.cell>
                             </x-ui::table.row>
                         @endforelse

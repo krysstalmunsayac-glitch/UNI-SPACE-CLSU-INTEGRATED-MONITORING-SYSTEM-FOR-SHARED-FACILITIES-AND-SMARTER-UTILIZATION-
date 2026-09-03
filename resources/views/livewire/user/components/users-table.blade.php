@@ -39,6 +39,10 @@
                 </x-ui::table.column>
 
                 <x-ui::table.column>
+                    Email
+                </x-ui::table.column>
+
+                <x-ui::table.column>
                     Actions
                 </x-ui::table.column>
             </x-ui::table.columns>
@@ -112,6 +116,21 @@
                             </button>
                         </x-ui::table.cell>
 
+                        {{-- Email verification --}}
+                        <x-ui::table.cell class="whitespace-nowrap">
+                            @php($invitationStatus = $user->invitationStatus())
+                            <x-ui::badge
+                                size="sm"
+                                :color="match ($invitationStatus) {
+                                    'Verified' => 'green',
+                                    'Invitation Pending' => 'amber',
+                                    default => 'red',
+                                }"
+                            >
+                                {{ $invitationStatus }}
+                            </x-ui::badge>
+                        </x-ui::table.cell>
+
                         {{-- Actions --}}
                         <x-ui::table.cell>
                             <x-ui::dropdown :position="$loop->remaining < 2 ? 'top' : 'bottom'" align="end">
@@ -139,13 +158,39 @@
                                         </x-ui::menu.item>
                                     @endif
 
-                                    @if ($user->id !== auth()->id())
+                                    @if (! $user->email_verified_at)
                                         <x-ui::menu.item
-                                            icon="power"
-                                            wire:click="requestToggleActive({{ $user->id }})"
+                                            icon="envelope"
+                                            wire:click="resendInvitation({{ $user->id }})"
+                                            wire:loading.attr="disabled"
+                                            wire:target="resendInvitation({{ $user->id }})"
                                         >
-                                            {{ $user->is_active ? 'Deactivate' : 'Activate' }}
+                                            Resend invitation
                                         </x-ui::menu.item>
+
+                                        <x-ui::menu.item
+                                            icon="x-circle"
+                                            wire:click="revokeInvitation({{ $user->id }})"
+                                            wire:loading.attr="disabled"
+                                            wire:target="revokeInvitation({{ $user->id }})"
+                                            data-ui-confirm="Revoke the invitation for {{ $user->name }}? Its current link will stop working."
+                                            data-ui-confirm-title="Revoke invitation"
+                                            data-ui-confirm-label="Revoke"
+                                            data-ui-confirm-variant="danger"
+                                        >
+                                            Revoke invitation
+                                        </x-ui::menu.item>
+                                    @endif
+
+                                    @if ($user->id !== auth()->id())
+                                        @if ($user->email_verified_at)
+                                            <x-ui::menu.item
+                                                icon="power"
+                                                wire:click="requestToggleActive({{ $user->id }})"
+                                            >
+                                                {{ $user->is_active ? 'Deactivate' : 'Activate' }}
+                                            </x-ui::menu.item>
+                                        @endif
 
                                         <x-ui::menu.separator />
 
@@ -169,7 +214,7 @@
                 @empty
                     <x-ui::table.row>
                         <x-ui::table.cell
-                            colspan="6"
+                            colspan="7"
                             class="py-12 text-center"
                         >
                             <div class="flex flex-col items-center gap-2 text-zinc-500">

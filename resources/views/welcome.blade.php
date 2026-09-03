@@ -161,7 +161,7 @@
                         $facilityType = strtolower($facility->facility_type ?? 'other');
                     @endphp
                     <article
-                        class="facility-card group {{ $loop->index >= 6 ? 'hidden' : '' }} overflow-hidden rounded-2xl border border-emerald-900/10 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-950/10 dark:border-white/10 dark:bg-zinc-900"
+                        class="facility-card group {{ $loop->index >= 6 ? 'hidden' : '' }} flex h-full flex-col overflow-hidden rounded-2xl border border-emerald-900/10 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-950/10 dark:border-white/10 dark:bg-zinc-900"
                         data-name="{{ strtolower($facility->Facility_Name.' '.$facility->Description.' '.$facility->Location) }}"
                         data-capacity="{{ $capacityGroup }}"
                         data-capacity-value="{{ $capacity }}"
@@ -178,7 +178,7 @@
                                 {{ $facility->facility_type ? ucfirst($facility->facility_type) : 'Facility' }}
                             </span>
                         </a>
-                        <div class="p-5">
+                        <div class="flex flex-1 flex-col p-5">
                             <div class="flex items-start justify-between gap-4">
                                 <div>
                                     <h3 class="text-xl font-black text-emerald-950 dark:text-white">{{ $facility->Facility_Name }}</h3>
@@ -192,9 +192,11 @@
                                 <span>•</span>
                                 <span>{{ $facility->Capacity ?? 'N/A' }} capacity</span>
                             </div>
-                            <a href="{{ route('requests.create', $facility) }}" class="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-emerald-700 px-5 py-3 font-bold text-white transition hover:bg-emerald-800">
-                                Reserve
-                            </a>
+                            <div class="mt-auto pt-6">
+                                <a href="{{ route('requests.create', $facility) }}" class="inline-flex w-full items-center justify-center rounded-xl bg-emerald-700 px-5 py-3 font-bold text-white transition hover:bg-emerald-800">
+                                    Reserve
+                                </a>
+                            </div>
                         </div>
                     </article>
                 @empty

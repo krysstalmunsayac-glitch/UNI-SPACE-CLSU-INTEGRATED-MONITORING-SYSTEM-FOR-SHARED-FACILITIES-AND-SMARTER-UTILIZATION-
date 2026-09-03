@@ -9,6 +9,7 @@ use App\Models\Requests;
 use App\Models\User;
 use App\Notifications\NewRequestSubmitted;
 use App\Notifications\RequestCancelledByUser;
+use App\Services\FacilityAvailabilityService;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Http\Request;
@@ -24,7 +25,7 @@ use Throwable;
 
 class FacilitiesController extends Controller
 {
-    public function showRequest(Facilities $facility)
+    public function showRequest(Facilities $facility, FacilityAvailabilityService $availability)
     {
         abort_unless($facility->Status === 'Available', 409, 'This facility is not currently available for requests.');
 
@@ -43,10 +44,34 @@ class FacilitiesController extends Controller
 
         $events = Events::orderBy('Event_Title')->get();
 
-        return view('requests.create', compact('facility', 'events', 'availableAmenities'));
+        $scheduling = [
+            'slots' => $availability->slots(),
+            'opens_at' => $availability::OPENS_AT,
+            'closes_at' => $availability::CLOSES_AT,
+            'minimum_minutes' => $availability::MINIMUM_MINUTES,
+            'buffer_minutes' => $availability::BUFFER_MINUTES,
+            'availability_url' => route('requests.availability', $facility),
+        ];
+
+        return view('requests.create', compact('facility', 'events', 'availableAmenities', 'scheduling'));
     }
 
-    public function storeRequest(Request $request, Facilities $facility)
+    public function availability(Request $request, Facilities $facility, FacilityAvailabilityService $availability)
+    {
+        abort_unless($facility->Status === 'Available', 409);
+        $validated = $request->validate([
+            'from' => ['required', 'date', 'after_or_equal:'.now()->addDays(3)->toDateString()],
+            'to' => ['required', 'date', 'after_or_equal:from'],
+        ]);
+
+        if (Carbon::parse($validated['from'])->diffInDays(Carbon::parse($validated['to'])) >= FacilityAvailabilityService::MAX_DAYS) {
+            throw ValidationException::withMessages(['to' => 'Availability may be requested for no more than 31 days.']);
+        }
+
+        return response()->json($availability->availability($facility->FID, $validated['from'], $validated['to']));
+    }
+
+    public function storeRequest(Request $request, Facilities $facility, FacilityAvailabilityService $availability)
     {
         abort_unless($facility->Status === 'Available', 409, 'This facility is not currently available for requests.');
 
@@ -97,7 +122,12 @@ class FacilitiesController extends Controller
             'Proposed_Date.after_or_equal' => 'Reservations must be submitted at least 3 days before the event date.',
         ]);
 
-        $dailySchedules = $this->validatedDailySchedules($validated);
+        $dailySchedules = $availability->validateSchedules(
+            $facility->FID,
+            $validated['Proposed_Date'],
+            $validated['Proposed_End_Date'],
+            $validated['Daily_Schedules'],
+        );
         $firstSchedule = $dailySchedules[0];
         $lastSchedule = $dailySchedules[array_key_last($dailySchedules)];
 
@@ -112,16 +142,12 @@ class FacilitiesController extends Controller
         }
 
         try {
-            $requestModel = DB::transaction(function () use ($validated, $dailySchedules, $firstSchedule, $lastSchedule, $facility, $attachmentPath): Requests {
+            $requestModel = DB::transaction(function () use ($validated, $dailySchedules, $firstSchedule, $lastSchedule, $facility, $attachmentPath, $availability): Requests {
                 User::query()->whereKey(auth()->id())->lockForUpdate()->firstOrFail();
                 Facilities::query()->whereKey($facility->FID)->lockForUpdate()->firstOrFail();
 
                 $this->validateDailyRequestLimit($validated['Proposed_Date'], $validated['Proposed_End_Date'], lockForUpdate: true);
-                if (Requests::hasActiveDailyScheduleConflict($facility->FID, $dailySchedules, lockForUpdate: true)) {
-                    throw ValidationException::withMessages([
-                        'Daily_Schedules' => 'This facility already has a request during one or more selected time slots. Please adjust the highlighted schedule.',
-                    ]);
-                }
+                $availability->validateSchedules($facility->FID, $validated['Proposed_Date'], $validated['Proposed_End_Date'], $dailySchedules, lock: true);
 
                 foreach ($dailySchedules as $schedule) {
                     $this->validateAmenityAvailability(
@@ -207,16 +233,18 @@ class FacilitiesController extends Controller
         return redirect(route('dashboard').'#requests');
     }
 
-    public function updateWaitingList(Request $request, Requests $requestModel)
+    public function updateWaitingList(Request $request, Requests $requestModel, FacilityAvailabilityService $availability)
     {
         if ($requestModel->User_ID !== auth()->id()) {
             abort(403);
         }
 
-        if ($requestModel->Status === 'Ended') {
+        if (in_array($requestModel->Status, ['Approved', 'Rejected', 'Ended'], true)) {
+            $status = strtolower($requestModel->Status);
+
             return redirect()
                 ->route('dashboard', ['request' => $requestModel->RID])
-                ->with('warning', 'This event has ended. Its request details can no longer be changed.');
+                ->with('warning', "This request is {$status}. Its submitted information is read-only.");
         }
 
         $earliestReservationDate = now()->addDays(3)->toDateString();
@@ -240,6 +268,19 @@ class FacilitiesController extends Controller
             $validated['Proposed_Start_Time'],
             $validated['Proposed_End_Time'],
         );
+
+        if ($requestModel->Facility_ID) {
+            $dailySchedules = collect(CarbonPeriod::create($validated['Proposed_Date'], $validated['Proposed_End_Date']))
+                ->map(fn ($date) => ['date' => $date->format('Y-m-d'), 'start' => $validated['Proposed_Start_Time'], 'end' => $validated['Proposed_End_Time']])
+                ->all();
+            $availability->validateSchedules(
+                $requestModel->Facility_ID,
+                $validated['Proposed_Date'],
+                $validated['Proposed_End_Date'],
+                $dailySchedules,
+                $requestModel->RID,
+            );
+        }
 
         $this->validateDailyRequestLimit($validated['Proposed_Date'], $validated['Proposed_End_Date'], $requestModel->RID);
 
@@ -505,12 +546,12 @@ class FacilitiesController extends Controller
         $start = Carbon::createFromFormat('H:i', $startTime);
         $end = Carbon::createFromFormat('H:i', $endTime);
 
-        if ($end->lessThanOrEqualTo($start) || $start->diffInMinutes($end) >= 120) {
+        if ($end->lessThanOrEqualTo($start) || $start->diffInMinutes($end) >= 60) {
             return;
         }
 
         throw ValidationException::withMessages([
-            $errorKey => 'A booking must be at least 2 hours.',
+            $errorKey => 'A booking must be at least 1 hour.',
         ]);
     }
 

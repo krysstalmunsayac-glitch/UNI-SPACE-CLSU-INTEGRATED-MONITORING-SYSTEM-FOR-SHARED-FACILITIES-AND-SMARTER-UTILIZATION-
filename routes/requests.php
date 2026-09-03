@@ -17,6 +17,10 @@ Route::middleware([
             Route::get('create/{facility}', 'showRequest')
                 ->name('create');
 
+            Route::get('availability/{facility}', 'availability')
+                ->middleware('throttle:60,1')
+                ->name('availability');
+
             Route::post('create/{facility}', 'storeRequest')
                 ->name('store');
 

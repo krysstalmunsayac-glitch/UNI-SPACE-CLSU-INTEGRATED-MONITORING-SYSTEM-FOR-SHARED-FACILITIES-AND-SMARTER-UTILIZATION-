@@ -11,8 +11,8 @@
 
                 <x-ui::subheading>
                     {{ $editingId
-                        ? 'Update this user\'s details.'
-                        : 'Create a new account.' }}
+                        ? 'Update this user\'s details. Changing the email sends a new invitation.'
+                        : 'Create an account and send a secure invitation.' }}
                 </x-ui::subheading>
             </div>
 
@@ -74,32 +74,11 @@
 
             </div>
 
-            <div>
-                <x-ui::input
-                    wire:model="password"
-                    type="password"
-                    label="Password"
-                    revealable
-                    minlength="8"
-                    pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^a-zA-Z0-9]).{8,}"
-                    title="Use at least 8 characters with uppercase, lowercase, number, and special character."
-                    :placeholder="$editingId
-                        ? 'Leave blank to keep current password'
-                        : 'Strong password required'"
-                />
-
-            </div>
-
-            <div>
-                <x-ui::input
-                    wire:model="password_confirmation"
-                    type="password"
-                    label="Confirm password"
-                    revealable
-                    :required="! $editingId"
-                    placeholder="Repeat the password"
-                />
-            </div>
+            @unless ($editingId)
+                <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900 dark:border-emerald-500/30 dark:bg-emerald-950/20 dark:text-emerald-100">
+                    A secure invitation will be emailed to this user. They will verify the address and create their own password.
+                </div>
+            @endunless
 
             <div>
                 <x-ui::input
@@ -153,11 +132,13 @@
 
             </div>
 
+            @if ($editingId)
             <x-ui::switch
                 wire:model="is_active"
                 label="Active account"
                 :disabled="$editingId === auth()->id()"
             />
+            @endif
 
             @if ($editingId === auth()->id())
                 <p class="-mt-4 text-xs font-medium text-zinc-500 dark:text-zinc-400">
@@ -179,7 +160,7 @@
                     </x-ui::button>
                 @else
                     <x-ui::button wire:click="save" variant="primary" class="flex-1">
-                        Create
+                        Send invitation
                     </x-ui::button>
                 @endif
 
@@ -199,12 +180,12 @@
             <div>
                 <x-ui::heading size="lg">Confirm new user</x-ui::heading>
                 <x-ui::subheading>
-                    Are you sure you want to add <span class="font-semibold">{{ $name }}</span> as a new user?
+                    Send a password-setup invitation to <span class="font-semibold">{{ $email }}</span>?
                 </x-ui::subheading>
 
             </div>
             <div class="flex gap-2">
-                <x-ui::button wire:click="save(true, false, true)" variant="primary" class="flex-1">Add user</x-ui::button>
+                <x-ui::button wire:click="save(true, false, true)" wire:loading.attr="disabled" wire:target="save" variant="primary" class="flex-1">Send invitation</x-ui::button>
                 <x-ui::button wire:click="$set('showCreateConfirmation', false)" variant="ghost" class="flex-1">Cancel</x-ui::button>
             </div>
         </div>

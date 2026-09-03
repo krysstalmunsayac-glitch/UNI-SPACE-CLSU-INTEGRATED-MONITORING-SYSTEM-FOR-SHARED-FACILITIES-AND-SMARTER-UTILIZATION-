@@ -566,26 +566,33 @@ class DashboardController extends Controller
 
                 return ['facility' => $facility?->Facility_Name ?? 'Unknown facility', 'rate' => round($rate, 1)];
             })->sortByDesc('rate')->values()->all();
-        $facilityRequestGroups = $rangeRequests->whereNotNull('Facility_ID')->groupBy('Facility_ID');
+        $facilityRequestGroups = $rangeRequests
+            ->whereNotNull('Facility_ID')
+            ->filter(fn (Requests $request) => $facilityLookup->has($request->Facility_ID))
+            ->groupBy('Facility_ID');
         $cancellationRates = $facilityRequestGroups->map(function ($requests, $facilityId) use ($facilityLookup): array {
             $total = $requests->count();
+            $cancelled = $requests->where('Status', 'Cancelled')->count();
 
             return [
-                'facility' => $facilityLookup->get($facilityId)?->Facility_Name ?? 'Unknown facility',
-                'rate' => $total ? round($requests->where('Status', 'Cancelled')->count() / $total * 100, 1) : 0,
+                'facility' => $facilityLookup->get($facilityId)->Facility_Name,
+                'rate' => $total ? round($cancelled / $total * 100, 1) : 0,
+                'cancelled' => $cancelled,
+                'total' => $total,
             ];
-        })->sortByDesc('rate')->values()->all();
+        })->filter(fn (array $row) => $row['cancelled'] > 0)->sortByDesc('rate')->values()->all();
         $facilityDecisionRates = $facilityRequestGroups->map(function ($requests, $facilityId) use ($facilityLookup): array {
             $approved = $requests->whereIn('Status', ['Approved', 'Ended'])->count();
             $rejected = $requests->where('Status', 'Rejected')->count();
             $decided = $approved + $rejected;
 
             return [
-                'facility' => $facilityLookup->get($facilityId)?->Facility_Name ?? 'Unknown facility',
+                'facility' => $facilityLookup->get($facilityId)->Facility_Name,
                 'approved' => $decided ? round($approved / $decided * 100, 1) : 0,
                 'rejected' => $decided ? round($rejected / $decided * 100, 1) : 0,
+                'decided' => $decided,
             ];
-        })->sortByDesc('approved')->values()->all();
+        })->filter(fn (array $row) => $row['decided'] > 0)->sortByDesc('approved')->values()->all();
         $facilityRatings = Feedbacks::query()
             ->whereIn('Facility_ID', $facilities->pluck('FID'))
             ->whereNotNull('Rating')

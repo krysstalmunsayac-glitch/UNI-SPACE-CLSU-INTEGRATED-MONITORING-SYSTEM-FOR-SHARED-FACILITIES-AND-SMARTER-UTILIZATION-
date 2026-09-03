@@ -3,7 +3,6 @@
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
 use Livewire\WithFileUploads;
@@ -32,20 +31,14 @@ new #[Layout('components.layouts.home')] class extends Component {
         $user = Auth::user();
 
         $this->name = trim($this->name);
-        $this->email = strtolower(trim($this->email));
+        // Email is the verified sign-in identity and may only be changed by
+        // an administrator through the invitation workflow.
+        $this->email = $user->email;
         $this->contact_number = trim($this->contact_number);
         $this->address = trim($this->address);
 
         $validated = $this->validate([
             'name' => ['required', 'string', 'min:2', 'max:100'],
-            'email' => [
-                'required',
-                'string',
-                'lowercase',
-                'email',
-                'max:255',
-                Rule::unique(User::class)->ignore($user->id),
-            ],
             'contact_number' => ['required', 'string', 'regex:'.User::PH_CONTACT_REGEX],
             'address' => ['required', 'string', 'min:5', 'max:500'],
             'profile_photo' => ['nullable', 'image', 'max:2048'],
@@ -56,11 +49,11 @@ new #[Layout('components.layouts.home')] class extends Component {
         $photo = $validated['profile_photo'] ?? null;
         unset($validated['profile_photo']);
 
-        $user->fill($validated);
-
-        if ($user->isDirty('email')) {
-            $user->email_verified_at = null;
-        }
+        $user->fill([
+            'name' => $validated['name'],
+            'contact_number' => $validated['contact_number'],
+            'address' => $validated['address'],
+        ]);
 
         if ($photo) {
             if ($user->ImageID && ! filter_var($user->ImageID, FILTER_VALIDATE_URL)) {
@@ -115,7 +108,10 @@ new #[Layout('components.layouts.home')] class extends Component {
                     <x-ui::input wire:model="contact_number" label="Contact number" type="tel" required minlength="11" maxlength="13" pattern="(?:09[0-9]{9}|\+639[0-9]{9})" title="Use 09XXXXXXXXX or +639XXXXXXXXX." placeholder="09XXXXXXXXX" autocomplete="tel" />
                 </div>
 
-                <x-ui::input wire:model="email" label="Email address" type="email" required maxlength="255" autocomplete="email" />
+                <div>
+                    <x-ui::input wire:model="email" label="Email address" type="email" readonly disabled />
+                    <p class="mt-2 text-xs text-zinc-500 dark:text-zinc-400">Your verified sign-in email cannot be changed from your profile. Contact an administrator if it needs to be updated.</p>
+                </div>
 
                 <div>
                     <label for="external_address" class="mb-2 block text-sm font-medium text-zinc-800 dark:text-zinc-200">Address</label>

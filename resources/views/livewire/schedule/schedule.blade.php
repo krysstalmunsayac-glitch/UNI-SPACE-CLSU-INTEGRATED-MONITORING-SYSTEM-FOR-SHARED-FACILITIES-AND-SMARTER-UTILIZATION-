@@ -11,6 +11,7 @@ use App\Models\Facilities;
 use App\Models\Schedule;
 use App\Models\Requests;
 use App\Support\CalendarColor;
+use App\Services\FacilityAvailabilityService;
 use Carbon\Carbon;
 
 new #[Layout('components.layouts.app')] class extends Component {
@@ -36,7 +37,7 @@ new #[Layout('components.layouts.app')] class extends Component {
     #[Validate('required|exists:requests,RID')]
     public ?int $Request_ID = null;
 
-    #[Validate('required|date|after_or_equal:today')]
+    #[Validate('required|date')]
     public string $Date = '';
 
     #[Validate('required')]
@@ -76,6 +77,20 @@ new #[Layout('components.layouts.app')] class extends Component {
         $this->applySearch();
     }
 
+    public function updatedStartTime(string $value): void
+    {
+        try {
+            $end = Carbon::createFromFormat('H:i', $value)
+                ->addMinutes(FacilityAvailabilityService::MINIMUM_MINUTES);
+
+            if ($end->format('H:i') <= FacilityAvailabilityService::CLOSES_AT) {
+                $this->End_Time = $end->format('H:i');
+            }
+        } catch (\Throwable) {
+            // Validation will present a useful message for malformed values.
+        }
+    }
+
     // ---- CRUD ----
     public function resetForm(): void
     {
@@ -101,8 +116,38 @@ new #[Layout('components.layouts.app')] class extends Component {
     {
         abort_if($this->editingId === null, 403, 'Creating schedules manually is not allowed.');
 
-        $validated = $this->validate();
+        // Authorize the existing record before validating any user-controlled
+        // fields, then enforce the same three-day lead time as reservations.
         $schedule = $this->getScopedSchedule((int) $this->editingId);
+        $validated = $this->validate([
+            'Request_ID' => ['required', 'exists:requests,RID'],
+            'Date' => ['required', 'date', 'after_or_equal:'.now()->addDays(3)->toDateString()],
+            'Start_Time' => ['required', 'date_format:H:i'],
+            'End_Time' => ['required', 'date_format:H:i', 'after:Start_Time'],
+            'Status' => ['required', 'in:Booked,Blocked'],
+        ], [
+            'Date.after_or_equal' => 'Schedules must be set at least 3 days in advance.',
+        ]);
+
+        $startTime = Carbon::createFromFormat('H:i', $validated['Start_Time']);
+        $endTime = Carbon::createFromFormat('H:i', $validated['End_Time']);
+
+        if ($startTime->diffInMinutes($endTime) < 60) {
+            $this->addError('End_Time', 'A booking must be at least 1 hour.');
+
+            return;
+        }
+
+        if (
+            $validated['Start_Time'] < FacilityAvailabilityService::OPENS_AT
+            || $validated['End_Time'] > FacilityAvailabilityService::CLOSES_AT
+            || (int) $startTime->format('i') % FacilityAvailabilityService::SLOT_MINUTES !== 0
+            || (int) $endTime->format('i') % FacilityAvailabilityService::SLOT_MINUTES !== 0
+        ) {
+            $this->addError('Start_Time', 'Choose a 30-minute time slot between 7:00 AM and 8:00 PM.');
+
+            return;
+        }
 
         // A schedule belongs to the request that created it. Do not allow a
         // modified Livewire payload to move it to a different request.
@@ -177,6 +222,30 @@ new #[Layout('components.layouts.app')] class extends Component {
             'End_Time'   => 'end time',
             'Status'     => 'status',
         ];
+    }
+
+    #[Computed]
+    public function startTimeSlots(): array
+    {
+        return app(FacilityAvailabilityService::class)->slots();
+    }
+
+    #[Computed]
+    public function endTimeSlots(): array
+    {
+        $minimum = Carbon::createFromFormat('H:i', $this->Start_Time ?: FacilityAvailabilityService::OPENS_AT)
+            ->addMinutes(FacilityAvailabilityService::MINIMUM_MINUTES)
+            ->format('H:i');
+
+        $slots = [];
+        $cursor = Carbon::createFromFormat('H:i', $minimum);
+        $close = Carbon::createFromFormat('H:i', FacilityAvailabilityService::CLOSES_AT);
+        while ($cursor->lessThanOrEqualTo($close)) {
+            $slots[] = $cursor->format('H:i');
+            $cursor->addMinutes(FacilityAvailabilityService::SLOT_MINUTES);
+        }
+
+        return $slots;
     }
 
     public function edit(int $scheduleId): void

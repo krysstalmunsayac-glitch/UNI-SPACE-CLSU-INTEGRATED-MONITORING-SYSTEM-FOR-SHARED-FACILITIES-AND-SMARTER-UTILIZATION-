@@ -29,6 +29,9 @@ class User extends Authenticatable implements MustVerifyEmail
         'email',
         'password',
         'email_verified_at',
+        'invitation_sent_at',
+        'invitation_expires_at',
+        'invitation_revoked_at',
         'contact_number',
         'office',
         'address',
@@ -54,9 +57,25 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'invitation_sent_at' => 'datetime',
+        'invitation_expires_at' => 'datetime',
+        'invitation_revoked_at' => 'datetime',
         'password' => 'hashed',
         'is_active' => 'boolean',
     ];
+
+    public function invitationStatus(): string
+    {
+        if ($this->email_verified_at) {
+            return 'Verified';
+        }
+
+        if ($this->invitation_revoked_at || ! $this->invitation_expires_at || $this->invitation_expires_at->isPast()) {
+            return 'Invitation Expired';
+        }
+
+        return 'Invitation Pending';
+    }
 
     /**
      * Get the user's initials

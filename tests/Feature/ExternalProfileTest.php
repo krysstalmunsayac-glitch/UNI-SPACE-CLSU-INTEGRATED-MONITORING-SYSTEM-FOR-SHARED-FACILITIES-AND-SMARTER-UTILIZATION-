@@ -14,7 +14,7 @@ it('allows an external user to save profile changes', function () {
 
     Volt::test('settings.external-profile')
         ->set('name', '  Updated User  ')
-        ->set('email', 'UPDATED@EXAMPLE.COM ')
+        ->set('email', 'attempted-change@example.com')
         ->set('contact_number', '09123456789')
         ->set('address', '  Updated home address  ')
         ->call('updateProfileInformation')
@@ -23,7 +23,7 @@ it('allows an external user to save profile changes', function () {
 
     expect($user->fresh())
         ->name->toBe('Updated User')
-        ->email->toBe('updated@example.com')
+        ->email->toBe('external@example.com')
         ->contact_number->toBe('09123456789')
         ->address->toBe('Updated home address');
 });

@@ -419,7 +419,7 @@ new #[Layout('components.layouts.app')] class extends Component
 
 <div class="w-full">
     @if ($archiveOnly)
-        <div class="mx-auto max-w-5xl">
+        <div class="mx-auto max-w-7xl">
             <x-ui::card>
                 @include('amenities.components.archived-amenities-modal', ['archiveOnly' => true])
             </x-ui::card>
@@ -428,7 +428,7 @@ new #[Layout('components.layouts.app')] class extends Component
     @include('amenities.components.page-header')
     @include('amenities.components.amenities-table')
     @if ($showArchivedModal)
-        <x-ui::modal wire:model.self="showArchivedModal" class="w-[95vw] max-w-5xl">
+        <x-ui::modal wire:model.self="showArchivedModal" class="w-[95vw] max-w-7xl">
             @include('amenities.components.archived-amenities-modal')
         </x-ui::modal>
     @endif

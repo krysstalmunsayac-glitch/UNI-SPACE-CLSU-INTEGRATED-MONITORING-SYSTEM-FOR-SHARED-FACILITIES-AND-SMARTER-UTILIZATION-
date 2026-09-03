@@ -39,6 +39,31 @@ it('allows pending requests to be approved', function () {
     expect($booking->fresh()->Status)->toBe('Approved');
 });
 
+it('rejects buffered competing pending requests when one request is approved', function () {
+    [$administrator, $booking] = administrativeRequest();
+    $competitor = Requests::withoutEvents(fn () => Requests::query()->create([
+        'User_ID' => User::factory()->create(['user_type' => 'user', 'is_active' => true])->id,
+        'Facility_ID' => $booking->Facility_ID,
+        'Proposed_Date' => $booking->Proposed_Date->toDateString(),
+        'Proposed_End_Date' => $booking->Proposed_Date->toDateString(),
+        'Proposed_Start_Time' => '10:00',
+        'Proposed_End_Time' => '11:00',
+        'Daily_Schedules' => [[
+            'date' => $booking->Proposed_Date->toDateString(),
+            'start' => '10:00',
+            'end' => '11:00',
+        ]],
+        'Status' => 'Pending',
+        'Purpose' => 'Buffered competing request',
+    ]));
+
+    $this->actingAs($administrator);
+    Volt::test('request.request')->call('approve', $booking->RID);
+
+    expect($booking->fresh()->Status)->toBe('Approved')
+        ->and($competitor->fresh()->Status)->toBe('Rejected');
+});
+
 it('does not approve or reject an already rejected request', function () {
     [$administrator, $booking] = administrativeRequest('Rejected');
     $this->actingAs($administrator);

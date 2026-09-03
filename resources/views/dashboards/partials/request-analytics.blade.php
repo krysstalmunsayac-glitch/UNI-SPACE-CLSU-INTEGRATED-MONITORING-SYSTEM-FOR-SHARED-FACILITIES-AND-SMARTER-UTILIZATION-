@@ -84,8 +84,12 @@
         </section>
         <section class="{{ $card }}">
             <h3 class="text-lg font-bold">Cancellation Rate by Facility</h3>
-            <p class="mt-1 text-sm text-slate-500 dark:text-zinc-400">Cancelled requests as a percentage of facility requests.</p>
-            <div class="mt-5 h-72"><canvas id="{{ $dashboardChartPrefix }}CancellationRateChart"></canvas></div>
+            <p class="mt-1 text-sm text-slate-500 dark:text-zinc-400">Facilities with cancellations, shown as a percentage of their requests.</p>
+            @if ($cancellationRates !== [])
+                <div class="mt-5" style="height: {{ max(288, count($cancellationRates) * 44) }}px;"><canvas id="{{ $dashboardChartPrefix }}CancellationRateChart"></canvas></div>
+            @else
+                <div class="mt-5 flex h-40 items-center justify-center rounded-xl border border-dashed border-slate-200 text-sm text-slate-500 dark:border-zinc-700 dark:text-zinc-400">No cancellations in this period.</div>
+            @endif
         </section>
     </div>
 
@@ -94,7 +98,11 @@
         <div class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
             <div><h3 class="text-lg font-bold">Approval / Rejection Rate by Facility</h3><p class="mt-1 text-sm text-slate-500 dark:text-zinc-400">Secondary analytics for decided requests.</p></div>
         </div>
-        <div class="mt-5 h-72"><canvas id="{{ $dashboardChartPrefix }}DecisionRateChart"></canvas></div>
+        @if ($facilityDecisionRates !== [])
+            <div class="mt-5" style="height: {{ max(288, count($facilityDecisionRates) * 44) }}px;"><canvas id="{{ $dashboardChartPrefix }}DecisionRateChart"></canvas></div>
+        @else
+            <div class="mt-5 flex h-40 items-center justify-center rounded-xl border border-dashed border-slate-200 text-sm text-slate-500 dark:border-zinc-700 dark:text-zinc-400">No approved or rejected requests in this period.</div>
+        @endif
     </section>
     <section class="{{ $card }}">
         <h3 class="text-lg font-bold">Facility Ratings</h3>

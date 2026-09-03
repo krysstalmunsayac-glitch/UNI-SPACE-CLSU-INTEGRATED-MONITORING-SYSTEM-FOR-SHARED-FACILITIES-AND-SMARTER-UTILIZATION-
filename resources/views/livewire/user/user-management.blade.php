@@ -2,11 +2,13 @@
 
 use App\Models\Facilities;
 use App\Models\User;
+use App\Services\UserInvitationService;
 use App\Support\Ui;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Password;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Validate;
@@ -95,8 +97,36 @@ new #[Layout('components.layouts.app')] class extends Component
 
     public function mount(): void
     {
+        abort_unless(auth()->user()?->isSuperAdmin(), 403);
         $this->archiveOnly = request()->boolean('archive');
         $this->showArchivedModal = $this->archiveOnly;
+    }
+
+    public function resendInvitation(int $userId): void
+    {
+        $user = $this->managedUser($userId);
+        if ($user->email_verified_at) {
+            Ui::toast(text: 'This email is already verified.', variant: 'info');
+            return;
+        }
+
+        $key = 'managed-user-invitation:'.auth()->id().':'.$user->id;
+        if (RateLimiter::tooManyAttempts($key, 3)) {
+            Ui::toast(text: 'Too many resend attempts. Try again later.', variant: 'danger');
+            return;
+        }
+
+        RateLimiter::hit($key, 3600);
+        app(UserInvitationService::class)->send($user);
+        Ui::toast(text: 'New invitation queued; the previous link is invalid.', variant: 'success');
+    }
+
+    public function revokeInvitation(int $userId): void
+    {
+        $user = $this->managedUser($userId);
+        abort_if($user->email_verified_at, 409, 'This account is already verified.');
+        app(UserInvitationService::class)->revoke($user);
+        Ui::toast(text: 'Invitation revoked.', variant: 'success');
     }
 
     /*
@@ -211,22 +241,27 @@ new #[Layout('components.layouts.app')] class extends Component
         bool $accountStatusConfirmed = false,
         bool $createConfirmed = false
     ): void {
+        $this->name = trim($this->name);
+        $this->email = Str::lower(trim($this->email));
+
+        if (User::onlyTrashed()->where('email', $this->email)->when($this->editingId, fn ($query) => $query->whereKeyNot($this->editingId))->exists()) {
+            $this->addError('email', 'This email belongs to an archived account. Restore that account instead.');
+            return;
+        }
+
         $rules = [
             'name' => ['required', 'string', 'min:2', 'max:100'],
             'email' => [
                 'required',
-                'email',
+                'email:rfc',
                 'max:255',
                 Rule::unique('users', 'email')->ignore($this->editingId),
             ],
             'contact_number' => ['nullable', 'string', 'regex:'.User::PH_CONTACT_REGEX],
-            'office' => ['nullable', 'string', 'min:2', 'max:150'],
+            'office' => ['nullable', 'required_if:user_type,admin', 'string', 'min:2', 'max:150'],
             'address' => ['nullable', 'string', 'min:5', 'max:500'],
             'user_type' => ['required', Rule::in(['super_admin', 'admin', 'user'])],
             'is_active' => ['boolean'],
-            'password' => $this->editingId
-                ? ['nullable', 'string', Password::defaults(), 'confirmed']
-                : ['required', 'string', Password::defaults(), 'confirmed'],
             'profile_photo' => ['nullable', 'image', 'max:2048'],
         ];
 
@@ -239,6 +274,11 @@ new #[Layout('components.layouts.app')] class extends Component
             $this->addError('is_active', 'You cannot deactivate your own account.');
             Ui::toast(text: 'You cannot deactivate your own account.', variant: 'danger');
 
+            return;
+        }
+
+        if (in_array($validated['user_type'], ['admin', 'super_admin'], true) && ! str_ends_with($validated['email'], '@clsu.edu.ph')) {
+            $this->addError('email', 'Administrative accounts must use an @clsu.edu.ph email address.');
             return;
         }
 
@@ -298,15 +338,11 @@ new #[Layout('components.layouts.app')] class extends Component
         ];
         $photo = $validated['profile_photo'] ?? null;
 
-        if (filled($validated['password'] ?? null)) {
-            $data['password'] = Hash::make($validated['password']);
-        }
-
         if ($this->editingId) {
             $user = $this->managedUser($this->editingId);
+            $emailChanged = $validated['email'] !== Str::lower($user->email);
             $roleChanged = $validated['user_type'] !== $this->originalUserType;
             $statusChanged = $validated['is_active'] !== $this->originalIsActive;
-            $passwordChanged = filled($validated['password'] ?? null);
 
             if ($photo) {
                 $newPhotoPath = $photo->store('profile-photos', 'public');
@@ -320,6 +356,10 @@ new #[Layout('components.layouts.app')] class extends Component
 
             $user->update($data);
 
+            if ($emailChanged) {
+                app(UserInvitationService::class)->send($user);
+            }
+
             Ui::toast(
                 text: 'User updated successfully!',
                 variant: 'success'
@@ -329,15 +369,15 @@ new #[Layout('components.layouts.app')] class extends Component
                 ? 'Role changed successfully'
                 : ($statusChanged
                     ? ($validated['is_active'] ? 'Account activated' : 'Account deactivated')
-                    : ($passwordChanged ? 'Password updated' : 'User updated'));
+                    : ($emailChanged ? 'Verification required' : 'User updated'));
             $successText = $roleChanged
                 ? "{$user->name} is now {$user->roleLabel()}."
                 : ($statusChanged
                     ? ($validated['is_active']
                         ? "{$user->name} can now access the system."
                         : "{$user->name} can no longer access the system.")
-                    : ($passwordChanged
-                        ? "{$user->name}'s password was updated successfully."
+                    : ($emailChanged
+                        ? "A new invitation was sent to {$user->email}. The account is inactive until verification is completed."
                         : 'User details were updated successfully.'));
 
             $this->dispatch('swal', [
@@ -346,22 +386,25 @@ new #[Layout('components.layouts.app')] class extends Component
                 'icon' => 'success',
             ]);
         } else {
-            $data['email_verified_at'] = now();
+            $data['password'] = Hash::make(Str::random(64));
+            $data['email_verified_at'] = null;
+            $data['is_active'] = false;
 
             if ($photo) {
                 $data['ImageID'] = $photo->store('profile-photos', 'public');
             }
 
-            User::query()->create($data);
+            $user = User::query()->create($data);
+            app(UserInvitationService::class)->send($user);
 
             Ui::toast(
-                text: 'User created successfully!',
+                text: 'User created and invitation queued.',
                 variant: 'success'
             );
 
             $this->dispatch('swal', [
-                'title' => 'User created',
-                'text' => 'User created successfully!',
+                'title' => 'Invitation sent',
+                'text' => "{$user->name} must use the emailed link to verify the address and create a password.",
                 'icon' => 'success',
             ]);
         }
@@ -413,6 +456,11 @@ new #[Layout('components.layouts.app')] class extends Component
     {
         $user = $this->managedUser($userId);
 
+        if (! $user->email_verified_at && ! $user->is_active) {
+            Ui::toast(text: 'This account must complete its email invitation before it can be activated.', variant: 'danger');
+            return;
+        }
+
         if ($user->id === auth()->id()) {
             Ui::toast(
                 text: 'You cannot deactivate your own account.',
@@ -439,6 +487,12 @@ new #[Layout('components.layouts.app')] class extends Component
 
             Ui::toast(text: 'You cannot deactivate your own account.', variant: 'danger');
 
+            return;
+        }
+
+        if (! $user->email_verified_at && ! $user->is_active) {
+            $this->showQuickStatusConfirmation = false;
+            Ui::toast(text: 'This account must complete its email invitation before it can be activated.', variant: 'danger');
             return;
         }
 
@@ -644,7 +698,6 @@ new #[Layout('components.layouts.app')] class extends Component
     public function users()
     {
         return User::query()
-            ->whereNotNull('email_verified_at')
             ->where('user_type', '!=', 'super_admin')
             ->when(
                 in_array($this->roleFilter, ['admin', 'user'], true),
@@ -674,7 +727,6 @@ new #[Layout('components.layouts.app')] class extends Component
     public function archivedUsers()
     {
         return User::onlyTrashed()
-            ->whereNotNull('email_verified_at')
             ->where('user_type', '!=', 'super_admin')
             ->when($this->search, fn ($query) => $query->where(function ($query) {
                 $query->where('name', 'like', '%'.$this->search.'%')
@@ -708,7 +760,6 @@ new #[Layout('components.layouts.app')] class extends Component
     public function userStats(): array
     {
         $stats = User::query()
-            ->whereNotNull('email_verified_at')
             ->where('user_type', '!=', 'super_admin')
             ->selectRaw('COUNT(*) as total')
             ->selectRaw("SUM(CASE WHEN user_type = 'admin' THEN 1 ELSE 0 END) as office_admins")

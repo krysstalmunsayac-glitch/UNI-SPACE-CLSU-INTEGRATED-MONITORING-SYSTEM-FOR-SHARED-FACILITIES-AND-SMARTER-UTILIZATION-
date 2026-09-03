@@ -26,27 +26,31 @@
                     wire:model="Date"
                     type="date"
                     label="Date"
-                    min="{{ now()->toDateString() }}"
+                    min="{{ now()->addDays(3)->toDateString() }}"
                 />
-
+                <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Schedule changes must be made at least 3 days before the event.</p>
             </div>
 
             <div class="grid grid-cols-2 gap-3">
                 <div>
-                    <x-ui::input
-                        wire:model="Start_Time"
-                        type="time"
-                        label="Start Time"
-                    />
+                    <x-ui::select wire:model.live="Start_Time" label="Start time">
+                        @foreach ($this->startTimeSlots as $slot)
+                            <x-ui::select.option value="{{ $slot }}">
+                                {{ Carbon\Carbon::createFromFormat('H:i', $slot)->format('g:i A') }}
+                            </x-ui::select.option>
+                        @endforeach
+                    </x-ui::select>
 
                 </div>
 
                 <div>
-                    <x-ui::input
-                        wire:model="End_Time"
-                        type="time"
-                        label="End Time"
-                    />
+                    <x-ui::select wire:model="End_Time" label="End time (1 hour minimum)">
+                        @foreach ($this->endTimeSlots as $slot)
+                            <x-ui::select.option value="{{ $slot }}">
+                                {{ Carbon\Carbon::createFromFormat('H:i', $slot)->format('g:i A') }}
+                            </x-ui::select.option>
+                        @endforeach
+                    </x-ui::select>
 
                 </div>
             </div>

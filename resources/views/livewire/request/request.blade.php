@@ -6,6 +6,7 @@ use App\Models\Schedule;
 use App\Models\User;
 use App\Notifications\RequestNeedsRevision;
 use App\Notifications\RequestStatusUpdated;
+use App\Services\FacilityAvailabilityService;
 use App\Support\Ui;
 use Carbon\CarbonPeriod;
 use Illuminate\Support\Facades\DB;
@@ -315,23 +316,17 @@ new #[Layout('components.layouts.app')] class extends Component
                 return null;
             }
 
-            if ($request->Facility_ID && Requests::hasActiveDailyScheduleConflict(
-                $request->Facility_ID,
-                $dailySchedules,
-                $request->RID,
-                true,
-            )) {
+            $availability = app(FacilityAvailabilityService::class);
+
+            if ($request->Facility_ID && $availability->conflicts(
+                $request->Facility_ID, $dailySchedules, $request->RID, true, ['Approved']
+            )->isNotEmpty()) {
                 return null;
             }
 
             $rejectedRequests = $request->Facility_ID
-                ? Requests::dailyScheduleConflicts(
-                    $request->Facility_ID,
-                    $dailySchedules,
-                    $request->RID,
-                    true,
-                    ['Pending'],
-                )
+                ? $availability->conflicts($request->Facility_ID, $dailySchedules, $request->RID, true, ['Pending'])
+                    ->pluck('request_id')->unique()->map(fn ($id) => Requests::query()->find($id))->filter()->values()
                 : collect();
 
             $request->update([
@@ -690,7 +685,7 @@ new #[Layout('components.layouts.app')] class extends Component
     public function forceDelete(int $requestId): void
     {
         Requests::onlyTrashed()->findOrFail($requestId)->forceDelete();
-        Ui::toast(text: 'Request permanently deleted.', variant: 'danger');
+        Ui::toast(text: 'Request permanently deleted.', variant: 'success');
         $this->dispatch('$refresh');
     }
 

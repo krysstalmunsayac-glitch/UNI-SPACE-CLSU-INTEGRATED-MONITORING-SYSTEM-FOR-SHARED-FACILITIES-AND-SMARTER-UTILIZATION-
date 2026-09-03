@@ -46,6 +46,11 @@
                     dailySchedules: @js(old('Daily_Schedules', [])),
                     sharedStartTime: @js(data_get(old('Daily_Schedules', []), '0.start', '09:00')),
                     sharedEndTime: @js(data_get(old('Daily_Schedules', []), '0.end', '10:00')),
+                    slots: @js($scheduling['slots']),
+                    endSlots: [...@js($scheduling['slots']), @js($scheduling['closes_at'])],
+                    availability: {},
+                    availabilityLoading: false,
+                    availabilityError: '',
                     customizeDailyTimes: @js(collect(old('Daily_Schedules', []))->map(fn ($schedule) => ($schedule['start'] ?? '').'|'.($schedule['end'] ?? ''))->unique()->count() > 1),
                     eventType: @js(old('Type_Event', '')),
                     photos: @js($facility->images->map(fn ($image) => asset('storage/'.ltrim($image->image_path, '/')))->values()),
@@ -92,6 +97,7 @@
 
                         this.dailySchedules = schedules;
                         if (!this.customizeDailyTimes) this.applySharedTime();
+                        this.loadAvailability();
                     },
                     applySharedTime() {
                         this.dailySchedules = this.dailySchedules.map(schedule => ({
@@ -100,6 +106,71 @@
                             end: this.sharedEndTime,
                         }));
                     },
+                    minimumEndTime(startTime) {
+                        if (!startTime) return null;
+                        const [hours, minutes] = startTime.split(':').map(Number);
+                        const minimumMinutes = (hours * 60) + minutes + 60;
+                        if (minimumMinutes >= 1440) return '23:59';
+                        return `${String(Math.floor(minimumMinutes / 60)).padStart(2, '0')}:${String(minimumMinutes % 60).padStart(2, '0')}`;
+                    },
+                    addMinutes(time, minutes) {
+                        const [hours, mins] = time.split(':').map(Number);
+                        const total = Math.min((hours * 60) + mins + minutes, 20 * 60);
+                        return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+                    },
+                    chooseSharedStart(time) {
+                        this.sharedStartTime = time;
+                        this.sharedEndTime = this.addMinutes(time, 60);
+                        this.applySharedTime();
+                    },
+                    chooseDayStart(schedule, time) {
+                        schedule.start = time;
+                        schedule.end = this.addMinutes(time, 60);
+                    },
+                    async loadAvailability() {
+                        const from = this.$refs.startDate?.value;
+                        const to = this.$refs.endDate?.value;
+                        if (!from || !to) return;
+                        this.availabilityLoading = true;
+                        this.availabilityError = '';
+                        try {
+                            const url = new URL(@js($scheduling['availability_url']), window.location.origin);
+                            url.searchParams.set('from', from);
+                            url.searchParams.set('to', to);
+                            const response = await fetch(url, { headers: { Accept: 'application/json' } });
+                            if (!response.ok) throw new Error('Availability could not be loaded.');
+                            this.availability = (await response.json()).days;
+                        } catch (error) {
+                            this.availability = {};
+                            this.availabilityError = error.message;
+                        } finally { this.availabilityLoading = false; }
+                    },
+                    slotStatus(date, start, end) {
+                        const day = this.availability[date];
+                        if (!day || day.closed) return 'unavailable';
+                        let status = 'available';
+                        for (const range of day.ranges || []) {
+                            if (start < range.blocked_end && end > range.blocked_start) {
+                                if (range.status === 'approved') return 'approved';
+                                status = 'pending';
+                            }
+                        }
+                        return status;
+                    },
+                    scheduleStatus(schedule) { return this.slotStatus(schedule.date, schedule.start, schedule.end); },
+                    hasApprovedConflict() { return this.dailySchedules.some(schedule => this.scheduleStatus(schedule) === 'approved'); },
+                    hasPendingWarning() { return !this.hasApprovedConflict() && this.dailySchedules.some(schedule => this.scheduleStatus(schedule) === 'pending'); },
+                    hasClosure() { return this.dailySchedules.some(schedule => this.scheduleStatus(schedule) === 'unavailable'); },
+                    hasBlockingConflict() { return this.hasApprovedConflict() || this.hasClosure(); },
+                    sharedStartDisabled(slot) { return this.dailySchedules.some(schedule => ['approved', 'unavailable'].includes(this.slotStatus(schedule.date, slot, this.addMinutes(slot, 60)))); },
+                    sharedEndDisabled(slot) { return this.dailySchedules.some(schedule => ['approved', 'unavailable'].includes(this.slotStatus(schedule.date, this.sharedStartTime, slot))); },
+                    duration(schedule) {
+                        if (!schedule?.start || !schedule?.end) return 0;
+                        const parts = value => value.split(':').map(Number);
+                        const [sh, sm] = parts(schedule.start); const [eh, em] = parts(schedule.end);
+                        return ((eh * 60) + em) - ((sh * 60) + sm);
+                    },
+                    formatTime(time) { return new Date(`2000-01-01T${time}:00`).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); },
                     useOneTimeForAllDays() {
                         this.customizeDailyTimes = false;
                         this.applySharedTime();
@@ -416,13 +487,44 @@
                                             </div>
                                             <label class="block">
                                                 <span class="mb-2 block text-sm font-medium text-emerald-900 dark:text-zinc-300">Start time</span>
-                                                <input type="time" x-model="sharedStartTime" x-on:input="applySharedTime()" x-bind:required="!customizeDailyTimes" class="h-11 w-full rounded-xl border border-emerald-900/10 bg-white px-3 text-sm text-emerald-950 shadow-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-950 dark:text-white">
+                                                <select x-model="sharedStartTime" x-on:change="chooseSharedStart($event.target.value)" x-bind:required="!customizeDailyTimes" class="h-11 w-full rounded-xl border border-emerald-900/10 bg-white px-3 text-sm text-emerald-950 shadow-sm focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-950 dark:text-white">
+                                                    <template x-for="slot in slots" :key="slot"><option :value="slot" :disabled="sharedStartDisabled(slot)" x-text="`${formatTime(slot)}${sharedStartDisabled(slot) ? ' — Already Booked' : ''}`"></option></template>
+                                                </select>
                                             </label>
                                             <label class="block">
-                                                <span class="mb-2 block text-sm font-medium text-emerald-900 dark:text-zinc-300">End time <span class="font-normal text-zinc-500">(2 hours minimum)</span></span>
-                                                <input type="time" x-model="sharedEndTime" x-on:input="applySharedTime()" x-bind:min="sharedStartTime" x-bind:required="!customizeDailyTimes" class="h-11 w-full rounded-xl border border-emerald-900/10 bg-white px-3 text-sm text-emerald-950 shadow-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-950 dark:text-white">
+                                                <span class="mb-2 block text-sm font-medium text-emerald-900 dark:text-zinc-300">End time <span class="font-normal text-zinc-500">(1 hour minimum)</span></span>
+                                                <select x-model="sharedEndTime" x-on:change="applySharedTime()" x-bind:required="!customizeDailyTimes" class="h-11 w-full rounded-xl border border-emerald-900/10 bg-white px-3 text-sm text-emerald-950 shadow-sm focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-950 dark:text-white">
+                                                    <template x-for="slot in endSlots.filter(slot => slot >= minimumEndTime(sharedStartTime))" :key="slot"><option :value="slot" :disabled="sharedEndDisabled(slot)" x-text="`${formatTime(slot)}${sharedEndDisabled(slot) ? ' — Already Booked' : ''}`"></option></template>
+                                                </select>
                                             </label>
                                         </div>
+
+                                        <div class="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900" aria-live="polite">
+                                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                                <p class="text-sm font-bold text-emerald-950 dark:text-white">Available booking hours: 7:00 AM–8:00 PM</p>
+                                                <p class="text-xs text-zinc-500">30-minute preparation + 30-minute cleanup buffer</p>
+                                            </div>
+                                            <div class="mt-3 flex flex-wrap gap-2 text-xs" aria-label="Availability color guide">
+                                                <span class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1"><i class="inline-block h-3 w-3 shrink-0 rounded-full" style="background:#10b981"></i> Available</span>
+                                                <span class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1"><i class="inline-block h-3 w-3 shrink-0 rounded-full" style="background:#f59e0b"></i> Pending request</span>
+                                                <span class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1"><i class="inline-block h-3 w-3 shrink-0 rounded-full" style="background:#ef4444"></i> Already booked</span>
+                                                <span class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1"><i class="inline-block h-3 w-3 shrink-0 rounded-full" style="background:#a1a1aa"></i> Closed / maintenance</span>
+                                            </div>
+                                            <p x-show="availabilityLoading" class="mt-3 text-sm text-zinc-500">Checking availability…</p>
+                                            <p x-show="availabilityError" x-text="availabilityError" class="mt-3 text-sm font-medium text-red-600"></p>
+                                            <div x-show="!availabilityLoading && !availabilityError" class="mt-4 space-y-3">
+                                                <template x-for="schedule in dailySchedules" :key="`timeline-${schedule.date}`">
+                                                    <div>
+                                                        <div class="mb-1 flex justify-between text-xs"><span class="font-semibold" x-text="new Date(`${schedule.date}T12:00:00`).toLocaleDateString(undefined, {weekday:'short', month:'short', day:'numeric'})"></span><span class="capitalize" x-text="scheduleStatus(schedule) === 'approved' ? 'Already Booked' : scheduleStatus(schedule) === 'pending' ? 'Pending Request' : scheduleStatus(schedule)"></span></div>
+                                                        <div class="flex h-5 overflow-hidden rounded-full bg-zinc-200" role="img" :aria-label="`Daily availability for ${schedule.date}`">
+                                                            <template x-for="slot in slots" :key="`${schedule.date}-${slot}`"><span class="flex-1 border-r border-white/40" :style="`background:${slotStatus(schedule.date, slot, addMinutes(slot, 30)) === 'available' ? '#10b981' : slotStatus(schedule.date, slot, addMinutes(slot, 30)) === 'pending' ? '#f59e0b' : slotStatus(schedule.date, slot, addMinutes(slot, 30)) === 'approved' ? '#ef4444' : '#a1a1aa'}`"></span></template>
+                                                        </div>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </div>
+
+                                        @include('requests.partials.booking-summary')
 
                                         <template x-for="(schedule, index) in dailySchedules" :key="schedule.date">
                                             <div>
@@ -437,11 +539,11 @@
                                                     </div>
                                                     <label class="block">
                                                         <span class="mb-2 block text-sm font-medium text-emerald-900 dark:text-zinc-300">Start time</span>
-                                                        <input type="time" x-bind:name="customizeDailyTimes ? `Daily_Schedules[${index}][start]` : null" x-model="schedule.start" x-bind:required="customizeDailyTimes" class="h-11 w-full rounded-xl border border-emerald-900/10 bg-white px-3 text-sm text-emerald-950 shadow-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-950 dark:text-white">
+                                                        <select x-bind:name="customizeDailyTimes ? `Daily_Schedules[${index}][start]` : null" x-model="schedule.start" x-on:change="chooseDayStart(schedule, $event.target.value)" x-bind:required="customizeDailyTimes" class="h-11 w-full rounded-xl border border-emerald-900/10 bg-white px-3 text-sm text-emerald-950 shadow-sm dark:border-white/10 dark:bg-zinc-950 dark:text-white"><template x-for="slot in slots" :key="slot"><option :value="slot" :disabled="['approved', 'unavailable'].includes(slotStatus(schedule.date, slot, addMinutes(slot, 60)))" x-text="`${formatTime(slot)}${slotStatus(schedule.date, slot, addMinutes(slot, 60)) === 'approved' ? ' — Already Booked' : ''}`"></option></template></select>
                                                     </label>
                                                     <label class="block">
-                                                        <span class="mb-2 block text-sm font-medium text-emerald-900 dark:text-zinc-300">End time <span class="font-normal text-zinc-500">(2 hours minimum)</span></span>
-                                                        <input type="time" x-bind:name="customizeDailyTimes ? `Daily_Schedules[${index}][end]` : null" x-model="schedule.end" x-bind:min="schedule.start" x-bind:required="customizeDailyTimes" class="h-11 w-full rounded-xl border border-emerald-900/10 bg-white px-3 text-sm text-emerald-950 shadow-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-950 dark:text-white">
+                                                        <span class="mb-2 block text-sm font-medium text-emerald-900 dark:text-zinc-300">End time <span class="font-normal text-zinc-500">(1 hour minimum)</span></span>
+                                                        <select x-bind:name="customizeDailyTimes ? `Daily_Schedules[${index}][end]` : null" x-model="schedule.end" x-bind:required="customizeDailyTimes" class="h-11 w-full rounded-xl border border-emerald-900/10 bg-white px-3 text-sm text-emerald-950 shadow-sm dark:border-white/10 dark:bg-zinc-950 dark:text-white"><template x-for="slot in endSlots.filter(slot => slot >= minimumEndTime(schedule.start))" :key="slot"><option :value="slot" :disabled="['approved', 'unavailable'].includes(slotStatus(schedule.date, schedule.start, slot))" x-text="`${formatTime(slot)}${slotStatus(schedule.date, schedule.start, slot) === 'approved' ? ' — Already Booked' : ''}`"></option></template></select>
                                                     </label>
                                                 </div>
                                             </div>
@@ -470,6 +572,7 @@
                                         <p class="mt-1 text-xs text-emerald-900/70 dark:text-zinc-300">PDF — max 5 MB.</p>
                                         @error('attachment') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                                     </div>
+
                                 </div>
 
                                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -486,7 +589,7 @@
                                         data-ui-confirm="Are you sure you want to submit this reservation request? Please review the selected facility, date, time, and amenities before continuing."
                                         data-ui-confirm-title="Confirm request submission"
                                         data-ui-confirm-label="Submit request"
-                                        x-bind:disabled="submitting"
+                                        x-bind:disabled="submitting || availabilityLoading || availabilityError || hasBlockingConflict()"
                                         x-bind:aria-busy="submitting"
                                     >
                                         <span x-show="!submitting">Send request</span>

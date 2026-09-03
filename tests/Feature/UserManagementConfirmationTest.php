@@ -10,6 +10,7 @@ it('changes an end user to office admin only after role confirmation', function 
     ]);
     $user = User::factory()->create([
         'user_type' => 'user',
+        'email' => 'role-change@clsu.edu.ph',
         'is_active' => true,
         'contact_number' => '09123456789',
         'office' => 'Testing Office',

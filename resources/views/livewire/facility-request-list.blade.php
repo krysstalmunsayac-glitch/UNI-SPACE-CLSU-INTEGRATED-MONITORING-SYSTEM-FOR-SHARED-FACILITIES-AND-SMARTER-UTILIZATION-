@@ -233,17 +233,19 @@ new class extends Component {
                                 </div>
                             </div>
 
-                            @if ($isEnded)
+                            @if ($isEnded || $isRejected || $isApproved)
                                 <div class="mt-6 flex flex-col gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 sm:flex-row sm:items-center sm:justify-between">
                                     <div>
-                                        <p>This event has ended. Its request details are now read-only and can no longer be changed.</p>
-                                        <p class="mt-1 text-xs font-normal">Sharing feedback is optional.</p>
+                                        <p>{{ $isApproved ? 'This request was approved.' : ($isRejected ? 'This request was rejected.' : 'This event has ended.') }} Its submitted information is read-only and can no longer be changed.</p>
+                                        @if ($isEnded)
+                                            <p class="mt-1 text-xs font-normal">Sharing feedback is optional.</p>
+                                        @endif
                                     </div>
-                                    @if ($request->feedback)
+                                    @if ($isEnded && $request->feedback)
                                         <span class="inline-flex shrink-0 items-center rounded-xl bg-emerald-100 px-4 py-2.5 text-xs font-black text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-200">
                                             Feedback submitted
                                         </span>
-                                    @elseif ($request->Facility_ID)
+                                    @elseif ($isEnded && $request->Facility_ID)
                                         <a
                                             href="{{ route('facility-feedback.create', $request) }}"
                                             class="inline-flex shrink-0 items-center justify-center rounded-xl bg-emerald-700 px-4 py-2.5 text-xs font-black text-white transition hover:bg-emerald-800"
@@ -252,6 +254,38 @@ new class extends Component {
                                         </a>
                                     @endif
                                 </div>
+
+                                <dl class="mt-6 grid gap-4 rounded-xl border border-emerald-900/10 bg-white p-5 text-sm dark:border-white/10 dark:bg-zinc-900 sm:grid-cols-2">
+                                    @foreach ([
+                                        'Event title' => $request->event?->Event_Title ?? 'N/A',
+                                        'Event type' => $request->event?->Type_Event ?? 'N/A',
+                                        'First event day' => $request->Proposed_Date?->format('M j, Y') ?? 'N/A',
+                                        'Last event day' => $request->Proposed_End_Date?->format('M j, Y') ?? $request->Proposed_Date?->format('M j, Y') ?? 'N/A',
+                                        'Start time' => $request->Proposed_Start_Time?->format('g:i A') ?? 'N/A',
+                                        'End time' => $request->Proposed_End_Time?->format('g:i A') ?? 'N/A',
+                                        'Expected attendees' => $request->Capacity ?? 'N/A',
+                                        'Purpose' => $request->Purpose ?? 'N/A',
+                                    ] as $label => $value)
+                                        <div>
+                                            <dt class="text-xs font-black uppercase tracking-wide text-emerald-700 dark:text-emerald-300">{{ $label }}</dt>
+                                            <dd class="mt-1 whitespace-pre-wrap font-semibold text-emerald-950 dark:text-white">{{ $value }}</dd>
+                                        </div>
+                                    @endforeach
+                                    <div class="sm:col-span-2">
+                                        <dt class="text-xs font-black uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Description</dt>
+                                        <dd class="mt-1 whitespace-pre-wrap font-semibold text-emerald-950 dark:text-white">{{ $request->event?->Description ?? 'N/A' }}</dd>
+                                    </div>
+                                    <div class="sm:col-span-2">
+                                        <dt class="text-xs font-black uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Request letter</dt>
+                                        <dd class="mt-2">
+                                            @if ($request->attachment_path)
+                                                <a href="{{ route('requests.attachment.download', $request) }}" class="inline-flex rounded-lg bg-emerald-700 px-3 py-2 text-xs font-black text-white hover:bg-emerald-800">Download submitted PDF</a>
+                                            @else
+                                                <span class="font-semibold text-zinc-500 dark:text-zinc-400">No request letter uploaded.</span>
+                                            @endif
+                                        </dd>
+                                    </div>
+                                </dl>
                             @else
                             <form action="{{ route('waiting.list.update', $request) }}" method="POST" enctype="multipart/form-data" class="mt-6 grid gap-4 lg:grid-cols-2">
                                 @csrf
