@@ -377,6 +377,13 @@ new #[Layout('components.layouts.app')] class extends Component
                 : 'Request approved successfully!',
             variant: 'success',
         );
+        $this->dispatch('swal', [
+            'title' => 'Request approved',
+            'text' => $rejectedCount > 0
+                ? "The request was approved and {$rejectedCount} conflicting pending request(s) were automatically rejected."
+                : 'The request was approved and added to the facility schedule.',
+            'icon' => 'success',
+        ]);
         $this->showViewModal = false;
     }
 
@@ -445,6 +452,11 @@ new #[Layout('components.layouts.app')] class extends Component
         }
 
         Ui::toast(text: 'Request rejected successfully.', variant: 'success');
+        $this->dispatch('swal', [
+            'title' => 'Request rejected',
+            'text' => 'The request was rejected successfully and the requester was notified.',
+            'icon' => 'success',
+        ]);
         $this->showRejectModal = false;
         $this->showViewModal = false;
         $this->rejectingId = null;
@@ -472,6 +484,11 @@ new #[Layout('components.layouts.app')] class extends Component
         }
 
         Ui::toast(text: 'Approved request cancelled and its schedule removed.', variant: 'success');
+        $this->dispatch('swal', [
+            'title' => 'Request cancelled',
+            'text' => 'The approved request was cancelled and its reserved schedule was released.',
+            'icon' => 'success',
+        ]);
         $this->showViewModal = false;
     }
 
@@ -518,6 +535,11 @@ new #[Layout('components.layouts.app')] class extends Component
         }
 
         Ui::toast(text: 'Review message sent. The user can update the same request.', variant: 'success');
+        $this->dispatch('swal', [
+            'title' => 'Revision requested',
+            'text' => 'The user can now update and resubmit the same request.',
+            'icon' => 'success',
+        ]);
         $this->showReviewModal = false;
         $this->showViewModal = false;
         $this->reviewingId = null;
@@ -679,6 +701,11 @@ new #[Layout('components.layouts.app')] class extends Component
     {
         Requests::onlyTrashed()->findOrFail($requestId)->restore();
         Ui::toast(text: 'Request restored successfully!', variant: 'success');
+        $this->dispatch('swal', [
+            'title' => 'Request restored',
+            'text' => 'The request is available in Request Management again.',
+            'icon' => 'success',
+        ]);
         $this->dispatch('$refresh');
     }
 
@@ -686,6 +713,11 @@ new #[Layout('components.layouts.app')] class extends Component
     {
         Requests::onlyTrashed()->findOrFail($requestId)->forceDelete();
         Ui::toast(text: 'Request permanently deleted.', variant: 'success');
+        $this->dispatch('swal', [
+            'title' => 'Request permanently deleted',
+            'text' => 'This request can no longer be restored.',
+            'icon' => 'success',
+        ]);
         $this->dispatch('$refresh');
     }
 
