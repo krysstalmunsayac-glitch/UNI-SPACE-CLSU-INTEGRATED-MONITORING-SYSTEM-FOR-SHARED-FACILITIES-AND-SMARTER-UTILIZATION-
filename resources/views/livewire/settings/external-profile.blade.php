@@ -67,6 +67,11 @@ new #[Layout('components.layouts.home')] class extends Component {
         $user->save();
 
         $this->dispatch('profile-updated', name: $user->name);
+        $this->dispatch('swal', [
+            'title' => 'Profile updated',
+            'text' => 'Your profile information was saved successfully.',
+            'icon' => 'success',
+        ]);
     }
 }; ?>
 

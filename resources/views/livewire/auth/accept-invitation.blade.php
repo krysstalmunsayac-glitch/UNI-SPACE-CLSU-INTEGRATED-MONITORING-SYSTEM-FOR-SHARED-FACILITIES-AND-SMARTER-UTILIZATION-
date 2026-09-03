@@ -26,7 +26,12 @@ new #[Layout('components.layouts.auth')] class extends Component {
     {
         $validated = $this->validate([
             'email' => ['required', 'email'],
-            'password' => ['required', 'confirmed', PasswordRule::defaults()],
+            'password' => [
+                'required',
+                'string',
+                'confirmed',
+                PasswordRule::min(8)->mixedCase()->numbers()->symbols(),
+            ],
         ]);
 
         $user = User::query()->where('email', $validated['email'])->first();
@@ -66,7 +71,20 @@ new #[Layout('components.layouts.auth')] class extends Component {
     <x-auth-header title="Set up your account" description="Verify your email by choosing a secure password" />
     <form wire:submit="accept" class="flex flex-col gap-6">
         <x-ui::input wire:model="email" label="Email address" type="email" readonly />
-        <x-ui::input wire:model="password" label="Password" type="password" revealable required autocomplete="new-password" />
+        <x-ui::input
+            wire:model="password"
+            label="Password"
+            type="password"
+            revealable
+            required
+            minlength="8"
+            pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^a-zA-Z0-9]).{8,}"
+            title="Use at least 8 characters with uppercase, lowercase, number, and special character."
+            autocomplete="new-password"
+        />
+        <p class="-mt-4 text-xs font-semibold leading-5 text-emerald-900/60 dark:text-zinc-400">
+            Use at least 8 characters with uppercase, lowercase, a number, and a special character (such as !, @, #, or $).
+        </p>
         <x-ui::input wire:model="password_confirmation" label="Confirm password" type="password" revealable required autocomplete="new-password" />
         <x-ui::button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="accept" class="w-full">
             <span wire:loading.remove wire:target="accept">Verify and activate account</span>

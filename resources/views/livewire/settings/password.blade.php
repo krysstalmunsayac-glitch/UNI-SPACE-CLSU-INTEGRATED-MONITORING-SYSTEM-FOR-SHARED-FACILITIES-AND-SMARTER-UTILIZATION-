@@ -20,7 +20,13 @@ new #[Layout('components.layouts.app')] class extends Component {
         try {
             $validated = $this->validate([
                 'current_password' => ['required', 'string', 'current_password'],
-                'password' => ['required', 'string', Password::defaults(), 'confirmed'],
+                'password' => [
+                    'required',
+                    'string',
+                    'different:current_password',
+                    'confirmed',
+                    Password::min(8)->mixedCase()->numbers()->symbols(),
+                ],
             ]);
         } catch (ValidationException $e) {
             $this->reset('current_password', 'password', 'password_confirmation');
@@ -50,7 +56,7 @@ new #[Layout('components.layouts.app')] class extends Component {
         <form wire:submit="updatePassword" class="mt-6 space-y-6">
             <x-ui::input
                 wire:model="current_password"
-                id="update_password_current_passwordpassword"
+                id="update_password_current_password"
                 label="{{ __('Current password') }}"
                 type="password"
                 revealable
@@ -66,8 +72,14 @@ new #[Layout('components.layouts.app')] class extends Component {
                 revealable
                 name="password"
                 required
+                minlength="8"
+                pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^a-zA-Z0-9]).{8,}"
+                title="Use at least 8 characters with uppercase, lowercase, a number, and a special character."
                 autocomplete="new-password"
             />
+            <p class="-mt-3 text-xs font-semibold leading-5 text-emerald-900/60 dark:text-zinc-400">
+                Use at least 8 characters with uppercase, lowercase, a number, and a special character (such as !, @, #, or $). The new password must be different from your current password.
+            </p>
             <x-ui::input
                 wire:model="password_confirmation"
                 id="update_password_password_confirmation"

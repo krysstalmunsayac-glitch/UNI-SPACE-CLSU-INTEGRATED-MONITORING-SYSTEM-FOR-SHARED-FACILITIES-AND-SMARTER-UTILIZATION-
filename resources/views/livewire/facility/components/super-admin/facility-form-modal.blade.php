@@ -53,13 +53,36 @@
             <div class="grid gap-3 sm:grid-cols-2">
                 <label class="text-xs font-semibold text-zinc-600 dark:text-zinc-300">
                     Latitude
-                    <input wire:model="Latitude" readonly class="mt-1 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900" placeholder="Click the map">
+                    <input
+                        x-ref="latitudeInput"
+                        wire:model.blur="Latitude"
+                        x-on:change="setManualCoordinates()"
+                        type="number"
+                        min="-90"
+                        max="90"
+                        step="0.0000001"
+                        inputmode="decimal"
+                        class="mt-1 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20 dark:border-zinc-700 dark:bg-zinc-900"
+                        placeholder="Example: 15.7354000"
+                    >
                 </label>
                 <label class="text-xs font-semibold text-zinc-600 dark:text-zinc-300">
                     Longitude
-                    <input wire:model="Longitude" readonly class="mt-1 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900" placeholder="Click the map">
+                    <input
+                        x-ref="longitudeInput"
+                        wire:model.blur="Longitude"
+                        x-on:change="setManualCoordinates()"
+                        type="number"
+                        min="-180"
+                        max="180"
+                        step="0.0000001"
+                        inputmode="decimal"
+                        class="mt-1 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20 dark:border-zinc-700 dark:bg-zinc-900"
+                        placeholder="Example: 120.9335000"
+                    >
                 </label>
             </div>
+            <p class="text-xs text-zinc-500 dark:text-zinc-400">Click the map, drag its pin, or type the exact latitude and longitude manually.</p>
             <button type="button" x-on:click="clearPin()" class="text-xs font-bold text-red-600 hover:text-red-700">Clear exact pin</button>
             @error('Latitude') <span class="text-sm text-red-600">{{ $message }}</span> @enderror
             @error('Longitude') <span class="text-sm text-red-600">{{ $message }}</span> @enderror

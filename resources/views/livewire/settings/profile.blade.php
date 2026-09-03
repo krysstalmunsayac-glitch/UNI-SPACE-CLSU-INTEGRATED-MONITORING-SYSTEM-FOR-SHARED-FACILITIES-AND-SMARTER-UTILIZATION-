@@ -83,6 +83,11 @@ new #[Layout('components.layouts.app')] class extends Component {
         $user->save();
 
         $this->dispatch('profile-updated', name: $user->name);
+        $this->dispatch('swal', [
+            'title' => 'Profile updated',
+            'text' => 'Your profile information was saved successfully.',
+            'icon' => 'success',
+        ]);
     }
 
     /**
@@ -171,7 +176,19 @@ new #[Layout('components.layouts.app')] class extends Component {
 
             <div class="flex items-center gap-4">
                 <div class="flex items-center justify-end">
-                    <x-ui::button variant="primary" type="submit" class="w-full">{{ __('Save') }}</x-ui::button>
+                    <x-ui::button
+                        variant="primary"
+                        type="submit"
+                        class="w-full"
+                        wire:loading.attr="disabled"
+                        wire:target="updateProfileInformation"
+                        data-ui-confirm="Save these changes to your profile information?"
+                        data-ui-confirm-title="Confirm profile update"
+                        data-ui-confirm-label="Save changes"
+                    >
+                        <span wire:loading.remove wire:target="updateProfileInformation">{{ __('Save') }}</span>
+                        <span wire:loading wire:target="updateProfileInformation">Saving...</span>
+                    </x-ui::button>
                 </div>
 
                 <x-action-message class="me-3" on="profile-updated">

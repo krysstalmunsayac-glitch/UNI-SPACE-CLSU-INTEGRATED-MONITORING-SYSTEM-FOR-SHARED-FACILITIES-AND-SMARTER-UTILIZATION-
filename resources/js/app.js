@@ -325,6 +325,23 @@ window.facilityLocationPicker = function (livewire) {
             }
         },
 
+        setManualCoordinates() {
+            const latitude = Number(this.$refs.latitudeInput?.value);
+            const longitude = Number(this.$refs.longitudeInput?.value);
+            const validLatitude = Number.isFinite(latitude) && latitude >= -90 && latitude <= 90;
+            const validLongitude = Number.isFinite(longitude) && longitude >= -180 && longitude <= 180;
+
+            if (!validLatitude || !validLongitude) return;
+
+            if (this.map) {
+                this.setPin(latitude, longitude);
+                this.map.setView([latitude, longitude], Math.max(this.map.getZoom(), 16));
+            } else {
+                livewire.set('Latitude', latitude, false);
+                livewire.set('Longitude', longitude, false);
+            }
+        },
+
         async findLocation() {
             const location = livewire.get('Location');
             const facilityName = livewire.get('Facility_Name');
