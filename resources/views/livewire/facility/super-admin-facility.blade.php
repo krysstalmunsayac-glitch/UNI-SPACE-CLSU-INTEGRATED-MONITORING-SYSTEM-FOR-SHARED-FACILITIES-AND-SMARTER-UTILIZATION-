@@ -298,8 +298,7 @@ new #[Layout('components.layouts.app')] class extends Component {
             'icon' => 'success',
         ]);
 
-        $this->resetPage('facilitiesPage');
-        $this->resetPage('archivedFacilitiesPage');
+        // Keep the administrator on the current paginated table after archiving.
     }
 
     public function openArchivedFacilities(): void

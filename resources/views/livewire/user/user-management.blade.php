@@ -448,8 +448,7 @@ new #[Layout('components.layouts.app')] class extends Component
             'icon' => 'success',
         ]);
 
-        $this->resetPage('usersPage');
-        $this->resetPage('archivedUsersPage');
+        // Keep the administrator on the current paginated table after archiving.
     }
 
     public function requestToggleActive(int $userId): void

@@ -172,11 +172,12 @@
                                     <x-ui::menu.separator />
                                     <x-ui::menu.item
                                         icon="archive-box"
-                                        class="text-amber-600"
+                                        variant="danger"
                                         wire:click="delete({{ $request->RID }})"
                                         data-ui-confirm="Archive request REQ-{{ str_pad((string) $request->RID, 5, '0', STR_PAD_LEFT) }}? It will be removed from this list and can be restored from Archives."
                                         data-ui-confirm-title="Confirm archive"
                                         data-ui-confirm-label="Archive request"
+                                        data-ui-confirm-variant="danger"
                                     >
                                         Archive request
                                     </x-ui::menu.item>

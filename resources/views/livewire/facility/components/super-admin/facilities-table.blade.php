@@ -100,9 +100,12 @@
 
                                 <x-ui::menu.item
                                     icon="archive-box"
-                                    class="text-red-600 dark:text-red-400"
+                                    variant="danger"
                                     wire:click="archiveFacility({{ $facility->FID }})"
                                     data-ui-confirm="Archive this facility?"
+                                    data-ui-confirm-title="Confirm archive"
+                                    data-ui-confirm-label="Archive facility"
+                                    data-ui-confirm-variant="danger"
                                 >
                                     Archive
                                 </x-ui::menu.item>

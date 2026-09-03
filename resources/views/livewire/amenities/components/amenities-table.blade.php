@@ -145,9 +145,12 @@
                                     <x-ui::menu.separator />
                                     <x-ui::menu.item
                                         icon="archive-box"
-                                        class="text-amber-700 dark:text-amber-300"
+                                        variant="danger"
                                         wire:click="delete({{ $amenity->AID }})"
                                         data-ui-confirm="Archive this amenity? It can be restored later."
+                                        data-ui-confirm-title="Confirm archive"
+                                        data-ui-confirm-label="Archive amenity"
+                                        data-ui-confirm-variant="danger"
                                     >
                                         Archive
                                     </x-ui::menu.item>
