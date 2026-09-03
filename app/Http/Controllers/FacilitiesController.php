@@ -239,7 +239,7 @@ class FacilitiesController extends Controller
             abort(403);
         }
 
-        if (in_array($requestModel->Status, ['Approved', 'Rejected', 'Ended'], true)) {
+        if (in_array($requestModel->Status, ['Approved', 'Rejected', 'Cancelled', 'Ended'], true)) {
             $status = strtolower($requestModel->Status);
 
             return redirect()
@@ -332,12 +332,8 @@ class FacilitiesController extends Controller
             'Purpose' => $validated['Purpose'],
             'Capacity' => $validated['Capacity'] ?? null,
             'attachment_path' => $attachmentPath,
-            'Status' => in_array($requestModel->Status, ['Rejected', 'Cancelled'], true)
-                ? 'Pending'
-                : $requestModel->Status,
-            'Cancellation_Reason' => $requestModel->Status === 'Cancelled'
-                ? null
-                : $requestModel->Cancellation_Reason,
+            'Status' => $requestModel->Status,
+            'Cancellation_Reason' => $requestModel->Cancellation_Reason,
             'Review_Notes' => null,
             'Review_Requested_At' => null,
         ]);

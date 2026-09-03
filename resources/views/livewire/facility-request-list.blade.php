@@ -40,7 +40,7 @@ new class extends Component {
             $this->requestSort = 'latest';
         }
 
-        if (! in_array($this->requestStatus, ['', 'Pending', 'Approved', 'Ended'], true)) {
+        if (! in_array($this->requestStatus, ['', 'Pending', 'Needs Revision', 'Approved', 'Rejected', 'Cancelled', 'Ended'], true)) {
             $this->requestStatus = '';
         }
     }
@@ -54,7 +54,16 @@ new class extends Component {
                     ->orWhere('Status', 'Ended');
             })
             ->with(['facility', 'event', 'feedback'])
-            ->when($this->requestStatus, fn (Builder $query) => $query->where('Status', $this->requestStatus))
+            ->when($this->requestStatus === 'Needs Revision', fn (Builder $query) => $query
+                ->where('Status', 'Pending')
+                ->whereNotNull('Review_Requested_At'))
+            ->when($this->requestStatus === 'Pending', fn (Builder $query) => $query
+                ->where('Status', 'Pending')
+                ->whereNull('Review_Requested_At'))
+            ->when(
+                $this->requestStatus && ! in_array($this->requestStatus, ['Pending', 'Needs Revision'], true),
+                fn (Builder $query) => $query->where('Status', $this->requestStatus),
+            )
             ->orderBy('Created_at', $this->requestSort === 'oldest' ? 'asc' : 'desc')
             ->orderBy('RID', $this->requestSort === 'oldest' ? 'asc' : 'desc')
             ->paginate(5, ['*'], 'requests_page');
@@ -118,7 +127,10 @@ new class extends Component {
                         <select wire:model.live="requestStatus" class="h-12 w-full appearance-none rounded-xl border border-emerald-900/10 bg-white px-4 pr-11 text-sm font-semibold text-emerald-950 outline-none transition focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900 dark:text-white">
                             <option value="" @selected($requestStatus === '')>All statuses</option>
                             <option value="Pending" @selected($requestStatus === 'Pending')>Pending</option>
+                            <option value="Needs Revision" @selected($requestStatus === 'Needs Revision')>Needs Revision</option>
                             <option value="Approved" @selected($requestStatus === 'Approved')>Approved</option>
+                            <option value="Rejected" @selected($requestStatus === 'Rejected')>Rejected</option>
+                            <option value="Cancelled" @selected($requestStatus === 'Cancelled')>Cancelled</option>
                             <option value="Ended" @selected($requestStatus === 'Ended')>Event Ended</option>
                         </select>
                         <span class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-lg leading-none text-emerald-700 dark:text-emerald-300">⌄</span>
@@ -233,10 +245,10 @@ new class extends Component {
                                 </div>
                             </div>
 
-                            @if ($isEnded || $isRejected || $isApproved)
+                            @if ($isEnded || $isRejected || $isApproved || $isCancelled)
                                 <div class="mt-6 flex flex-col gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 sm:flex-row sm:items-center sm:justify-between">
                                     <div>
-                                        <p>{{ $isApproved ? 'This request was approved.' : ($isRejected ? 'This request was rejected.' : 'This event has ended.') }} Its submitted information is read-only and can no longer be changed.</p>
+                                        <p>{{ $isApproved ? 'This request was approved.' : ($isRejected ? 'This request was rejected.' : ($isCancelled ? 'This request was cancelled.' : 'This event has ended.')) }} Its submitted information is read-only and can no longer be changed.</p>
                                         @if ($isEnded)
                                             <p class="mt-1 text-xs font-normal">Sharing feedback is optional.</p>
                                         @endif
@@ -286,6 +298,39 @@ new class extends Component {
                                         </dd>
                                     </div>
                                 </dl>
+
+                                @if ($isApproved)
+                                    <form action="{{ route('waiting.list.cancel', $request) }}" method="POST" class="mt-6 rounded-xl border border-rose-200 bg-rose-50/60 p-4 dark:border-rose-500/30 dark:bg-rose-500/10">
+                                        @csrf
+                                        <label class="mb-2 block text-xs font-black uppercase tracking-wide text-rose-700 dark:text-rose-300" for="approved-cancellation-reason-{{ $request->RID }}">
+                                            Reason for cancellation
+                                        </label>
+                                        <div class="flex flex-col gap-3 sm:flex-row">
+                                            <select
+                                                id="approved-cancellation-reason-{{ $request->RID }}"
+                                                name="Cancellation_Reason"
+                                                required
+                                                class="min-w-0 flex-1 rounded-xl border border-rose-200 bg-white px-4 py-3 text-sm text-emerald-950 outline-none focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 dark:border-rose-500/30 dark:bg-zinc-900 dark:text-white"
+                                            >
+                                                <option value="">Select a cancellation reason</option>
+                                                @foreach (['Change of plans', 'Schedule conflict', 'Event postponed', 'Event cancelled', 'Facility no longer needed'] as $reason)
+                                                    <option value="{{ $reason }}">{{ $reason }}</option>
+                                                @endforeach
+                                            </select>
+                                            <button
+                                                type="submit"
+                                                class="shrink-0 rounded-xl bg-rose-600 px-6 py-3 text-sm font-black text-white shadow-sm transition hover:bg-rose-700 disabled:opacity-60"
+                                                data-ui-confirm="Cancel this approved facility request? Its reserved schedule will be released."
+                                                data-ui-confirm-title="Cancel approved request"
+                                                data-ui-confirm-label="Cancel request"
+                                                data-ui-confirm-variant="danger"
+                                                onclick="this.form?.addEventListener('submit', () => { this.disabled = true; }, { once: true })"
+                                            >
+                                                Cancel approved request
+                                            </button>
+                                        </div>
+                                    </form>
+                                @endif
                             @else
                             <form action="{{ route('waiting.list.update', $request) }}" method="POST" enctype="multipart/form-data" class="mt-6 grid gap-4 lg:grid-cols-2">
                                 @csrf
@@ -391,7 +436,7 @@ new class extends Component {
                             </form>
                             @endif
 
-                            @if ($canCancel)
+                            @if ($canCancel && ! $isApproved)
                                 <form id="cancel-request-{{ $request->RID }}" action="{{ route('waiting.list.cancel', $request) }}" method="POST" class="hidden">
                                     @csrf
                                 </form>

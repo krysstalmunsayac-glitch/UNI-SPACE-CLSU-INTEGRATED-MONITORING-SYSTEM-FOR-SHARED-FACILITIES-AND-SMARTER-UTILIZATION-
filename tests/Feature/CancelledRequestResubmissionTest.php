@@ -3,8 +3,9 @@
 use App\Models\Facilities;
 use App\Models\Requests;
 use App\Models\User;
+use Illuminate\Support\Facades\Notification;
 
-it('allows an external user to edit and resubmit a cancelled request', function () {
+it('allows an external user to update a request that needs revision', function () {
     $user = User::factory()->create([
         'user_type' => 'user',
         'is_active' => true,
@@ -19,8 +20,9 @@ it('allows an external user to edit and resubmit a cancelled request', function 
         'Proposed_End_Date' => now()->addWeek()->toDateString(),
         'Proposed_Start_Time' => '08:00',
         'Proposed_End_Time' => '09:00',
-        'Status' => 'Cancelled',
-        'Cancellation_Reason' => 'Schedule conflict',
+        'Status' => 'Pending',
+        'Review_Notes' => 'Please clarify the purpose and attendance.',
+        'Review_Requested_At' => now(),
         'Purpose' => 'Original purpose',
         'Capacity' => 20,
     ]));
@@ -41,7 +43,8 @@ it('allows an external user to edit and resubmit a cancelled request', function 
 
     expect($facilityRequest->fresh())
         ->Status->toBe('Pending')
-        ->Cancellation_Reason->toBeNull()
+        ->Review_Notes->toBeNull()
+        ->Review_Requested_At->toBeNull()
         ->Purpose->toBe('Updated purpose')
         ->Capacity->toBe(30);
 });
@@ -61,7 +64,9 @@ it('rejects a booking shorter than one hour', function () {
         'Proposed_End_Date' => now()->addWeek()->toDateString(),
         'Proposed_Start_Time' => '08:00',
         'Proposed_End_Time' => '09:00',
-        'Status' => 'Cancelled',
+        'Status' => 'Pending',
+        'Review_Notes' => 'Please correct the booking time.',
+        'Review_Requested_At' => now(),
         'Purpose' => 'Original purpose',
     ]));
 
@@ -108,4 +113,32 @@ it('keeps decided requests read only', function (string $status) {
         ->assertSessionHas('warning');
 
     expect($facilityRequest->fresh()->Purpose)->toBe('Original submitted purpose');
-})->with(['Approved', 'Rejected']);
+})->with(['Approved', 'Rejected', 'Cancelled', 'Ended']);
+
+it('allows an external user to cancel their approved request', function () {
+    Notification::fake();
+
+    $user = User::factory()->create(['user_type' => 'user', 'is_active' => true]);
+    $facility = Facilities::query()->create(['Facility_Name' => 'Approved Cancellation Hall']);
+    $facilityRequest = Requests::withoutEvents(fn () => Requests::query()->create([
+        'User_ID' => $user->id,
+        'Facility_ID' => $facility->FID,
+        'Proposed_Date' => now()->addWeek()->toDateString(),
+        'Proposed_End_Date' => now()->addWeek()->toDateString(),
+        'Proposed_Start_Time' => '08:00',
+        'Proposed_End_Time' => '09:00',
+        'Status' => 'Approved',
+        'Purpose' => 'Approved event',
+    ]));
+
+    $this->actingAs($user)
+        ->post(route('waiting.list.cancel', $facilityRequest), [
+            'Cancellation_Reason' => 'Change of plans',
+        ])
+        ->assertRedirect(route('dashboard'))
+        ->assertSessionHas('success');
+
+    expect($facilityRequest->fresh())
+        ->Status->toBe('Cancelled')
+        ->Cancellation_Reason->toBe('Change of plans');
+});
