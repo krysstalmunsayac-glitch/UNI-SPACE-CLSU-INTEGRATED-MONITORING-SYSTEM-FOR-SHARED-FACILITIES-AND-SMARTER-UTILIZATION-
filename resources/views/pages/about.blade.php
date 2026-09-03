@@ -78,8 +78,8 @@
     <section class="border-y border-emerald-900/10 bg-emerald-800 py-20 text-white dark:border-white/10">
         <div class="mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
             <img
-                src="https://placehold.co/900x620/064e3b/ffffff?text=Team+Placeholder"
-                alt="Placeholder team working on facility reservations"
+                src="{{ asset('images/clsu-team.jpg') }}"
+                alt="Central Luzon State University Gymnatorium entrance"
                 class="h-full min-h-[320px] w-full rounded-2xl object-cover"
             >
             <div class="flex flex-col justify-center">
