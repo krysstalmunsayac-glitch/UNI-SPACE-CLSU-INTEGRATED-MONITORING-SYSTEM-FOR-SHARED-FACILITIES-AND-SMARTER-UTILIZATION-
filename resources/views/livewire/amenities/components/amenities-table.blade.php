@@ -154,14 +154,6 @@
                                     >
                                         Archive
                                     </x-ui::menu.item>
-                                    <x-ui::menu.item
-                                        icon="trash"
-                                        class="text-red-700 dark:text-red-300"
-                                        wire:click="forceDelete({{ $amenity->AID }})"
-                                        data-ui-confirm="Permanently delete this amenity? This action cannot be undone."
-                                    >
-                                        Delete permanently
-                                    </x-ui::menu.item>
                                 </x-ui::menu>
                             </x-ui::dropdown>
                             @else
