@@ -139,6 +139,8 @@
                                     size="sm"
                                     icon="ellipsis-horizontal"
                                     inset="top bottom"
+                                    aria-label="Actions for {{ $user->name }}"
+                                    title="User actions"
                                 />
 
                                 <x-ui::menu>

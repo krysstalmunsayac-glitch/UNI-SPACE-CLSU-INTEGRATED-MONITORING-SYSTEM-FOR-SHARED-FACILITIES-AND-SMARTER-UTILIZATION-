@@ -6,7 +6,13 @@
                     <x-ui::subheading>Restore archived accounts or delete them permanently.</x-ui::subheading>
                 </div>
                 <div class="w-full lg:w-auto lg:min-w-[28rem]">
-                    <x-ui::input wire:model.live.debounce.400ms="searchInput" placeholder="Search name, email, or role..." class="w-full" />
+                    <x-ui::input
+                        wire:model.live.debounce.400ms="searchInput"
+                        label="Search archived users"
+                        placeholder="Search by name, email, or role..."
+                        icon="magnifying-glass"
+                        class="w-full"
+                    />
                 </div>
             </div>
 
