@@ -2,22 +2,78 @@
 
 namespace App\Services;
 
+use App\Models\Facilities;
 use App\Models\FacilityBlackout;
 use App\Models\Requests;
+use App\Notifications\FacilityUnavailable;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\ValidationException;
 
 class FacilityAvailabilityService
 {
     public const OPENS_AT = '07:00';
+
     public const CLOSES_AT = '20:00';
+
     public const SLOT_MINUTES = 30;
+
     public const MINIMUM_MINUTES = 60;
+
     public const BUFFER_MINUTES = 30;
+
     public const MAX_DAYS = 31;
+
+    /**
+     * Toggle a facility's availability and cancel any requests that can no
+     * longer be fulfilled when it is deactivated.
+     *
+     * @return int Number of active requests cancelled
+     */
+    public function toggle(Facilities $facility): int
+    {
+        if ($facility->Status === 'Unavailable') {
+            $facility->update(['Status' => 'Available']);
+
+            return 0;
+        }
+
+        $cancelledRequests = DB::transaction(function () use ($facility) {
+            $facility->update(['Status' => 'Unavailable']);
+
+            $requests = Requests::query()
+                ->with([
+                    'user:id,name,email',
+                    'facility:FID,Facility_Name',
+                ])
+                ->where('Facility_ID', $facility->FID)
+                ->whereIn('Status', ['Pending', 'Approved'])
+                ->lockForUpdate()
+                ->get();
+
+            foreach ($requests as $request) {
+                $request->update([
+                    'Status' => 'Cancelled',
+                    'Cancellation_Reason' => 'The facility has been marked unavailable by the facility administrator.',
+                ]);
+
+                $request->schedules()->delete();
+            }
+
+            return $requests;
+        });
+
+        foreach ($cancelledRequests as $request) {
+            if ($request->user) {
+                Notification::send($request->user, new FacilityUnavailable($request));
+            }
+        }
+
+        return $cancelledRequests->count();
+    }
 
     public function slots(): array
     {
@@ -28,6 +84,7 @@ class FacilityAvailabilityService
             $slots[] = $cursor->format('H:i');
             $cursor->addMinutes(self::SLOT_MINUTES);
         }
+
         return $slots;
     }
 
@@ -69,12 +126,15 @@ class FacilityAvailabilityService
         if ($conflicts->isNotEmpty()) {
             throw ValidationException::withMessages(['Daily_Schedules' => 'The selected time on '.$conflicts->first()['date'].' is already booked, including its 30-minute preparation and cleanup buffer.']);
         }
+
         return $schedules;
     }
 
     public function conflicts(int $facilityId, array $schedules, ?int $ignoreRequestId = null, bool $lock = false, array $statuses = ['Pending', 'Approved']): Collection
     {
-        if ($schedules === []) return collect();
+        if ($schedules === []) {
+            return collect();
+        }
         $dates = array_column($schedules, 'date');
         $requests = Requests::query()->where('Facility_ID', $facilityId)->whereIn('Status', $statuses)
             ->whereDate('Proposed_Date', '<=', max($dates))->whereDate(DB::raw('COALESCE(Proposed_End_Date, Proposed_Date)'), '>=', min($dates))
@@ -84,10 +144,15 @@ class FacilityAvailabilityService
         return collect($schedules)->flatMap(function ($candidate) use ($requests) {
             return $requests->map(function (Requests $request) use ($candidate) {
                 $existing = $request->scheduleForDate($candidate['date']);
-                if (! $existing) return null;
+                if (! $existing) {
+                    return null;
+                }
                 $blockedStart = Carbon::createFromFormat('H:i', $existing['start'])->subMinutes(self::BUFFER_MINUTES)->format('H:i');
                 $blockedEnd = Carbon::createFromFormat('H:i', $existing['end'])->addMinutes(self::BUFFER_MINUTES)->format('H:i');
-                if ($candidate['start'] >= $blockedEnd || $candidate['end'] <= $blockedStart) return null;
+                if ($candidate['start'] >= $blockedEnd || $candidate['end'] <= $blockedStart) {
+                    return null;
+                }
+
                 return ['request_id' => $request->RID, 'date' => $candidate['date'], 'status' => strtolower($request->Status), 'start' => $existing['start'], 'end' => $existing['end'], 'blocked_start' => $blockedStart, 'blocked_end' => $blockedEnd];
             })->filter();
         })->values();
@@ -103,6 +168,7 @@ class FacilityAvailabilityService
                 ->map(fn (array $range) => collect($range)->except('request_id')->all())->all();
             $days[$date] = ['closed' => (bool) $blackout, 'reason' => $blackout?->reason, 'ranges' => $ranges];
         }
+
         return ['config' => ['opens_at' => self::OPENS_AT, 'closes_at' => self::CLOSES_AT, 'slot_minutes' => self::SLOT_MINUTES, 'minimum_minutes' => self::MINIMUM_MINUTES, 'buffer_minutes' => self::BUFFER_MINUTES], 'days' => $days];
     }
 

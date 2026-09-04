@@ -5,6 +5,7 @@ use App\Models\FacilityBlackout;
 use App\Models\Requests;
 use App\Models\User;
 use App\Services\FacilityAvailabilityService;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\ValidationException;
 
 function schedulingFixture(string $status = 'Approved', string $start = '09:00', string $end = '10:00'): array
@@ -19,6 +20,7 @@ function schedulingFixture(string $status = 'Approved', string $start = '09:00',
         'Daily_Schedules' => [['date' => $date, 'start' => $start, 'end' => $end]],
         'Status' => $status, 'Purpose' => 'Availability test',
     ]));
+
     return [$user, $facility, $request, $date];
 }
 
@@ -76,4 +78,17 @@ it('returns private scheduling statuses only from an authenticated rate limited 
     $response = $this->actingAs($user)->getJson($url)->assertOk()
         ->assertJsonPath("days.{$date}.ranges.0.status", 'approved');
     expect($response->getContent())->not->toContain($user->name)->not->toContain('Availability test');
+});
+
+it('toggles facility availability and cancels active requests', function () {
+    Notification::fake();
+    [, $facility, $request] = schedulingFixture('Approved');
+    $service = app(FacilityAvailabilityService::class);
+
+    expect($service->toggle($facility))->toBe(1)
+        ->and($facility->fresh()->Status)->toBe('Unavailable')
+        ->and($request->fresh()->Status)->toBe('Cancelled')
+        ->and($request->fresh()->Cancellation_Reason)->not->toBeEmpty()
+        ->and($service->toggle($facility->fresh()))->toBe(0)
+        ->and($facility->fresh()->Status)->toBe('Available');
 });
