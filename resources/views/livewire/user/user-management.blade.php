@@ -116,9 +116,9 @@ new #[Layout('components.layouts.app')] class extends Component
             return;
         }
 
-        RateLimiter::hit($key, 3600);
         app(UserInvitationService::class)->send($user);
-        Ui::toast(text: 'New invitation queued; the previous link is invalid.', variant: 'success');
+        RateLimiter::hit($key, 3600);
+        Ui::toast(text: 'New invitation sent; the previous link is invalid.', variant: 'success');
     }
 
     public function revokeInvitation(int $userId): void
@@ -398,7 +398,7 @@ new #[Layout('components.layouts.app')] class extends Component
             app(UserInvitationService::class)->send($user);
 
             Ui::toast(
-                text: 'User created and invitation queued.',
+                text: 'User created and invitation sent.',
                 variant: 'success'
             );
 

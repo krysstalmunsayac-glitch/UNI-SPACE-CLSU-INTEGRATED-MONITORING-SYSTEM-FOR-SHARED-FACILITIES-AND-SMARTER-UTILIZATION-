@@ -31,7 +31,9 @@ class UserInvitationService
             'email' => $user->email,
         ]);
 
-        $user->notify(new UserInvitationNotification($url, $expiresAt->format('M j, Y g:i A T')));
+        // Invitations are user-triggered and must be delivered immediately. Using
+        // notify() here leaves them in the database queue when no worker is running.
+        $user->notifyNow(new UserInvitationNotification($url, $expiresAt->format('M j, Y g:i A T')));
     }
 
     public function revoke(User $user): void
