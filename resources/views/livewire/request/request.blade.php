@@ -265,6 +265,12 @@ new #[Layout('components.layouts.app')] class extends Component
     {
         $request = $this->getScopedRequest($requestId);
 
+        if ($request->Status === 'Cancelled') {
+            Ui::toast(text: 'Cancelled requests are read-only and cannot be edited.', variant: 'warning');
+
+            return;
+        }
+
         $this->editingId = $request->RID;
         $this->Event_ID = $request->Event_ID;
         $this->User_ID = $request->User_ID;
@@ -548,9 +554,15 @@ new #[Layout('components.layouts.app')] class extends Component
 
     public function save(): void
     {
+        $request = $this->getScopedRequest($this->editingId);
+        abort_if(
+            $request->Status === 'Cancelled',
+            409,
+            'Cancelled requests are read-only and cannot be edited.',
+        );
+
         $this->validate();
 
-        $request = $this->getScopedRequest($this->editingId);
         $previousStatus = $request->Status;
         $wasApproved = $request->Status === 'Approved';
         $facilityId = $request->facility?->FID;

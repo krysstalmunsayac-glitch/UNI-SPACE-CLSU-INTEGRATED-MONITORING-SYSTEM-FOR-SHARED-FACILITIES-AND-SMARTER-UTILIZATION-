@@ -86,3 +86,15 @@ it('does not permanently delete an active request', function () {
 
     expect(Requests::query()->whereKey($booking->RID)->exists())->toBeTrue();
 });
+
+it('keeps cancelled requests read only for administrators', function () {
+    [$administrator, $booking] = administrativeRequest('Cancelled');
+    $this->actingAs($administrator);
+
+    Volt::test('request.request')
+        ->call('edit', $booking->RID)
+        ->assertSet('showModal', false)
+        ->assertSet('editingId', null);
+
+    expect($booking->fresh()->Purpose)->toBe('Status transition test');
+});

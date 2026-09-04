@@ -307,7 +307,10 @@
                 if ('IntersectionObserver' in window && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
                     const revealObserver = new IntersectionObserver(entries => {
                         entries.forEach(entry => {
-                            entry.target.classList.toggle('is-visible', entry.isIntersecting);
+                            if (!entry.isIntersecting) return;
+
+                            entry.target.classList.add('is-visible');
+                            revealObserver.unobserve(entry.target);
                         });
                     }, { threshold: 0.12, rootMargin: '0px 0px -48px' });
 

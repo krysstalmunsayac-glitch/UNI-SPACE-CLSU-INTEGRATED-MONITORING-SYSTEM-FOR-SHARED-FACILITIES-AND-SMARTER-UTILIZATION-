@@ -367,7 +367,10 @@
                 if (!window.userDashboardRevealObserver && 'IntersectionObserver' in window && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
                     window.userDashboardRevealObserver = new IntersectionObserver(entries => {
                         entries.forEach(entry => {
-                            entry.target.classList.toggle('is-visible', entry.isIntersecting);
+                            if (!entry.isIntersecting) return;
+
+                            entry.target.classList.add('is-visible');
+                            window.userDashboardRevealObserver.unobserve(entry.target);
                         });
                     }, { threshold: 0.12, rootMargin: '0px 0px -48px' });
                 }
