@@ -33,24 +33,12 @@
 
             <div class="grid grid-cols-2 gap-3">
                 <div>
-                    <x-ui::select wire:model.live="Start_Time" label="Start time">
-                        @foreach ($this->startTimeSlots as $slot)
-                            <x-ui::select.option value="{{ $slot }}">
-                                {{ Carbon\Carbon::createFromFormat('H:i', $slot)->format('g:i A') }}
-                            </x-ui::select.option>
-                        @endforeach
-                    </x-ui::select>
+                    <x-ui::time-select wire:model.live="Start_Time" label="Start time" :options="$this->startTimeSlots" />
 
                 </div>
 
                 <div>
-                    <x-ui::select wire:model="End_Time" label="End time (1 hour minimum)">
-                        @foreach ($this->endTimeSlots as $slot)
-                            <x-ui::select.option value="{{ $slot }}">
-                                {{ Carbon\Carbon::createFromFormat('H:i', $slot)->format('g:i A') }}
-                            </x-ui::select.option>
-                        @endforeach
-                    </x-ui::select>
+                    <x-ui::time-select wire:model="End_Time" label="End time (1 hour minimum)" :options="$this->endTimeSlots" />
 
                 </div>
             </div>

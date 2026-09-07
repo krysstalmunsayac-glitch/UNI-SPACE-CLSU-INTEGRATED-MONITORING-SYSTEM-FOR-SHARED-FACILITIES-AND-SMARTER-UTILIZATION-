@@ -332,7 +332,7 @@
                             <input type="hidden" name="_step" value="2">
 
                             {{-- STEP 1: Event details --}}
-                            <div x-show="step === 1" x-cloak class="space-y-4">
+                            <div x-ref="eventDetails" x-show="step === 1" x-cloak class="space-y-4">
                                 <x-ui::heading size="lg">Event details</x-ui::heading>
                                 <p class="text-sm text-emerald-900/70 dark:text-zinc-300">Tell us about the event this request is for.</p>
 
@@ -392,7 +392,11 @@
                                         type="button"
                                         class="inline-flex items-center justify-center rounded-xl bg-emerald-700 px-5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-800"
                                         x-on:click="
-                                            if ($refs.requestForm.reportValidity()) {
+                                            const invalidField = Array.from($refs.eventDetails.querySelectorAll('input, select, textarea'))
+                                                .find(field => !field.checkValidity());
+                                            if (invalidField) {
+                                                invalidField.reportValidity();
+                                            } else {
                                                 step = 2;
                                                 window.scrollTo({ top: 0, behavior: 'smooth' });
                                             }
@@ -485,18 +489,18 @@
                                                 <span class="block text-xs font-bold uppercase tracking-wide text-emerald-800 dark:text-emerald-300" x-text="dailySchedules.length === 1 ? 'Booking day' : 'Booking period'"></span>
                                                 <span class="mt-2 block font-semibold text-emerald-950 dark:text-white" x-text="dailySchedules.length === 1 ? new Date(`${dailySchedules[0]?.date}T12:00:00`).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) : `${dailySchedules.length} consecutive days`"></span>
                                             </div>
-                                            <label class="block">
+                                            <div class="block">
                                                 <span class="mb-2 block text-sm font-medium text-emerald-900 dark:text-zinc-300">Start time</span>
-                                                <select x-model="sharedStartTime" x-on:change="chooseSharedStart($event.target.value)" x-bind:required="!customizeDailyTimes" class="h-11 w-full rounded-xl border border-emerald-900/10 bg-white px-3 text-sm text-emerald-950 shadow-sm focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-950 dark:text-white">
-                                                    <template x-for="slot in slots" :key="slot"><option :value="slot" :disabled="sharedStartDisabled(slot)" x-text="`${formatTime(slot)}${sharedStartDisabled(slot) ? ' — Already Booked' : ''}`"></option></template>
-                                                </select>
-                                            </label>
-                                            <label class="block">
+                                                <x-ui::time-dropdown selection="sharedStartTime" label="Start time"><select size="6" x-ref="options" x-cloak x-show="expanded" aria-label="Start time" x-on:click="if ($event.target.tagName === 'OPTION' &amp;&amp; !$event.target.disabled) { expanded = false; $refs.trigger.focus() }" x-on:keydown.enter.prevent="expanded = false; $refs.trigger.focus()" style="position: absolute; bottom: 100%; left: 0; z-index: 50; margin-bottom: 0.25rem; height: calc(12rem + 2px); padding: 0; overflow-y: auto;" x-model="sharedStartTime" x-on:change="chooseSharedStart($event.target.value)" x-bind:required="!customizeDailyTimes" class="h-11 w-full rounded-xl border border-emerald-900/10 bg-white px-3 text-sm text-emerald-950 shadow-sm focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-950 dark:text-white">
+                                                    <template x-for="slot in slots" :key="slot"><option style="height: 2rem; padding: 0.375rem 0.75rem;" :value="slot" :disabled="sharedStartDisabled(slot)" x-text="`${formatTime(slot)}${sharedStartDisabled(slot) ? ' — Already Booked' : ''}`"></option></template>
+                                                </select></x-ui::time-dropdown>
+                                            </div>
+                                            <div class="block">
                                                 <span class="mb-2 block text-sm font-medium text-emerald-900 dark:text-zinc-300">End time <span class="font-normal text-zinc-500">(1 hour minimum)</span></span>
-                                                <select x-model="sharedEndTime" x-on:change="applySharedTime()" x-bind:required="!customizeDailyTimes" class="h-11 w-full rounded-xl border border-emerald-900/10 bg-white px-3 text-sm text-emerald-950 shadow-sm focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-950 dark:text-white">
-                                                    <template x-for="slot in endSlots.filter(slot => slot >= minimumEndTime(sharedStartTime))" :key="slot"><option :value="slot" :disabled="sharedEndDisabled(slot)" x-text="`${formatTime(slot)}${sharedEndDisabled(slot) ? ' — Already Booked' : ''}`"></option></template>
-                                                </select>
-                                            </label>
+                                                <x-ui::time-dropdown selection="sharedEndTime" label="End time"><select size="6" x-ref="options" x-cloak x-show="expanded" aria-label="End time" x-on:click="if ($event.target.tagName === 'OPTION' &amp;&amp; !$event.target.disabled) { expanded = false; $refs.trigger.focus() }" x-on:keydown.enter.prevent="expanded = false; $refs.trigger.focus()" style="position: absolute; bottom: 100%; left: 0; z-index: 50; margin-bottom: 0.25rem; height: calc(12rem + 2px); padding: 0; overflow-y: auto;" x-model="sharedEndTime" x-on:change="applySharedTime()" x-bind:required="!customizeDailyTimes" class="h-11 w-full rounded-xl border border-emerald-900/10 bg-white px-3 text-sm text-emerald-950 shadow-sm focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-950 dark:text-white">
+                                                    <template x-for="slot in endSlots.filter(slot => slot >= minimumEndTime(sharedStartTime))" :key="slot"><option style="height: 2rem; padding: 0.375rem 0.75rem;" :value="slot" :disabled="sharedEndDisabled(slot)" x-text="`${formatTime(slot)}${sharedEndDisabled(slot) ? ' — Already Booked' : ''}`"></option></template>
+                                                </select></x-ui::time-dropdown>
+                                            </div>
                                         </div>
 
                                         <div class="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900" aria-live="polite">
@@ -537,14 +541,14 @@
                                                         <span class="block text-xs font-bold uppercase tracking-wide text-emerald-800 dark:text-emerald-300">Booking day</span>
                                                         <span class="mt-2 block font-semibold text-emerald-950 dark:text-white" x-text="new Date(`${schedule.date}T12:00:00`).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })"></span>
                                                     </div>
-                                                    <label class="block">
+                                                    <div class="block">
                                                         <span class="mb-2 block text-sm font-medium text-emerald-900 dark:text-zinc-300">Start time</span>
-                                                        <select x-bind:name="customizeDailyTimes ? `Daily_Schedules[${index}][start]` : null" x-model="schedule.start" x-on:change="chooseDayStart(schedule, $event.target.value)" x-bind:required="customizeDailyTimes" class="h-11 w-full rounded-xl border border-emerald-900/10 bg-white px-3 text-sm text-emerald-950 shadow-sm dark:border-white/10 dark:bg-zinc-950 dark:text-white"><template x-for="slot in slots" :key="slot"><option :value="slot" :disabled="['approved', 'unavailable'].includes(slotStatus(schedule.date, slot, addMinutes(slot, 60)))" x-text="`${formatTime(slot)}${slotStatus(schedule.date, slot, addMinutes(slot, 60)) === 'approved' ? ' — Already Booked' : ''}`"></option></template></select>
-                                                    </label>
-                                                    <label class="block">
+                                                        <x-ui::time-dropdown selection="schedule.start" label="Start time"><select size="6" x-ref="options" x-cloak x-show="expanded" aria-label="Start time" x-on:click="if ($event.target.tagName === 'OPTION' &amp;&amp; !$event.target.disabled) { expanded = false; $refs.trigger.focus() }" x-on:keydown.enter.prevent="expanded = false; $refs.trigger.focus()" style="position: absolute; bottom: 100%; left: 0; z-index: 50; margin-bottom: 0.25rem; height: calc(12rem + 2px); padding: 0; overflow-y: auto;" x-bind:name="customizeDailyTimes ? `Daily_Schedules[${index}][start]` : null" x-model="schedule.start" x-on:change="chooseDayStart(schedule, $event.target.value)" x-bind:required="customizeDailyTimes" class="h-11 w-full rounded-xl border border-emerald-900/10 bg-white px-3 text-sm text-emerald-950 shadow-sm dark:border-white/10 dark:bg-zinc-950 dark:text-white"><template x-for="slot in slots" :key="slot"><option style="height: 2rem; padding: 0.375rem 0.75rem;" :value="slot" :disabled="['approved', 'unavailable'].includes(slotStatus(schedule.date, slot, addMinutes(slot, 60)))" x-text="`${formatTime(slot)}${slotStatus(schedule.date, slot, addMinutes(slot, 60)) === 'approved' ? ' — Already Booked' : ''}`"></option></template></select></x-ui::time-dropdown>
+                                                    </div>
+                                                    <div class="block">
                                                         <span class="mb-2 block text-sm font-medium text-emerald-900 dark:text-zinc-300">End time <span class="font-normal text-zinc-500">(1 hour minimum)</span></span>
-                                                        <select x-bind:name="customizeDailyTimes ? `Daily_Schedules[${index}][end]` : null" x-model="schedule.end" x-bind:required="customizeDailyTimes" class="h-11 w-full rounded-xl border border-emerald-900/10 bg-white px-3 text-sm text-emerald-950 shadow-sm dark:border-white/10 dark:bg-zinc-950 dark:text-white"><template x-for="slot in endSlots.filter(slot => slot >= minimumEndTime(schedule.start))" :key="slot"><option :value="slot" :disabled="['approved', 'unavailable'].includes(slotStatus(schedule.date, schedule.start, slot))" x-text="`${formatTime(slot)}${slotStatus(schedule.date, schedule.start, slot) === 'approved' ? ' — Already Booked' : ''}`"></option></template></select>
-                                                    </label>
+                                                        <x-ui::time-dropdown selection="schedule.end" label="End time"><select size="6" x-ref="options" x-cloak x-show="expanded" aria-label="End time" x-on:click="if ($event.target.tagName === 'OPTION' &amp;&amp; !$event.target.disabled) { expanded = false; $refs.trigger.focus() }" x-on:keydown.enter.prevent="expanded = false; $refs.trigger.focus()" style="position: absolute; bottom: 100%; left: 0; z-index: 50; margin-bottom: 0.25rem; height: calc(12rem + 2px); padding: 0; overflow-y: auto;" x-bind:name="customizeDailyTimes ? `Daily_Schedules[${index}][end]` : null" x-model="schedule.end" x-bind:required="customizeDailyTimes" class="h-11 w-full rounded-xl border border-emerald-900/10 bg-white px-3 text-sm text-emerald-950 shadow-sm dark:border-white/10 dark:bg-zinc-950 dark:text-white"><template x-for="slot in endSlots.filter(slot => slot >= minimumEndTime(schedule.start))" :key="slot"><option style="height: 2rem; padding: 0.375rem 0.75rem;" :value="slot" :disabled="['approved', 'unavailable'].includes(slotStatus(schedule.date, schedule.start, slot))" x-text="`${formatTime(slot)}${slotStatus(schedule.date, schedule.start, slot) === 'approved' ? ' — Already Booked' : ''}`"></option></template></select></x-ui::time-dropdown>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </template>
