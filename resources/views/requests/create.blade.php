@@ -443,11 +443,11 @@
                                             type="date"
                                             x-ref="startDate"
                                             x-on:change="syncDailySchedules()"
-                                            min="{{ now()->addDays(3)->toDateString() }}"
-                                            value="{{ old('Proposed_Date', now()->addDays(3)->toDateString()) }}"
+                                            min="{{ app(\App\Services\BookingPolicy::class)->earliestDate(auth()->user()) }}"
+                                            value="{{ old('Proposed_Date', app(\App\Services\BookingPolicy::class)->earliestDate(auth()->user())) }}"
                                             x-bind:required="step === 2"
                                         />
-                                        <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Book at least 3 days before your event.</p>
+                                        <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{{ app(\App\Services\BookingPolicy::class)->noticeMessage(auth()->user()) }}</p>
                                     </div>
 
                                     <div>
@@ -457,9 +457,9 @@
                                             type="date"
                                             x-ref="endDate"
                                             x-on:change="syncDailySchedules()"
-                                            x-bind:min="$refs.startDate?.value || '{{ now()->addDays(3)->toDateString() }}'"
-                                            min="{{ now()->addDays(3)->toDateString() }}"
-                                            value="{{ old('Proposed_End_Date', old('Proposed_Date', now()->addDays(3)->toDateString())) }}"
+                                            x-bind:min="$refs.startDate?.value || '{{ app(\App\Services\BookingPolicy::class)->earliestDate(auth()->user()) }}'"
+                                            min="{{ app(\App\Services\BookingPolicy::class)->earliestDate(auth()->user()) }}"
+                                            value="{{ old('Proposed_End_Date', old('Proposed_Date', app(\App\Services\BookingPolicy::class)->earliestDate(auth()->user()))) }}"
                                             x-bind:required="step === 2"
                                         />
                                         <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Use the same date for a one-day event.</p>

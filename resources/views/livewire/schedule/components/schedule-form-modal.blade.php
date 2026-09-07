@@ -26,9 +26,9 @@
                     wire:model="Date"
                     type="date"
                     label="Date"
-                    min="{{ now()->addDays(3)->toDateString() }}"
+                    min="{{ app(\App\Services\BookingPolicy::class)->earliestDate(auth()->user()) }}"
                 />
-                <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Schedule changes must be made at least 3 days before the event.</p>
+                <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{{ app(\App\Services\BookingPolicy::class)->noticeMessage(auth()->user()) }}</p>
             </div>
 
             <div class="grid grid-cols-2 gap-3">

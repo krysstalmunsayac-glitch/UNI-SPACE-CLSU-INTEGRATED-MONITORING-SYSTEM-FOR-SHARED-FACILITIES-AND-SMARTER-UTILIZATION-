@@ -60,7 +60,7 @@ class FacilitiesController extends Controller
     {
         abort_unless($facility->Status === 'Available', 409);
         $validated = $request->validate([
-            'from' => ['required', 'date', 'after_or_equal:'.now()->addDays(3)->toDateString()],
+            'from' => ['required', 'date', 'after_or_equal:'.app(\App\Services\BookingPolicy::class)->earliestDate(auth()->user())],
             'to' => ['required', 'date', 'after_or_equal:from'],
         ]);
 
@@ -75,7 +75,7 @@ class FacilitiesController extends Controller
     {
         abort_unless($facility->Status === 'Available', 409, 'This facility is not currently available for requests.');
 
-        $earliestReservationDate = now()->addDays(3)->toDateString();
+        $earliestReservationDate = app(\App\Services\BookingPolicy::class)->earliestDate(auth()->user());
 
         $validated = $request->validate([
             'Amenity_ID' => ['array', 'nullable'],
@@ -119,7 +119,7 @@ class FacilitiesController extends Controller
             'Capacity' => ['nullable', 'integer', 'min:1', 'max:'.($facility->Capacity ?? 100000)],
             'attachment' => ['nullable', 'file', 'mimes:pdf', 'max:5120'],
         ], [
-            'Proposed_Date.after_or_equal' => 'Reservations must be submitted at least 3 days before the event date.',
+            'Proposed_Date.after_or_equal' => app(\App\Services\BookingPolicy::class)->noticeMessage(auth()->user()),
         ]);
 
         $dailySchedules = $availability->validateSchedules(
@@ -130,6 +130,7 @@ class FacilitiesController extends Controller
         );
         $firstSchedule = $dailySchedules[0];
         $lastSchedule = $dailySchedules[array_key_last($dailySchedules)];
+        app(\App\Services\BookingPolicy::class)->validateFutureStart($firstSchedule['date'], $firstSchedule['start'], 'Daily_Schedules.0.start');
 
         $attachmentPath = null;
 
@@ -247,7 +248,7 @@ class FacilitiesController extends Controller
                 ->with('warning', "This request is {$status}. Its submitted information is read-only.");
         }
 
-        $earliestReservationDate = now()->addDays(3)->toDateString();
+        $earliestReservationDate = app(\App\Services\BookingPolicy::class)->earliestDate(auth()->user());
 
         $validated = $request->validate([
             'Event_Title' => ['nullable', 'string', 'min:3', 'max:255'],
@@ -261,8 +262,10 @@ class FacilitiesController extends Controller
             'Capacity' => ['nullable', 'integer', 'min:1', 'max:100000'],
             'attachment' => ['nullable', 'file', 'mimes:pdf', 'max:5120'],
         ], [
-            'Proposed_Date.after_or_equal' => 'Reservations must be scheduled at least 3 days from today.',
+            'Proposed_Date.after_or_equal' => app(\App\Services\BookingPolicy::class)->noticeMessage(auth()->user()),
         ]);
+
+        app(\App\Services\BookingPolicy::class)->validateFutureStart($validated['Proposed_Date'], $validated['Proposed_Start_Time'], 'Proposed_Start_Time');
 
         $this->validateBookingDuration(
             $validated['Proposed_Start_Time'],
@@ -589,7 +592,7 @@ class FacilitiesController extends Controller
 
     public function storeEventRequest(Request $request, Events $event)
     {
-        $earliestReservationDate = now()->addDays(3)->toDateString();
+        $earliestReservationDate = app(\App\Services\BookingPolicy::class)->earliestDate(auth()->user());
 
         $validated = $request->validate([
             'Amenity_ID' => ['nullable', 'array'],
@@ -601,8 +604,10 @@ class FacilitiesController extends Controller
             'Purpose' => ['required', 'string', 'min:5', 'max:1000'],
             'Capacity' => ['nullable', 'integer', 'min:1', 'max:100000'],
         ], [
-            'Proposed_Date.after_or_equal' => 'Reservations must be submitted at least 3 days before the event date.',
+            'Proposed_Date.after_or_equal' => app(\App\Services\BookingPolicy::class)->noticeMessage(auth()->user()),
         ]);
+
+        app(\App\Services\BookingPolicy::class)->validateFutureStart($validated['Proposed_Date'], $validated['Proposed_Start_Time'], 'Proposed_Start_Time');
 
         $this->validateBookingDuration(
             $validated['Proposed_Start_Time'],

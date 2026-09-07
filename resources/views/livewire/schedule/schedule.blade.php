@@ -12,6 +12,7 @@ use App\Models\Schedule;
 use App\Models\Requests;
 use App\Support\CalendarColor;
 use App\Services\FacilityAvailabilityService;
+use App\Services\BookingPolicy;
 use Carbon\Carbon;
 
 new #[Layout('components.layouts.app')] class extends Component {
@@ -27,6 +28,7 @@ new #[Layout('components.layouts.app')] class extends Component {
     public bool $showArchivedModal = false;
 
     public ?string $selectedDate = null;
+    public $noticeDays = 3;
 
     // ---- Filters ----
     public string $searchInput = '';
@@ -53,6 +55,15 @@ new #[Layout('components.layouts.app')] class extends Component {
     {
         Requests::markPastRequestsAsEnded();
         $this->Date = Carbon::now()->toDateString();
+        $this->noticeDays = app(BookingPolicy::class)->noticeDays();
+    }
+
+    public function saveBookingRules(): void
+    {
+        app(BookingPolicy::class)->saveNoticeDays(auth()->user(), $this->noticeDays);
+        $this->noticeDays = app(BookingPolicy::class)->noticeDays();
+        $this->resetValidation('noticeDays');
+        Ui::toast(text: 'Booking notice period updated.', variant: 'success');
     }
 
     public function setView(string $view): void
@@ -117,17 +128,19 @@ new #[Layout('components.layouts.app')] class extends Component {
         abort_if($this->editingId === null, 403, 'Creating schedules manually is not allowed.');
 
         // Authorize the existing record before validating any user-controlled
-        // fields, then enforce the same three-day lead time as reservations.
+        // fields, then enforce the saved notice period and super-admin exception.
         $schedule = $this->getScopedSchedule((int) $this->editingId);
         $validated = $this->validate([
             'Request_ID' => ['required', 'exists:requests,RID'],
-            'Date' => ['required', 'date', 'after_or_equal:'.now()->addDays(3)->toDateString()],
+            'Date' => ['required', 'date', 'after_or_equal:'.app(BookingPolicy::class)->earliestDate(auth()->user())],
             'Start_Time' => ['required', 'date_format:H:i'],
             'End_Time' => ['required', 'date_format:H:i', 'after:Start_Time'],
             'Status' => ['required', 'in:Booked,Blocked'],
         ], [
-            'Date.after_or_equal' => 'Schedules must be set at least 3 days in advance.',
+            'Date.after_or_equal' => app(BookingPolicy::class)->noticeMessage(auth()->user()),
         ]);
+
+        app(BookingPolicy::class)->validateFutureStart($validated['Date'], $validated['Start_Time'], 'Start_Time');
 
         $startTime = Carbon::createFromFormat('H:i', $validated['Start_Time']);
         $endTime = Carbon::createFromFormat('H:i', $validated['End_Time']);

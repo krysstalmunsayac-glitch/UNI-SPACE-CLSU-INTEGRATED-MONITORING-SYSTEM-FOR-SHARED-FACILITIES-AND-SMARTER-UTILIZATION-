@@ -30,6 +30,22 @@
         </div>
     </div>
 
+    @if (auth()->user()?->isSuperAdmin())
+        <form wire:submit="saveBookingRules" class="flex flex-col gap-4 border-b border-gray-100 px-5 py-4 xl:flex-row xl:items-start xl:justify-between dark:border-zinc-800">
+            <div class="min-w-0 max-w-2xl">
+                <h2 class="text-sm font-semibold text-gray-950 dark:text-white">Booking notice</h2>
+                <p id="booking-notice-help" class="mt-1 text-sm text-gray-500 dark:text-zinc-400">Choose the minimum notice for new reservations and date changes across all facilities. Use 0 for same-day bookings.</p>
+                <p class="mt-2 text-xs text-gray-500 dark:text-zinc-400">Super admins can schedule inside this period. Existing bookings stay valid.</p>
+            </div>
+            <div class="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-start xl:shrink-0">
+                <div class="w-full sm:w-40">
+                    <x-ui::input wire:model="noticeDays" type="number" min="0" max="365" step="1" label="Minimum days" aria-describedby="booking-notice-help" required />
+                </div>
+                <x-ui::button type="submit" variant="primary" class="w-full sm:mt-7 sm:w-auto" wire:target="saveBookingRules">Save booking rule</x-ui::button>
+            </div>
+        </form>
+    @endif
+
     <div class="grid gap-3 border-b border-gray-100 px-5 py-4 sm:grid-cols-2 xl:grid-cols-5 dark:border-zinc-800">
         <div class="rounded-lg border border-gray-100 bg-gray-50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900/70">
             <p class="text-xs font-medium text-gray-500 dark:text-zinc-400">Visible schedules</p>
