@@ -7,9 +7,9 @@
         @forelse ($this->facilities as $facility)
             <x-ui::card wire:key="assigned-facility-{{ $facility->FID }}" class="flex flex-col gap-0 overflow-hidden p-0">
                 <div class="relative h-36 w-full bg-slate-100 dark:bg-slate-800">
-                    @if ($facility->images->isNotEmpty())
+                    @if ($facility->images->isNotEmpty() || $facility->Image_URL)
                         <img
-                            src="{{ asset('storage/'.$facility->images->first()->image_path) }}"
+                            src="{{ $facility->primaryImageUrl() }}"
                             class="h-full w-full object-cover"
                             alt="{{ $facility->Facility_Name }}"
                             loading="lazy"
@@ -35,9 +35,10 @@
                                 'inline-flex min-w-24 items-center justify-center whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold leading-none text-white shadow-sm transition-colors',
                                 'bg-emerald-700 group-hover:bg-red-600' => $facility->Status === 'Available',
                                 'bg-red-600 group-hover:bg-emerald-700' => $facility->Status === 'Unavailable',
+                                'bg-zinc-600' => ! in_array($facility->Status, ['Available', 'Unavailable'], true),
                             ])
                         >
-                            {{ $facility->Status }}
+                            {{ $facility->Status ?: 'Not specified' }}
                         </span>
                     </button>
                 </div>
@@ -97,7 +98,7 @@
             </x-ui::card>
         @empty
             <div class="col-span-full rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-10 text-center text-slate-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-400">
-                No facilities assigned to your account.
+                {{ $search !== '' || $statusFilter !== '' ? 'No assigned facilities match your search or availability filter.' : 'No facilities assigned to your account.' }}
             </div>
         @endforelse
     </div>

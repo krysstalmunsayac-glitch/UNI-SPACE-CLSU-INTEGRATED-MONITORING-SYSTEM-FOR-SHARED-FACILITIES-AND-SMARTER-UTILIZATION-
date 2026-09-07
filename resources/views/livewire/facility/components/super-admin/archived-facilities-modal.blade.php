@@ -22,11 +22,11 @@
 
                 <x-ui::table.rows>
                     @forelse ($this->archivedFacilities as $facility)
-                        <x-ui::table.row :key="'archived-facility-'.$facility->FID">
+                        <x-ui::table.row wire:key="archived-facility-{{ $facility->FID }}">
                             <x-ui::table.cell>
                                 <div class="flex items-center gap-3">
-                                    @if ($facility->images->isNotEmpty())
-                                        <x-ui::avatar size="sm" src="{{ asset('storage/'.$facility->images->first()->image_path) }}" />
+                                    @if ($facility->images->isNotEmpty() || $facility->Image_URL)
+                                        <x-ui::avatar size="sm" :src="$facility->primaryImageUrl()" />
                                     @else
                                         <x-ui::avatar size="sm" :name="$facility->Facility_Name" />
                                     @endif
@@ -49,7 +49,7 @@
                                         default => 'red',
                                     }"
                                 >
-                                    {{ $facility->Status }}
+                                    {{ $facility->Status ?: 'Not specified' }}
                                 </x-ui::badge>
                             </x-ui::table.cell>
 

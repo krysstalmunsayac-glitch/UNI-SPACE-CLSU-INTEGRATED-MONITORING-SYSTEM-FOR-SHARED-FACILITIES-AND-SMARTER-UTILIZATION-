@@ -32,11 +32,11 @@
 
         <x-ui::table.rows>
             @forelse ($this->facilities as $facility)
-                <x-ui::table.row :key="'facility-'.$facility->FID">
+                <x-ui::table.row wire:key="facility-{{ $facility->FID }}">
                     <x-ui::table.cell>
                         <div class="flex items-center gap-3">
-                            @if ($facility->images->isNotEmpty())
-                                <x-ui::avatar size="xs" src="{{ asset('storage/'.$facility->images->first()->image_path) }}" />
+                            @if ($facility->images->isNotEmpty() || $facility->Image_URL)
+                                <x-ui::avatar size="xs" :src="$facility->primaryImageUrl()" />
                             @else
                                 <x-ui::avatar size="xs" :name="$facility->Facility_Name" />
                             @endif
@@ -72,9 +72,10 @@
                                     'inline-flex min-w-24 items-center justify-center whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold leading-none text-white transition-colors',
                                     'bg-emerald-700 group-hover:bg-red-600' => $facility->Status === 'Available',
                                     'bg-red-600 group-hover:bg-emerald-700' => $facility->Status === 'Unavailable',
+                                    'bg-zinc-600' => ! in_array($facility->Status, ['Available', 'Unavailable'], true),
                                 ])
                             >
-                                {{ $facility->Status }}
+                                {{ $facility->Status ?: 'Not specified' }}
                             </span>
                         </button>
                     </x-ui::table.cell>

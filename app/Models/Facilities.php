@@ -78,7 +78,9 @@ class Facilities extends Model
     {
         static::deleting(function (Facilities $facility): void {
             $facility->archiveRelatedRequests();
-            $facility->images()->delete();
+            if ($facility->isForceDeleting()) {
+                $facility->images()->delete();
+            }
         });
     }
 

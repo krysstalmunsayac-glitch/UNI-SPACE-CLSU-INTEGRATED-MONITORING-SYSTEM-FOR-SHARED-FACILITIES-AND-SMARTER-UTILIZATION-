@@ -74,7 +74,7 @@ new #[Layout('components.layouts.app')] class extends Component {
     public ?int $Capacity = null;
 
     #[Validate('required|in:Available,Unavailable')]
-    public string $Status = 'Available';
+    public ?string $Status = 'Available';
 
     public function applySearch(): void
     {
@@ -298,7 +298,7 @@ new #[Layout('components.layouts.app')] class extends Component {
             'icon' => 'success',
         ]);
 
-        // Keep the administrator on the current paginated table after archiving.
+        unset($this->facilities, $this->archivedFacilities);
     }
 
     public function openArchivedFacilities(): void
@@ -330,7 +330,7 @@ new #[Layout('components.layouts.app')] class extends Component {
     public function forceDeleteFacility(int $facilityId): void
     {
         $facility = Facilities::onlyTrashed()
-            ->with(['images' => fn ($query) => $query->oldest('id')->limit(1)])
+            ->with('images')
             ->findOrFail($facilityId);
 
         foreach ($facility->images as $image) {
@@ -399,7 +399,7 @@ new #[Layout('components.layouts.app')] class extends Component {
     #[Computed]
     public function facilities()
     {
-        return Facilities::query()
+        $query = Facilities::query()
             ->with(['images' => fn ($query) => $query->oldest('id')->limit(1)])
             ->when(
                 in_array($this->statusFilter, ['Available', 'Unavailable'], true),
@@ -412,20 +412,30 @@ new #[Layout('components.layouts.app')] class extends Component {
                     $searchQuery
                         ->where('Facility_Name', 'like', $term)
                         ->orWhere('Location', 'like', $term)
-                        ->orWhere('Office', 'like', $term);
+                        ->orWhere('Office', 'like', $term)
+                        ->orWhere('facility_type', 'like', $term);
                 });
             })
             ->orderBy($this->sortBy, $this->sortDirection)
-            ->paginate(
-                perPage: 8,
-                pageName: 'facilitiesPage'
-            );
+            ->orderBy('FID', $this->sortDirection);
+
+        $facilities = $query->paginate(
+            perPage: 8,
+            pageName: 'facilitiesPage'
+        );
+
+        if ($facilities->currentPage() > $facilities->lastPage()) {
+            $this->setPage($facilities->lastPage(), 'facilitiesPage');
+            $facilities = $query->paginate(perPage: 8, pageName: 'facilitiesPage');
+        }
+
+        return $facilities;
     }
 
     #[Computed]
     public function archivedFacilities()
     {
-        return Facilities::onlyTrashed()
+        $query = Facilities::onlyTrashed()
             ->when($this->search, fn ($query) => $query->where(function ($query) {
                 $query->where('Facility_Name', 'like', '%'.$this->search.'%')
                     ->orWhere('Location', 'like', '%'.$this->search.'%')
@@ -433,14 +443,23 @@ new #[Layout('components.layouts.app')] class extends Component {
             }))
             ->with(['images' => fn ($query) => $query->oldest('id')->limit(1)])
             ->orderByDesc('deleted_at')
-            ->paginate(
-                perPage: 8,
-                pageName: 'archivedFacilitiesPage'
-            );
+            ->orderByDesc('FID');
+
+        $facilities = $query->paginate(
+            perPage: 8,
+            pageName: 'archivedFacilitiesPage'
+        );
+
+        if ($facilities->currentPage() > $facilities->lastPage()) {
+            $this->setPage($facilities->lastPage(), 'archivedFacilitiesPage');
+            $facilities = $query->paginate(perPage: 8, pageName: 'archivedFacilitiesPage');
+        }
+
+        return $facilities;
     }
 }; ?>
 
-<div class="w-full">
+<div class="w-full" @if (! $showModal && ! $showStatusConfirmation && ! $showCreateConfirmation) wire:poll.15s @endif>
     @if ($archiveOnly)
         <div class="mx-auto max-w-7xl">
             <x-ui::card>

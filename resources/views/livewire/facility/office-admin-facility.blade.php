@@ -58,7 +58,7 @@ new #[Layout('components.layouts.app')] class extends Component {
     public ?int $Capacity = null;
 
     #[Validate('required|in:Available,Unavailable')]
-    public string $Status = 'Available';
+    public ?string $Status = 'Available';
 
     public function applySearch(): void
     {
@@ -247,7 +247,7 @@ new #[Layout('components.layouts.app')] class extends Component {
     #[Computed]
     public function facilities()
     {
-        return Facilities::query()
+        $query = Facilities::query()
             ->with(['images' => fn ($query) => $query->oldest('id')->limit(1)])
             ->whereHas('assignedAdmins', function ($adminQuery) {
                 $adminQuery->where('users.id', auth()->id());
@@ -268,10 +268,19 @@ new #[Layout('components.layouts.app')] class extends Component {
                 });
             })
             ->orderBy($this->sortBy, $this->sortDirection)
-            ->paginate(
-                perPage: 8,
-                pageName: 'assignedFacilitiesPage'
-            );
+            ->orderBy('FID', $this->sortDirection);
+
+        $facilities = $query->paginate(
+            perPage: 8,
+            pageName: 'assignedFacilitiesPage'
+        );
+
+        if ($facilities->currentPage() > $facilities->lastPage()) {
+            $this->setPage($facilities->lastPage(), 'assignedFacilitiesPage');
+            $facilities = $query->paginate(perPage: 8, pageName: 'assignedFacilitiesPage');
+        }
+
+        return $facilities;
     }
 
     private function getScopedFacility(int $facilityId): Facilities
@@ -284,7 +293,7 @@ new #[Layout('components.layouts.app')] class extends Component {
     }
 }; ?>
 
-<div class="w-full">
+<div class="w-full" @if (! $showModal && ! $showStatusConfirmation) wire:poll.15s @endif>
     @include('facility.components.office-admin.page-header')
     @include('facility.components.office-admin.facilities-grid')
     @if ($showModal)

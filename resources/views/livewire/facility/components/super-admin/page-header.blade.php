@@ -22,7 +22,7 @@
 
         <x-ui::input
             wire:model.live.debounce.400ms="searchInput"
-            placeholder="Search by name, location, or office..."
+            placeholder="Search name, type, location, or office..."
             icon="magnifying-glass"
             class="w-full sm:w-[240px]"
         />
