@@ -233,29 +233,7 @@
         </div>
     </section>
 
-    <section id="map" class="scroll-mt-28 border-t border-emerald-900/10 bg-emerald-50/50 py-20 dark:border-white/10 dark:bg-zinc-900">
-        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div class="grid gap-8 lg:grid-cols-[0.75fr_1.25fr] lg:items-stretch">
-                <div class="rounded-2xl bg-emerald-800 p-8 text-white">
-                    <h2 class="text-4xl font-black">Campus map</h2>
-                    <p class="mt-4 text-lg leading-8 text-emerald-50">
-                        Explore the CLSU campus map before sending your facility request.
-                    </p>
-
-                    <div class="mt-8 space-y-3 text-sm font-semibold text-emerald-50">
-                        <p>Central Luzon State University</p>
-                        <p>Science City of Munoz, Nueva Ecija</p>
-                    </div>
-                </div>
-
-                <div class="relative z-0 overflow-hidden rounded-2xl border border-emerald-900/10 bg-white shadow-xl shadow-emerald-950/10 dark:border-white/10 dark:bg-zinc-950">
-                    <div id="campus-map" class="relative z-0 flex h-[440px] w-full items-center justify-center bg-emerald-50 text-sm font-bold text-emerald-900 dark:bg-zinc-900 dark:text-emerald-200">
-                        Loading campus map...
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+    @include('partials.campus-map', ['mapFacilities' => $facilities])
 
     <section id="help" class="bg-white py-20 dark:bg-zinc-950">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -376,122 +354,8 @@
                 });
                 filterFacilities();
 
-                const initializeCampusMap = () => {
-                    const mapElement = document.getElementById('campus-map');
-                    if (!mapElement || mapElement.dataset.initialized) return true;
-                    if (!window.L) return false;
+                @include('partials.campus-map-script', ['mapFacilities' => $facilities])
 
-                    mapElement.dataset.initialized = 'true';
-
-                    const campusCenter = [15.7354, 120.9335];
-                    const map = L.map(mapElement, {
-                        scrollWheelZoom: false,
-                    }).setView(campusCenter, 16);
-                    mapElement.classList.remove('flex', 'items-center', 'justify-center');
-
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                        maxZoom: 19,
-                        attribution: '&copy; OpenStreetMap contributors',
-                    }).addTo(map);
-
-                    const facilities = @js($facilities->map(fn ($facility) => [
-                        'FID' => $facility->FID,
-                        'Facility_Name' => $facility->Facility_Name,
-                        'Location' => $facility->Location,
-                        'Status' => $facility->Status,
-                        'Latitude' => $facility->Latitude,
-                        'Longitude' => $facility->Longitude,
-                    ])->values());
-                    const bounds = L.latLngBounds();
-                    const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, character => ({
-                        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;',
-                    })[character]);
-                    const fallbackCoordinates = facility => {
-                        const hash = [...String(facility.FID ?? facility.Facility_Name)].reduce((total, character) => ((total * 31) + character.charCodeAt(0)) >>> 0, 0);
-                        const angle = (hash % 360) * (Math.PI / 180);
-                        const radius = 0.00035 + ((hash % 8) * 0.00012);
-                        return [campusCenter[0] + Math.sin(angle) * radius, campusCenter[1] + Math.cos(angle) * radius];
-                    };
-                    const addFacilityMarker = (facility, coordinates, approximate = false) => {
-                        L.marker(coordinates).addTo(map).bindPopup(
-                            `<strong>${escapeHtml(facility.Facility_Name)}</strong><br>` +
-                            `${escapeHtml(facility.Location || 'CLSU Main Campus')}<br>` +
-                            `<small>${escapeHtml(facility.Status || '')}${approximate ? ' · Approximate campus pin' : ''}</small>`
-                        );
-                        bounds.extend(coordinates);
-                    };
-                    const locateFacilities = async () => {
-                        for (const facility of facilities) {
-                            const savedLatitude = Number(facility.Latitude);
-                            const savedLongitude = Number(facility.Longitude);
-                            if (
-                                Number.isFinite(savedLatitude)
-                                && Number.isFinite(savedLongitude)
-                                && savedLatitude !== 0
-                                && savedLongitude !== 0
-                            ) {
-                                addFacilityMarker(facility, [savedLatitude, savedLongitude]);
-                                continue;
-                            }
-
-                            const cacheKey = `clsu-facility-map-${facility.FID}-${facility.Location || ''}`;
-                            let cached = null;
-
-                            try {
-                                cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
-                            } catch {
-                                localStorage.removeItem(cacheKey);
-                            }
-
-                            if (cached?.length === 2) {
-                                addFacilityMarker(facility, cached);
-                                continue;
-                            }
-
-                            const query = [facility.Facility_Name, facility.Location, 'Central Luzon State University', 'Science City of Muñoz', 'Nueva Ecija'].filter(Boolean).join(', ');
-
-                            try {
-                                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(query)}`, {
-                                    headers: { 'Accept': 'application/json' },
-                                });
-                                if (!response.ok) throw new Error(`Geocoding failed with status ${response.status}`);
-                                const result = (await response.json())[0];
-                                const coordinates = result ? [Number(result.lat), Number(result.lon)] : fallbackCoordinates(facility);
-                                try {
-                                    localStorage.setItem(cacheKey, JSON.stringify(coordinates));
-                                } catch {
-                                    // The map still works when browser storage is unavailable.
-                                }
-                                addFacilityMarker(facility, coordinates, !result);
-                            } catch {
-                                addFacilityMarker(facility, fallbackCoordinates(facility), true);
-                            }
-
-                            await new Promise(resolve => setTimeout(resolve, 1050));
-                        }
-
-                        if (bounds.isValid()) map.fitBounds(bounds.pad(0.18), { maxZoom: 17 });
-                    };
-
-                    locateFacilities();
-
-                    setTimeout(() => map.invalidateSize(), 100);
-                    return true;
-                };
-
-                if (!initializeCampusMap()) {
-                    let attempts = 0;
-                    const leafletTimer = window.setInterval(() => {
-                        attempts += 1;
-                        if (initializeCampusMap()) {
-                            window.clearInterval(leafletTimer);
-                        } else if (attempts >= 40) {
-                            window.clearInterval(leafletTimer);
-                            const mapElement = document.getElementById('campus-map');
-                            if (mapElement) mapElement.textContent = 'The campus map could not be loaded. Please refresh and try again.';
-                        }
-                    }, 250);
-                }
             });
         </script>
     @endpush
