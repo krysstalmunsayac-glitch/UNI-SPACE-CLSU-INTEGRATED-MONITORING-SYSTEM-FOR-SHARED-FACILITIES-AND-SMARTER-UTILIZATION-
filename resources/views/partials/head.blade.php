@@ -114,6 +114,7 @@
 </style>
 
 @vite(['resources/css/app.css', 'resources/js/app.js'])
+@include('partials.select-styles')
 @if (session()->has('sweet_alert'))
     <script>
         window.pendingSweetAlert = {{ Illuminate\Support\Js::from(session('sweet_alert')) }};

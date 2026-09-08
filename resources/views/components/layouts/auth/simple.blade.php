@@ -3,6 +3,38 @@
     <head>
         @include('partials.head')
         <style>
+            .auth-page {
+                padding-top: 40px;
+                padding-bottom: 40px;
+            }
+
+            .auth-form-panel {
+                min-width: 0;
+                padding-top: 32px;
+                padding-bottom: 32px;
+            }
+
+            .auth-form-logo {
+                margin-bottom: 16px;
+                padding-top: 0;
+                padding-bottom: 0;
+            }
+
+            @media (min-width: 1024px) {
+                .auth-card > section {
+                    min-height: 640px;
+                }
+
+                .auth-form-logo {
+                    position: relative;
+                    top: -16px;
+                }
+
+                .auth-card[data-auth-page="login"] .auth-form-logo {
+                    top: -56px;
+                }
+            }
+
             .auth-card [data-ui-label],
             .auth-card label {
                 font-size: 12px !important;
@@ -15,7 +47,7 @@
                 border: 0 !important;
                 border-radius: 0 !important;
                 background: #f1f5f3 !important;
-                color: #007a2f !important;
+                color: #175239 !important;
                 box-shadow: none !important;
             }
 
@@ -108,7 +140,7 @@
     <body class="min-h-screen bg-zinc-100 font-sans text-emerald-950 antialiased dark:bg-zinc-950 dark:text-zinc-100">
         @php
             $isRegisterPage = request()->routeIs('register');
-            $panelTitle = $isRegisterPage ? 'Welcome Back!' : 'Hello, Friend!';
+            $panelTitle = $isRegisterPage ? 'Create Account' : (request()->routeIs('login') ? 'Sign in' : 'Hello, Friend!');
             $panelText = $isRegisterPage
                 ? 'To keep connected with SIEL SPACE, please log in with your account.'
                 : 'Enter your details and start your facility reservation journey with us.';
@@ -116,7 +148,7 @@
             $panelButton = $isRegisterPage ? 'Sign In' : 'Sign Up';
         @endphp
 
-        <main class="flex min-h-svh items-center justify-center px-4 py-10">
+        <main class="auth-page flex min-h-svh items-center justify-center px-4 py-10">
             <div class="auth-card grid w-full max-w-6xl overflow-hidden rounded-xl bg-white shadow-2xl shadow-zinc-900/20 dark:bg-zinc-900 dark:shadow-black/35 lg:grid-cols-2" data-auth-page="{{ $isRegisterPage ? 'register' : 'login' }}">
                 @if ($isRegisterPage)
                     @include('components.layouts.auth.simple-panel', [
@@ -127,8 +159,11 @@
                     ])
                 @endif
 
-                <section class="flex min-h-[640px] items-center justify-center px-8 py-12 sm:px-14">
+                <section class="auth-form-panel flex min-h-[640px] items-center justify-center px-8 pb-12 pt-20 sm:px-14">
                     <div class="w-full max-w-md">
+                        <a href="{{ route('home') }}" wire:navigate class="auth-form-logo mx-auto mb-8 flex w-fit max-w-full items-center justify-center rounded-xl bg-white px-4 py-3" aria-label="SIEL SPACE home">
+                            <img src="{{ asset('images/silesyu-space-logo.svg') }}" alt="SIEL SPACE" class="h-auto w-64 max-w-full object-contain" width="2172" height="724">
+                        </a>
                         {{ $slot }}
                     </div>
                 </section>

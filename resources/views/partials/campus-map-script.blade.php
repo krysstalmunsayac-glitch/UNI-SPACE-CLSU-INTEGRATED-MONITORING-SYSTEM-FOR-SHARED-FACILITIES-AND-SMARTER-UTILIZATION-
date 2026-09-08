@@ -4,22 +4,6 @@
                     if (!window.L) return false;
                     mapElement.dataset.initialized = 'true';
 
-                    document.querySelectorAll('.map-select-chevron').forEach(chevron => {
-                        const openSelect = () => {
-                            const select = document.getElementById(chevron.dataset.select);
-                            if (!select) return;
-                            select.focus();
-                            if (typeof select.showPicker === 'function') select.showPicker();
-                        };
-                        chevron.addEventListener('click', openSelect);
-                        chevron.addEventListener('keydown', event => {
-                            if (event.key === 'Enter' || event.key === ' ') {
-                                event.preventDefault();
-                                openSelect();
-                            }
-                        });
-                    });
-
                     const campusCenter = [15.7354, 120.9335];
                     // CLSU Main Gate at the campus access-road junction with Maharlika Highway.
                     const mainGateCoordinates = [15.7301879, 120.9300414];

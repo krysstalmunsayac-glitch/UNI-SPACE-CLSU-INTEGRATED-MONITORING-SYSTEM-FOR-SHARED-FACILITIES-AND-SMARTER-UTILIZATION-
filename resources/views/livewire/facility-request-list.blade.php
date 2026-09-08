@@ -117,7 +117,7 @@ new class extends Component {
                             <option value="latest" @selected($requestSort === 'latest')>Latest first</option>
                             <option value="oldest" @selected($requestSort === 'oldest')>Oldest first</option>
                         </select>
-                        <span class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-lg leading-none text-emerald-700 dark:text-emerald-300">⌄</span>
+
                     </span>
                 </label>
 
@@ -133,7 +133,7 @@ new class extends Component {
                             <option value="Cancelled" @selected($requestStatus === 'Cancelled')>Cancelled</option>
                             <option value="Ended" @selected($requestStatus === 'Ended')>Event Ended</option>
                         </select>
-                        <span class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-lg leading-none text-emerald-700 dark:text-emerald-300">⌄</span>
+
                     </span>
                 </label>
 

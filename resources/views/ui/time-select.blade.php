@@ -41,10 +41,9 @@
         x-on:click="expanded ? closeOptions() : showOptions()"
         x-on:keydown.arrow-down.prevent="showOptions()"
         x-on:keydown.arrow-up.prevent="showOptions()"
-        class="flex h-10 w-full items-center justify-between rounded-lg border border-zinc-300 bg-white px-3 text-left text-sm text-zinc-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-600 dark:border-zinc-600 dark:bg-zinc-900 dark:text-white"
+        class="select-picker-trigger flex h-10 w-full items-center justify-between rounded-lg border border-zinc-300 bg-white px-3 text-left text-sm text-zinc-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-600 dark:border-zinc-600 dark:bg-zinc-900 dark:text-white"
     >
         <span x-text="selectedLabel()"></span>
-        <x-ui::icon.chevron-down class="size-4 shrink-0" />
     </button>
     <select
         x-ref="options"

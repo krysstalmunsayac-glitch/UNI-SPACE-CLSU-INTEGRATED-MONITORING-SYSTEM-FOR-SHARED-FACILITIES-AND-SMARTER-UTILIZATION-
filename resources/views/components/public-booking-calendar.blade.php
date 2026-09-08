@@ -523,19 +523,6 @@
                 min-width: 0;
             }
 
-            .booking-select-wrap::after {
-                content: "⌄";
-                pointer-events: none;
-                position: absolute;
-                right: 10px;
-                top: 50%;
-                transform: translateY(-52%);
-                color: #047857;
-                font-size: 16px;
-                font-weight: 800;
-                line-height: 1;
-            }
-
             .booking-controls select,
             .booking-controls button,
             .booking-calendar-nav button {
@@ -858,10 +845,6 @@
             .dark .booking-calendar-filterbar select {
                 border-color: rgba(255, 255, 255, 0.1);
                 background: #27272a;
-            }
-
-            .dark .booking-select-wrap::after {
-                color: #6ee7b7;
             }
 
             .dark .booking-calendar-filterbar label {

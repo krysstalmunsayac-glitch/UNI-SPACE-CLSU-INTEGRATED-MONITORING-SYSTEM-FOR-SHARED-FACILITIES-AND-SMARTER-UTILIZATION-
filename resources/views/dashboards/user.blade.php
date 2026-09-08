@@ -92,7 +92,7 @@
                             <option value="large">301+</option>
                             <option value="custom">Other / Specific capacity</option>
                         </select>
-                        <span class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-lg leading-none text-emerald-700 dark:text-emerald-300">⌄</span>
+
                     </span>
                     <input id="capacity-custom" type="number" min="70" max="2000" placeholder="Enter 70-2,000" class="mt-2 hidden h-12 w-full rounded-xl border border-emerald-900/10 bg-white px-4 text-base font-semibold text-emerald-950 shadow-sm outline-none transition focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-950 dark:text-white">
                 </label>
@@ -106,7 +106,7 @@
                                 <option value="{{ strtolower($type) }}">{{ ucfirst($type) }}</option>
                             @endforeach
                         </select>
-                        <span class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-lg leading-none text-emerald-700 dark:text-emerald-300">⌄</span>
+
                     </span>
                 </label>
             </div>
@@ -154,7 +154,7 @@
                             </div>
                             <div class="mt-auto pt-6">
                                 <a href="{{ route('requests.create', $facility) }}" class="inline-flex w-full items-center justify-center rounded-xl bg-emerald-700 px-5 py-3 font-bold text-white transition hover:bg-emerald-800">
-                                    Reserve
+                                    Book
                                 </a>
                             </div>
                         </div>
@@ -246,7 +246,7 @@
 
             <div class="mt-14 space-y-5">
                 @foreach ([
-                    'How do I reserve a facility?' => 'Choose an available facility, click Reserve, then complete the request form.',
+                    'How do I reserve a facility?' => 'Choose an available facility, click Book, then complete the request form.',
                     'Can I check existing reservations first?' => 'Yes. Use the booking calendar on this dashboard to review scheduled reservations.',
                     'How will I know if my request is approved?' => 'SIEL SPACE will notify you when your request status changes.',
                     'How far in advance should I book?' => 'Submit your request as early as possible. Requests are handled first-come, first-served.',

@@ -104,7 +104,9 @@ new #[Layout('components.layouts.auth')] class extends Component {
         {{ __('Back to Home') }}
     </a>
 
-    <x-auth-header title="Sign in" description="or use your account" />
+    <div class="lg:hidden">
+        <x-auth-header title="Sign in" description="or use your account" />
+    </div>
 
     <!-- Session Status -->
     <x-auth-session-status class="text-center" :status="session('status')" />

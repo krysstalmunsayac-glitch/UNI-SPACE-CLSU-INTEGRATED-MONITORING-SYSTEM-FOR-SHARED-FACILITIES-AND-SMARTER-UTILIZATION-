@@ -68,10 +68,10 @@
 
             $shellProps = [
                 'brandUrl' => route('dashboard'),
-                'logoUrl' => asset('images/silesyu-space-logo.png'),
+                'logoUrl' => asset('images/silesyu-space-logo.svg'),
                 'collapsedLogoUrl' => ($isSuperAdmin || $isAdmin)
-                    ? asset('images/admin-collapsed-logo.png')
-                    : asset('images/silesyu-space-logo.png'),
+                    ? asset('images/admin-collapsed-logo.svg')
+                    : asset('images/silesyu-space-logo.svg'),
                 'navigation' => $navigation,
                 'user' => [
                     'name' => $currentUser->name,
