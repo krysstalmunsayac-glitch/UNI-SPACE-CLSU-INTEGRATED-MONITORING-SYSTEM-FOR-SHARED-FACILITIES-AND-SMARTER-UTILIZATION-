@@ -6,7 +6,7 @@
 
                     const campusCenter = [15.7354, 120.9335];
                     // CLSU Main Gate at the campus access-road junction with Maharlika Highway.
-                    const mainGateCoordinates = [15.7301879, 120.9300414];
+                    const mainGateCoordinates = [15.7305665, 120.9297932];
                     const map = L.map(mapElement, {
                         scrollWheelZoom: false,
                     }).setView(campusCenter, 16);
