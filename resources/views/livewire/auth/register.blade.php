@@ -157,9 +157,7 @@ new #[Layout('components.layouts.auth')] class extends Component
 }; ?>
 
 <div class="flex flex-col gap-6">
-    <div class="lg:hidden">
-        <x-auth-header title="Create Account" description="or use your email for registration" />
-    </div>
+
 
     <!-- Session Status -->
     <x-auth-session-status class="text-center" :status="session('status')" />

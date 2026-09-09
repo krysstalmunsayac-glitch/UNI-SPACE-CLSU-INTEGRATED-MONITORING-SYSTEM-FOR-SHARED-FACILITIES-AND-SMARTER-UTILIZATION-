@@ -40,6 +40,7 @@
                 <x-ui::table.column>Time</x-ui::table.column>
 
                 <x-ui::table.column
+                    class="min-w-32 whitespace-nowrap"
                     sortable
                     :sorted="$sortBy === 'Status'"
                     :direction="$sortDirection"
@@ -94,7 +95,7 @@
                             @endif
                         </x-ui::table.cell>
 
-                        <x-ui::table.cell>
+                        <x-ui::table.cell class="min-w-32 whitespace-nowrap">
                             <x-ui::badge
                                 size="sm"
                                 :color="match($request->Status) {

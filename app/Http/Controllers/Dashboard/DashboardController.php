@@ -79,7 +79,9 @@ class DashboardController extends Controller
 
         return view('dashboards.user', [
             'facilities' => Facilities::query()
-                ->with('images')
+                ->with(['images', 'amenities' => fn ($query) => $query
+                    ->where('amenities.Status', 'Available')
+                    ->orderBy('amenities.name')])
                 ->where('Status', 'Available')
                 ->orderBy('Facility_Name')
                 ->get(),
@@ -458,7 +460,6 @@ class DashboardController extends Controller
         Carbon $dateFrom,
         Carbon $dateTo,
     ): array {
-        $requestIds = (clone $requestScope)->pluck('RID');
         $approvedRequestIds = (clone $requestScope)
             ->whereIn('Status', ['Approved', 'Ended'])
             ->pluck('RID');
@@ -528,30 +529,45 @@ class DashboardController extends Controller
                     ->count())->all()]
             )->all(),
         ];
-
-        $decisionLogs = AuditLog::query()
-            ->where('auditable_type', Requests::class)
-            ->whereIn('auditable_id', $requestIds)
-            ->whereIn('action', ['request_approved', 'request_rejected'])
-            ->whereBetween('created_at', [$dateFrom, $dateTo])
-            ->oldest('created_at')
-            ->get(['auditable_id', 'created_at'])
-            ->groupBy('auditable_id')
-            ->map->first();
-        $createdAtByRequest = Requests::withTrashed()
-            ->whereIn('RID', $decisionLogs->keys())
-            ->pluck('Created_at', 'RID');
-        $reviewTimeTrend = $months->map(function (Carbon $month) use ($decisionLogs, $createdAtByRequest): array {
-            $hours = $decisionLogs
-                ->filter(fn ($log) => Carbon::parse($log->created_at)->isSameMonth($month))
-                ->map(function ($log) use ($createdAtByRequest): ?float {
-                    $submittedAt = $createdAtByRequest[$log->auditable_id] ?? null;
-
-                    return $submittedAt ? Carbon::parse($submittedAt)->diffInMinutes(Carbon::parse($log->created_at)) / 60 : null;
-                })->filter();
-
-            return ['label' => $month->format('M Y'), 'hours' => $hours->isNotEmpty() ? round($hours->average(), 1) : null];
-        })->values()->all();
+        $typeTrendUsesDailyBuckets = $dateFrom->copy()->startOfDay()->diffInDays($dateTo->copy()->startOfDay()) <= 31;
+        $typeTrendBuckets = collect();
+        if ($typeTrendUsesDailyBuckets) {
+            for ($day = $dateFrom->copy()->startOfDay(); $day->lte($dateTo); $day->addDay()) {
+                $typeTrendBuckets->push($day->copy());
+            }
+        } else {
+            $typeTrendBuckets = $months;
+        }
+        $typeTrendStart = $typeTrendUsesDailyBuckets
+            ? $dateFrom->copy()->startOfDay()
+            : ($months->first()?->copy()->startOfMonth() ?? $dateFrom);
+        $facilityTypeRecords = (clone $requestScope)
+            ->with('facility:FID,facility_type')
+            ->whereBetween('Created_at', [$typeTrendStart, $dateTo])
+            ->get(['RID', 'Facility_ID', 'Created_at']);
+        $facilityTypes = $facilityTypeRecords
+            ->map(fn (Requests $request) => filled($request->facility?->facility_type)
+                ? ucfirst($request->facility->facility_type)
+                : 'Other')
+            ->unique()
+            ->sort()
+            ->values();
+        $facilityTypeUsageTrend = [
+            'labels' => $typeTrendBuckets
+                ->map(fn (Carbon $bucket) => $bucket->format($typeTrendUsesDailyBuckets ? 'M d' : 'M Y'))
+                ->all(),
+            'series' => $facilityTypes->mapWithKeys(fn (string $type) => [
+                $type => $typeTrendBuckets->map(fn (Carbon $bucket) => $facilityTypeRecords
+                    ->filter(fn (Requests $request) => (
+                        filled($request->facility?->facility_type)
+                            ? ucfirst($request->facility->facility_type)
+                            : 'Other'
+                    ) === $type && ($typeTrendUsesDailyBuckets
+                        ? $request->Created_at?->isSameDay($bucket)
+                        : $request->Created_at?->isSameMonth($bucket)))
+                    ->count())->all(),
+            ])->all(),
+        ];
 
         $rangeRequests = (clone $requestScope)
             ->with('facility:FID,Facility_Name,Capacity')
@@ -614,7 +630,7 @@ class DashboardController extends Controller
             'overallFacilityUtilizationRate' => $overallFacilityUtilizationRate,
             'bookingDemandHeatmap' => $heatmap,
             'requestOutcomesTrend' => $requestOutcomesTrend,
-            'reviewTimeTrend' => $reviewTimeTrend,
+            'facilityTypeUsageTrend' => $facilityTypeUsageTrend,
             'capacityUtilization' => $capacityUtilization,
             'cancellationRates' => $cancellationRates,
             'facilityDecisionRates' => $facilityDecisionRates,
@@ -632,7 +648,7 @@ class DashboardController extends Controller
 
         $dateFrom = isset($validated['date_from'])
             ? Carbon::parse($validated['date_from'])->startOfDay()
-            : today()->subMonths(5)->startOfMonth();
+            : today()->subMonth()->startOfDay();
         $dateTo = isset($validated['date_to'])
             ? Carbon::parse($validated['date_to'])->endOfDay()
             : today()->endOfDay();

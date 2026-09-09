@@ -3,7 +3,7 @@
     $facilityUtilizationRates ??= [];
     $bookingDemandHeatmap ??= [];
     $requestOutcomesTrend ??= ['labels' => [], 'series' => []];
-    $reviewTimeTrend ??= [];
+    $facilityTypeUsageTrend ??= ['labels' => [], 'series' => []];
     $capacityUtilization ??= [];
     $cancellationRates ??= [];
     $facilityDecisionRates ??= [];
@@ -19,7 +19,7 @@
     $chartData = [
         'utilization' => $facilityUtilizationRates,
         'outcomes' => $requestOutcomesTrend,
-        'reviews' => $reviewTimeTrend,
+        'facilityTypes' => $facilityTypeUsageTrend,
         'capacity' => $capacityUtilization,
         'cancellations' => $cancellationRates,
         'decisions' => $facilityDecisionRates,
@@ -63,18 +63,19 @@
         </section>
     </div>
 
-    <div class="grid gap-5 xl:grid-cols-2">
+    <div>
         <section class="{{ $card }}">
             <h3 class="text-lg font-bold">Request Outcomes Over Time</h3>
             <p class="mt-1 text-sm text-slate-500 dark:text-zinc-400">Monthly request outcomes in the selected period.</p>
             <div class="mt-5 h-72"><canvas id="{{ $dashboardChartPrefix }}OutcomesChart"></canvas></div>
         </section>
-        <section class="{{ $card }}">
-            <h3 class="text-lg font-bold">Average Review Time Trend</h3>
-            <p class="mt-1 text-sm text-slate-500 dark:text-zinc-400">Average hours from submission to approval or rejection.</p>
-            <div class="mt-5 h-72"><canvas id="{{ $dashboardChartPrefix }}ReviewTrendChart"></canvas></div>
-        </section>
     </div>
+
+    <section class="{{ $card }}">
+        <h3 class="text-lg font-bold">Facility Type Usage Comparison</h3>
+        <p class="mt-1 text-sm text-slate-500 dark:text-zinc-400">Monthly request volume grouped by facility type.</p>
+        <div class="mt-5 h-72"><canvas id="{{ $dashboardChartPrefix }}FacilityTypeTrendChart"></canvas></div>
+    </section>
 
     <div class="grid gap-5 xl:grid-cols-2">
         <section class="{{ $card }}">
@@ -161,9 +162,22 @@
             type: 'bar', data: { labels: data.outcomes.labels, datasets: Object.entries(data.outcomes.series).map(([status, values]) => ({ label: status, data: values, backgroundColor: colors[status], borderRadius: 4 })) },
             options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true, grid: { display: false }, ticks: { color: text } }, y: { stacked: true, beginAtZero: true, grid: { color: grid }, ticks: { color: text, precision: 0 } } }, plugins: { legend: { labels: { color: text, usePointStyle: true } } } },
         });
-        replace(canvas('ReviewTrendChart'), {
-            type: 'line', data: { labels: data.reviews.map(x => x.label), datasets: [{ label: 'Average review hours', data: data.reviews.map(x => x.hours), borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,.12)', fill: true, tension: .3, spanGaps: true }] },
-            options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: { display: false }, ticks: { color: text } }, y: { beginAtZero: true, grid: { color: grid }, ticks: { color: text, callback: value => value + 'h' } } }, plugins: { legend: { labels: { color: text } } } },
+        const typePalette = ['#2563eb', '#10b981', '#f59e0b', '#f43f5e', '#7c3aed', '#0f766e', '#64748b', '#db2777'];
+        replace(canvas('FacilityTypeTrendChart'), {
+            type: 'line',
+            data: {
+                labels: data.facilityTypes.labels,
+                datasets: Object.entries(data.facilityTypes.series).map(([type, values], index) => ({
+                    label: type,
+                    data: values,
+                    borderColor: typePalette[index % typePalette.length],
+                    backgroundColor: typePalette[index % typePalette.length],
+                    tension: .3,
+                    pointRadius: 3,
+                    pointHoverRadius: 5,
+                })),
+            },
+            options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: { display: false }, ticks: { color: text } }, y: { beginAtZero: true, grid: { color: grid }, ticks: { color: text, precision: 0, stepSize: 1 } } }, plugins: { legend: { labels: { color: text, usePointStyle: true } } } },
         });
         replace(canvas('CapacityUtilizationChart'), { type: 'bar', data: { labels: data.capacity.map(x => x.facility), datasets: [{ data: data.capacity.map(x => x.rate), backgroundColor: '#2563eb', borderRadius: 7 }] }, options: percentOptions });
         replace(canvas('CancellationRateChart'), { type: 'bar', data: { labels: data.cancellations.map(x => x.facility), datasets: [{ data: data.cancellations.map(x => x.rate), backgroundColor: '#f59e0b', borderRadius: 7 }] }, options: percentOptions });

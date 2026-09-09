@@ -7,16 +7,16 @@
         $recentRequests = $recentRequests ?? collect();
 
         $summaryCards = [
-            ['label' => 'Total Users', 'value' => $totalUsers, 'note' => 'Registered user accounts', 'tone' => 'slate'],
-            ['label' => 'Total Facilities', 'value' => $facilityCount ?? 0, 'note' => 'Managed shared spaces', 'tone' => 'slate'],
-            ['label' => 'Total Requests', 'value' => $totalRequests, 'note' => 'Submitted in selected dates', 'tone' => 'slate'],
+            ['label' => 'Total Requests', 'value' => $totalRequests, 'note' => 'Submitted in selected dates', 'tone' => 'cyan'],
             ['label' => 'Pending', 'value' => $pendingRequests, 'note' => 'Awaiting review', 'tone' => 'amber'],
             ['label' => 'Approved', 'value' => $approvedRequests, 'note' => 'Approved in selected dates', 'tone' => 'emerald'],
             ['label' => 'Rejected', 'value' => $dashboardStatusCounts['Rejected'] ?? 0, 'note' => 'Rejected in selected dates', 'tone' => 'rose'],
-            ['label' => 'Cancelled', 'value' => $dashboardStatusCounts['Cancelled'] ?? 0, 'note' => 'Cancelled in selected dates', 'tone' => 'amber'],
-            ['label' => 'Facility Utilization', 'value' => ($overallFacilityUtilizationRate ?? 0).'%', 'note' => $availabilityBaseline ?? '', 'tone' => 'emerald'],
-            ['label' => 'Approval Rate', 'value' => isset($approvalRate) ? $approvalRate.'%' : '—', 'note' => 'Approved vs rejected', 'tone' => 'emerald'],
-            ['label' => 'Avg. Review Time', 'value' => isset($averageReviewHours) ? $averageReviewHours.'h' : '—', 'note' => ($reviewedRequestCount ?? 0).' reviewed requests', 'tone' => 'slate'],
+            ['label' => 'Cancelled', 'value' => $dashboardStatusCounts['Cancelled'] ?? 0, 'note' => 'Cancelled in selected dates', 'tone' => 'orange'],
+            ['label' => 'Total Users', 'value' => $totalUsers, 'note' => 'Registered user accounts', 'tone' => 'plain'],
+            ['label' => 'Total Facilities', 'value' => $facilityCount ?? 0, 'note' => 'Managed shared spaces', 'tone' => 'plain'],
+            ['label' => 'Facility Utilization', 'value' => ($overallFacilityUtilizationRate ?? 0).'%', 'note' => $availabilityBaseline ?? '', 'tone' => 'teal'],
+            ['label' => 'Approval Rate', 'value' => isset($approvalRate) ? $approvalRate.'%' : '—', 'note' => 'Approved vs rejected', 'tone' => 'green'],
+            ['label' => 'Most Used Facility', 'value' => $mostUsedFacility['name'] ?? 'N/A', 'note' => ($mostUsedFacility['count'] ?? 0).' requests in selected dates', 'tone' => 'indigo', 'valueClass' => 'text-xl leading-tight'],
         ];
     @endphp
 
@@ -46,20 +46,40 @@
                     @foreach ($summaryCards as $card)
                         <article @class([
                             'flex min-h-32 flex-col rounded-xl border p-4',
+                            'border-slate-200 bg-white text-slate-950 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white' => $card['tone'] === 'plain',
                             'border-slate-200 bg-slate-50 dark:border-zinc-800 dark:bg-zinc-950' => $card['tone'] === 'slate',
+                            'border-blue-200 bg-blue-50 dark:border-blue-900/50 dark:bg-blue-950/25' => $card['tone'] === 'blue',
+                            'border-violet-200 bg-violet-50 dark:border-violet-900/50 dark:bg-violet-950/25' => $card['tone'] === 'violet',
+                            'border-cyan-200 bg-cyan-50 dark:border-cyan-900/50 dark:bg-cyan-950/25' => $card['tone'] === 'cyan',
                             'border-emerald-100 bg-emerald-50 dark:border-emerald-900/40 dark:bg-emerald-950/20' => $card['tone'] === 'emerald',
                             'border-rose-100 bg-rose-50 dark:border-rose-900/40 dark:bg-rose-950/20' => $card['tone'] === 'rose',
                             'border-amber-100 bg-amber-50 dark:border-amber-900/40 dark:bg-amber-950/20' => $card['tone'] === 'amber',
+                            'border-orange-200 bg-orange-50 dark:border-orange-900/50 dark:bg-orange-950/25' => $card['tone'] === 'orange',
+                            'border-teal-200 bg-teal-50 dark:border-teal-900/50 dark:bg-teal-950/25' => $card['tone'] === 'teal',
+                            'border-green-200 bg-green-50 dark:border-green-900/50 dark:bg-green-950/25' => $card['tone'] === 'green',
+                            'border-indigo-200 bg-indigo-50 dark:border-indigo-900/50 dark:bg-indigo-950/25' => $card['tone'] === 'indigo',
                         ])>
                             <p @class([
                                 'text-xs font-bold uppercase tracking-wide',
+                                'text-slate-950 dark:text-white' => $card['tone'] === 'plain',
                                 'text-slate-500 dark:text-zinc-400' => $card['tone'] === 'slate',
+                                'text-blue-700 dark:text-blue-300' => $card['tone'] === 'blue',
+                                'text-violet-700 dark:text-violet-300' => $card['tone'] === 'violet',
+                                'text-cyan-700 dark:text-cyan-300' => $card['tone'] === 'cyan',
                                 'text-emerald-700 dark:text-emerald-300' => $card['tone'] === 'emerald',
                                 'text-rose-700 dark:text-rose-300' => $card['tone'] === 'rose',
                                 'text-amber-700 dark:text-amber-300' => $card['tone'] === 'amber',
+                                'text-orange-700 dark:text-orange-300' => $card['tone'] === 'orange',
+                                'text-teal-700 dark:text-teal-300' => $card['tone'] === 'teal',
+                                'text-green-700 dark:text-green-300' => $card['tone'] === 'green',
+                                'text-indigo-700 dark:text-indigo-300' => $card['tone'] === 'indigo',
                             ])>{{ $card['label'] }}</p>
-                            <div class="mt-2 text-3xl font-bold leading-none">{{ $card['value'] }}</div>
-                            <p class="mt-auto pt-2 text-sm leading-snug text-slate-500 dark:text-zinc-400">{{ $card['note'] }}</p>
+                            <div class="mt-2 font-bold {{ $card['valueClass'] ?? 'text-3xl leading-none' }}">{{ $card['value'] }}</div>
+                            <p @class([
+                                'mt-auto pt-2 text-sm leading-snug',
+                                'text-slate-950 dark:text-white' => $card['tone'] === 'plain',
+                                'text-slate-500 dark:text-zinc-400' => $card['tone'] !== 'plain',
+                            ])>{{ $card['note'] }}</p>
                         </article>
                     @endforeach
                 </div>

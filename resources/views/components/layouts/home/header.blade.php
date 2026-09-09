@@ -14,11 +14,36 @@
         $profileRoute = $isEndUser ? route('profile.external') : route('settings.profile');
         $homeRoute = $isEndUser ? route('dashboard') : route('home');
         $aboutRoute = $homeRoute;
+        $isImmersiveHome = request()->routeIs('home') || ($isEndUser && request()->routeIs('dashboard'));
     @endphp
 
+    <style>
+        .site-header[data-transparent="true"] .navigation-typeface,
+        .site-header[data-transparent="true"] .navigation-typeface a {
+            color: #fff !important;
+        }
+
+        .site-header[data-transparent="true"] .navigation-typeface a {
+            border-color: transparent !important;
+        }
+
+        .site-header[data-transparent="true"] .header-outline-action,
+        .site-header[data-transparent="true"] .header-mobile-toggle {
+            border-color: rgba(255, 255, 255, .8) !important;
+            color: #fff !important;
+        }
+
+        .site-header[data-transparent="true"] .header-brand {
+            filter: drop-shadow(0 1px 3px rgba(0, 0, 0, .55));
+        }
+    </style>
+
     <header
+        data-transparent="{{ $isImmersiveHome ? 'true' : 'false' }}"
         x-data="{
             mobileMenuOpen: false,
+            immersive: @js($isImmersiveHome),
+            scrolled: window.scrollY > 24,
             activeSection: window.location.hash.replace('#', '') || 'home',
             setActive(section) {
                 this.activeSection = section || 'home';
@@ -31,15 +56,24 @@
                 if (visible) setActive(visible.target.id);
             }, { rootMargin: '-20% 0px -65% 0px', threshold: [0.01, 0.25, 0.5] });
             sectionIds.forEach(id => { const section = document.getElementById(id); if (section) observer.observe(section); });
-            window.addEventListener('scroll', () => { if (window.scrollY < 160) setActive('home'); }, { passive: true });
+            window.addEventListener('scroll', () => {
+                scrolled = window.scrollY > 24;
+                if (window.scrollY < 160) setActive('home');
+            }, { passive: true });
             window.addEventListener('hashchange', () => setActive(window.location.hash.replace('#', '') || 'home'));
         })"
         x-on:keydown.escape.window="mobileMenuOpen = false"
-        class="sticky top-0 z-[2000] border-b border-emerald-900/10 bg-white/95 backdrop-blur dark:border-white/10 dark:bg-zinc-950/95"
+        x-bind:data-transparent="immersive && !scrolled && !mobileMenuOpen ? 'true' : 'false'"
+        x-bind:class="immersive ? ((scrolled || mobileMenuOpen) ? 'border-b border-emerald-900/10 bg-white/95 shadow-sm backdrop-blur dark:border-white/10 dark:bg-zinc-950/95' : 'border-transparent bg-transparent') : ''"
+        @class([
+            'site-header top-0 z-[2000] transition-colors duration-300',
+            'fixed inset-x-0' => $isImmersiveHome,
+            'sticky border-b border-emerald-900/10 bg-white/95 backdrop-blur dark:border-white/10 dark:bg-zinc-950/95' => ! $isImmersiveHome,
+        ])
     >
         <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:h-20 sm:px-6 lg:px-8">
             <a href="{{ $homeRoute }}#home" class="flex h-16 shrink-0 items-center justify-center sm:h-20" aria-label="SIEL SPACE home">
-                <img src="{{ asset('images/silesyu-space-logo.svg') }}" alt="SIEL SPACE" class="h-10 w-auto object-contain sm:h-14">
+                <img src="{{ asset('images/silesyu-space-logo.svg') }}" alt="SIEL SPACE" class="header-brand h-10 w-auto object-contain sm:h-14">
             </a>
 
             <nav class="navigation-typeface hidden items-center gap-6 text-sm font-semibold text-emerald-950 dark:text-zinc-100 lg:flex">
@@ -67,7 +101,7 @@
 
             <div class="flex items-center gap-3">
                 @guest
-                    <a href="{{ route('login') }}" class="hidden rounded-xl border border-emerald-700 px-5 py-2 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-700 hover:text-white dark:border-emerald-300 dark:text-emerald-200 dark:hover:bg-emerald-300 dark:hover:text-emerald-950 lg:inline-flex">
+                    <a href="{{ route('login') }}" class="header-outline-action hidden rounded-xl border border-emerald-700 px-5 py-2 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-700 hover:text-white dark:border-emerald-300 dark:text-emerald-200 dark:hover:bg-emerald-300 dark:hover:text-emerald-950 lg:inline-flex">
                         Sign In
                     </a>
                     <a href="{{ route('register') }}" class="hidden rounded-xl bg-emerald-700 px-5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-800 dark:bg-emerald-400 dark:text-emerald-950 dark:hover:bg-emerald-300 lg:inline-flex">
@@ -128,7 +162,7 @@
 
                 <button
                     type="button"
-                    class="inline-flex size-10 items-center justify-center rounded-xl border border-emerald-900/10 text-emerald-950 transition hover:bg-emerald-50 dark:border-white/10 dark:text-white dark:hover:bg-zinc-800 lg:hidden"
+                    class="header-mobile-toggle inline-flex size-10 items-center justify-center rounded-xl border border-emerald-900/10 text-emerald-950 transition hover:bg-emerald-50 dark:border-white/10 dark:text-white dark:hover:bg-zinc-800 lg:hidden"
                     x-on:click="mobileMenuOpen = ! mobileMenuOpen"
                     x-bind:aria-expanded="mobileMenuOpen"
                     aria-controls="mobile-navigation"
@@ -229,7 +263,7 @@
         </nav>
     </header>
 
-    <main class="pt-4">
+    <main @class(['pt-0' => $isImmersiveHome, 'pt-4' => ! $isImmersiveHome])>
         {{ $slot }}
     </main>
 

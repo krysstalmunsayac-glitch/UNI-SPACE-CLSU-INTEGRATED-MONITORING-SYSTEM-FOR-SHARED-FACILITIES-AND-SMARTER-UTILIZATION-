@@ -34,6 +34,8 @@ it('renders operational analytics for a super administrator', function () {
         ->get(route('dashboard.superadmin'))
         ->assertOk()
         ->assertSee('Facility Utilization Rate')
+        ->assertSee('Facility Type Usage Comparison')
+        ->assertSee(today()->subDays(15)->format('M d'))
         ->assertSee('Booking Demand Heatmap')
         ->assertSee('Analytics Hall');
 

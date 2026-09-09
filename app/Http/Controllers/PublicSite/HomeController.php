@@ -47,12 +47,55 @@ class HomeController extends Controller
                 });
         }
 
+        $facilities = Facilities::query()
+            ->with(['images', 'amenities' => fn ($query) => $query
+                ->where('amenities.Status', 'Available')
+                ->orderBy('amenities.name')])
+            ->where('Status', 'Available')
+            ->orderBy('Facility_Name')
+            ->get();
+
+        $categoryLabels = [
+            'auditorium' => 'Auditoriums',
+            'classroom' => 'Classrooms',
+            'conference' => 'Conference spaces',
+            'laboratory' => 'Laboratories',
+            'sports' => 'Sports facilities',
+            'other' => 'Other spaces',
+        ];
+
+        $facilityCategories = $facilities
+            ->filter(fn (Facilities $facility) => filled($facility->facility_type))
+            ->groupBy(fn (Facilities $facility) => strtolower($facility->facility_type))
+            ->map(function ($group, string $type) use ($categoryLabels): array {
+                $featured = $group->first(fn (Facilities $facility) => $facility->images->isNotEmpty() || filled($facility->Image_URL));
+
+                return [
+                    'type' => $type,
+                    'name' => $categoryLabels[$type] ?? ucfirst($type).' spaces',
+                    'count' => $group->count(),
+                    'image' => $featured?->primaryImageUrl() ?? asset('images/siel-space-slide-02.jpg'),
+                ];
+            })
+            ->sortByDesc('count')
+            ->take(5)
+            ->values();
+
+        $homepageStats = [
+            'available_facilities' => $facilities->count(),
+            'facility_types' => $facilities->pluck('facility_type')->filter()->map(fn ($type) => strtolower($type))->unique()->count(),
+            'requests_this_month' => Requests::query()
+                ->whereBetween('Created_at', [now()->startOfMonth(), now()->endOfMonth()])
+                ->count(),
+            'upcoming_reservations' => $schedules
+                ->filter(fn (array $event) => Carbon::parse($event['end'])->isFuture())
+                ->count(),
+        ];
+
         return view('welcome', [
-            'facilities' => Facilities::query()
-                ->with('images')
-                ->where('Status', 'Available')
-                ->orderBy('Facility_Name')
-                ->get(),
+            'facilities' => $facilities,
+            'facilityCategories' => $facilityCategories,
+            'homepageStats' => $homepageStats,
             'schedules' => $schedules->values()->all(),
         ]);
     }

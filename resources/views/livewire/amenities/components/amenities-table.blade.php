@@ -21,7 +21,7 @@
 
                 <x-ui::table.column>Description</x-ui::table.column>
 
-                <x-ui::table.column>Created by</x-ui::table.column>
+                <x-ui::table.column class="min-w-36 whitespace-nowrap">Created by</x-ui::table.column>
 
                 <x-ui::table.column
                     sortable
@@ -42,6 +42,7 @@
                 </x-ui::table.column>
 
                 <x-ui::table.column
+                    class="min-w-32 whitespace-nowrap"
                     sortable
                     :sorted="$sortBy === 'Status'"
                     :direction="$sortDirection"
@@ -65,13 +66,13 @@
                             <div class="max-w-md whitespace-normal leading-5">{{ $amenity->Description ?? '—' }}</div>
                         </x-ui::table.cell>
 
-                        <x-ui::table.cell>
+                        <x-ui::table.cell class="min-w-36 whitespace-nowrap">
                             <div class="font-medium text-zinc-900 dark:text-white">
                                 {{ $amenity->creator?->name ?? 'Legacy/System' }}
                             </div>
                         </x-ui::table.cell>
 
-                        <x-ui::table.cell>
+                        <x-ui::table.cell class="min-w-32 whitespace-nowrap">
                             <span class="group/tooltip relative inline-flex" tabindex="0">
                                 <x-ui::badge :color="$amenity->reservation_limit ? 'blue' : 'zinc'">
                                     {{ $amenity->reservation_limit ? number_format($amenity->reservation_limit).' concurrent' : 'Unlimited' }}
@@ -104,7 +105,7 @@
                             </span>
                         </x-ui::table.cell>
 
-                        <x-ui::table.cell>
+                        <x-ui::table.cell class="min-w-32 whitespace-nowrap">
                             @if ($this->canManageAmenity($amenity))
                             <button
                                 type="button"
@@ -117,7 +118,7 @@
                             >
                                 <span
                                     @class([
-                                        'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold text-white transition-colors',
+                                        'inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold text-white transition-colors',
                                         'bg-emerald-700 group-hover:bg-red-600' => $amenity->Status === 'Available',
                                         'bg-red-600 group-hover:bg-emerald-700' => $amenity->Status !== 'Available',
                                     ])

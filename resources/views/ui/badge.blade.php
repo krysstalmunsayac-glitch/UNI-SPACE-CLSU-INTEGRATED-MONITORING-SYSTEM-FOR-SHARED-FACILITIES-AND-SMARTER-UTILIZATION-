@@ -8,4 +8,4 @@
         default => 'bg-zinc-100 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-200',
     };
 @endphp
-<span data-ui-badge {{ $attributes->class("inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold $classes") }}>{{ $slot }}</span>
+<span data-ui-badge {{ $attributes->class("inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold $classes") }}>{{ $slot }}</span>

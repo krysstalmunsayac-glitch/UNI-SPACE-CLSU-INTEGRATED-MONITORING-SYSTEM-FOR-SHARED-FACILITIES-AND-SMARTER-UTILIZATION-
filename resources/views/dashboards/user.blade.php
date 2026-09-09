@@ -1,64 +1,71 @@
 <x-layouts.home.header>
-    <section id="home" class="scroll-mt-20 bg-white dark:bg-zinc-950">
-        <div class="mx-auto grid min-h-[520px] max-w-7xl items-center gap-10 px-4 py-20 sm:px-6 lg:grid-cols-[0.95fr_1.05fr] lg:px-8">
-            <div class="mx-auto max-w-2xl lg:mx-0">
-                <p class="text-sm font-black uppercase tracking-[0.24em] text-yellow-600 dark:text-yellow-300">
-                    External user dashboard
-                </p>
-                <h1 class="mt-4 text-5xl font-black leading-[0.95] tracking-tight text-emerald-950 dark:text-white sm:text-6xl lg:text-7xl">
-                    Welcome back, {{ auth()->user()->name }}
-                </h1>
-                <p class="mt-8 max-w-xl text-xl leading-8 text-emerald-900/75 dark:text-emerald-100/80">
-                    Browse available campus spaces, check the booking calendar, and send your reservation request from one familiar SIEL SPACE dashboard.
-                </p>
-                <div class="mt-10 flex flex-col gap-4 sm:flex-row">
-                    <a href="#facilities" class="group inline-flex items-center justify-center rounded-xl bg-emerald-700 px-7 py-4 text-base font-bold text-white shadow-lg shadow-emerald-900/15 transition hover:bg-emerald-800">
-                        Browse Facilities
-                        <svg aria-hidden="true" class="ml-3 h-5 w-5 transition-transform group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M5 12h14"></path>
-                            <path d="m13 6 6 6-6 6"></path>
-                        </svg>
-                    </a>
-                    <a href="#calendar" class="inline-flex items-center justify-center rounded-xl bg-emerald-50 px-7 py-4 text-base font-bold text-emerald-950 transition hover:bg-emerald-100 dark:bg-zinc-900 dark:text-emerald-100 dark:hover:bg-zinc-800">
-                        View Calendar
-                        <svg aria-hidden="true" class="ml-3 h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect width="18" height="18" x="3" y="4" rx="2"></rect>
-                            <path d="M16 2v4M8 2v4M3 10h18"></path>
-                        </svg>
-                    </a>
+    @php
+        $heroSlides = [
+            ['image' => 'images/siel-space-slide-01.jpg', 'alt' => 'CLSU athletic field and grandstand'],
+            ['image' => 'images/siel-space-slide-02.jpg', 'alt' => 'CLSU auditorium viewed from the balcony'],
+            ['image' => 'images/siel-space-slide-03.jpg', 'alt' => 'Rows of seats inside the CLSU auditorium'],
+            ['image' => 'images/siel-space-slide-04.jpg', 'alt' => 'Central aisle and seating inside the CLSU auditorium'],
+            ['image' => 'images/siel-space-slide-05.jpg', 'alt' => 'Front entrance of the CLSU auditorium'],
+            ['image' => 'images/siel-space-slide-06.jpg', 'alt' => 'Angled exterior view of the CLSU auditorium'],
+        ];
+    @endphp
+
+    <section
+        id="home"
+        class="relative min-h-[100svh] scroll-mt-20 overflow-hidden bg-zinc-950 text-white"
+        x-data="{
+            active: 0,
+            total: {{ count($heroSlides) }},
+            timer: null,
+            init() { this.start(); },
+            start() {
+                clearInterval(this.timer);
+                this.timer = setInterval(() => this.active = (this.active + 1) % this.total, 10000);
+            },
+            goTo(index) { this.active = index; this.start(); },
+            destroy() { clearInterval(this.timer); }
+        }"
+    >
+        @foreach ($heroSlides as $slide)
+            <img
+                src="{{ asset($slide['image']) }}"
+                alt="{{ $slide['alt'] }}"
+                class="external-hero-slide absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-1000 ease-in-out"
+                style="opacity: {{ $loop->first ? '1' : '0' }}"
+                x-bind:style="{ opacity: active === {{ $loop->index }} ? 1 : 0 }"
+                x-bind:aria-hidden="active !== {{ $loop->index }}"
+                @if ($loop->first) fetchpriority="high" @endif
+            >
+        @endforeach
+        <div class="absolute inset-0 bg-black/55" aria-hidden="true"></div>
+
+        <div class="relative mx-auto grid min-h-[100svh] max-w-[1536px] items-center gap-12 px-4 pb-16 pt-24 sm:px-6 lg:grid-cols-[1.25fr_.75fr] lg:px-8">
+            <div class="max-w-3xl">
+                <p class="text-sm font-black uppercase tracking-[.28em] text-yellow-400">External user dashboard</p>
+                <h1 class="mt-4 text-5xl font-black leading-[.98] tracking-tight sm:text-6xl lg:text-7xl">Welcome back, {{ auth()->user()->name }}</h1>
+                <p class="mt-7 max-w-2xl text-lg leading-8 text-white/85 sm:text-xl">Browse available campus spaces, check the booking calendar, and manage your reservation requests from one SIEL SPACE dashboard.</p>
+                <div class="mt-9 flex flex-col gap-3 sm:flex-row">
+                    <a href="#facilities" class="inline-flex min-h-12 items-center justify-center bg-[#009639] px-7 py-3 font-bold text-white transition hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-yellow-400">Browse Facilities</a>
+                    <a href="#requests" class="inline-flex min-h-12 items-center justify-center border border-white bg-white px-7 py-3 font-bold text-zinc-950 transition hover:bg-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400">My Requests</a>
                 </div>
             </div>
 
-            <div class="hidden lg:block">
-                <div class="rounded-[2rem] border border-emerald-900/10 bg-white p-6 shadow-2xl shadow-emerald-950/10 dark:border-white/10 dark:bg-zinc-900">
-                    <div class="grid grid-cols-7 gap-3 text-center text-sm font-semibold text-emerald-900/70 dark:text-zinc-300">
-                        @foreach (['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as $day)
-                            <div>{{ $day }}</div>
-                        @endforeach
-                        @foreach ([18, 19, 20, 21, 22, 23, 24] as $day)
-                            <div @class([
-                                'rounded-xl py-3 text-2xl font-black',
-                                'bg-emerald-600 text-white' => $day === 20,
-                                'text-emerald-950 dark:text-white' => $day !== 20,
-                            ])>{{ $day }}</div>
-                        @endforeach
-                    </div>
-                    <div class="mt-6 grid grid-cols-[80px_repeat(7,minmax(0,1fr))] overflow-hidden rounded-2xl border border-emerald-900/10 text-sm dark:border-white/10">
-                        @foreach (['08:00', '09:00', '10:00', '11:00', '12:00', '13:00'] as $time)
-                            <div class="border-b border-emerald-900/10 bg-emerald-50 p-4 font-semibold text-emerald-700 dark:border-white/10 dark:bg-zinc-950 dark:text-emerald-300">{{ $time }}</div>
-                            @for ($i = 0; $i < 7; $i++)
-                                <div class="min-h-16 overflow-hidden border-b border-l border-emerald-900/10 p-2 dark:border-white/10">
-                                    @if (($time === '09:00' && $i === 4) || ($time === '10:00' && $i === 3) || ($time === '13:00' && $i === 4))
-                                        <div class="{{ $time === '13:00' ? 'bg-yellow-400 text-emerald-950' : 'bg-emerald-600 text-white' }} max-w-full truncate rounded-xl px-2 py-2 text-center text-[10px] font-bold leading-none shadow-sm">
-                                            {{ $time === '13:00' ? 'Workshop' : 'Reserved' }}
-                                        </div>
-                                    @endif
-                                </div>
-                            @endfor
-                        @endforeach
-                    </div>
-                </div>
-            </div>
+            <aside class="border-t-4 border-yellow-400 bg-white p-7 text-zinc-950 sm:p-8" aria-label="External user reservation tools">
+                <p class="text-xs font-black uppercase tracking-[.2em] text-[#009639]">Your reservation hub</p>
+                <h2 class="mt-3 text-3xl font-black tracking-tight">Plan with confidence.</h2>
+                <p class="mt-3 leading-7 text-zinc-600">Everything you need to choose a venue and follow the progress of your request.</p>
+                <dl class="mt-7 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-zinc-200 pt-6">
+                    @foreach ([['Facilities', 'Compare spaces'], ['Calendar', 'Check schedules'], ['Requests', 'Track progress'], ['Notifications', 'Receive updates']] as [$term, $description])
+                        <div><dt class="font-black text-[#009639]">{{ $term }}</dt><dd class="mt-1 text-sm text-zinc-500">{{ $description }}</dd></div>
+                    @endforeach
+                </dl>
+            </aside>
+        </div>
+
+        <div class="absolute bottom-5 left-1/2 z-10 flex -translate-x-1/2 gap-2" role="group" aria-label="Choose hero image">
+            @foreach ($heroSlides as $slide)
+                <button type="button" class="h-2.5 w-8 border border-white transition-colors" x-bind:class="active === {{ $loop->index }} ? 'bg-yellow-400' : 'bg-white/40 hover:bg-white'" x-on:click="goTo({{ $loop->index }})" aria-label="Show image {{ $loop->iteration }} of {{ count($heroSlides) }}" x-bind:aria-current="active === {{ $loop->index }} ? 'true' : null"></button>
+            @endforeach
         </div>
     </section>
 
@@ -119,46 +126,10 @@
 
             <div id="facility-grid" class="mt-14 grid gap-8 md:grid-cols-2 xl:grid-cols-3">
                 @forelse ($facilities as $facility)
-                    @php
-                        $capacity = (int) ($facility->Capacity ?? 0);
-                        $capacityGroup = $capacity > 300 ? 'large' : ($capacity > 150 ? 'medium' : 'small');
-                        $facilityType = strtolower($facility->facility_type ?? 'other');
-                    @endphp
-                    <article
-                        class="facility-card group {{ $loop->index >= 6 ? 'hidden' : '' }} flex h-full flex-col overflow-hidden rounded-2xl border border-emerald-900/10 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-950/10 dark:border-white/10 dark:bg-zinc-900"
-                        data-name="{{ strtolower($facility->Facility_Name.' '.$facility->Description.' '.$facility->Location) }}"
-                        data-capacity="{{ $capacityGroup }}"
-                        data-capacity-value="{{ $capacity }}"
-                        data-type="{{ $facilityType }}"
-                    >
-                        <a href="{{ route('requests.create', $facility) }}" class="relative block aspect-[16/10] overflow-hidden bg-emerald-50 dark:bg-zinc-800">
-                            <img
-                                src="{{ $facility->primaryImageUrl() }}"
-                                alt="{{ $facility->Facility_Name }}"
-                                class="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                                loading="lazy"
-                            >
-                            <span class="absolute left-4 top-4 rounded-full bg-yellow-400 px-3 py-1 text-xs font-black uppercase tracking-wide text-emerald-950">
-                                {{ $facility->facility_type ? ucfirst($facility->facility_type) : 'Facility' }}
-                            </span>
-                        </a>
-                        <div class="flex flex-1 flex-col p-5">
-                            <h3 class="text-xl font-black text-emerald-950 dark:text-white">{{ $facility->Facility_Name }}</h3>
-                            <p class="mt-2 line-clamp-2 text-sm leading-6 text-emerald-900/70 dark:text-zinc-300">
-                                {{ $facility->Description ?? 'Campus facility available for reservation.' }}
-                            </p>
-                            <div class="mt-5 flex flex-wrap items-center gap-3 text-sm font-semibold text-emerald-800 dark:text-emerald-300">
-                                <span>{{ $facility->Location ?? 'Campus' }}</span>
-                                <span>•</span>
-                                <span>{{ $facility->Capacity ?? 'N/A' }} capacity</span>
-                            </div>
-                            <div class="mt-auto pt-6">
-                                <a href="{{ route('requests.create', $facility) }}" class="inline-flex w-full items-center justify-center rounded-xl bg-emerald-700 px-5 py-3 font-bold text-white transition hover:bg-emerald-800">
-                                    Book
-                                </a>
-                            </div>
-                        </div>
-                    </article>
+                    @include('pages.partials.facility-summary-card', [
+                        'facility' => $facility,
+                        'hidden' => $loop->index >= 6,
+                    ])
                 @empty
                     <div class="col-span-full rounded-2xl border border-dashed border-emerald-900/20 bg-emerald-50 p-10 text-center text-emerald-900 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-300">
                         No facilities are currently available for reservation.
@@ -226,6 +197,10 @@
         }
 
         @media (prefers-reduced-motion: reduce) {
+            .external-hero-slide {
+                transition: none;
+            }
+
             .dashboard-reveal {
                 opacity: 1;
                 transform: none;
@@ -267,7 +242,7 @@
         <script>
             window.initUserDashboard = window.initUserDashboard || function () {
                 const revealElements = [
-                    ...document.querySelectorAll('#home > div, #about section > div, #facilities > div, #calendar > div, #requests > div, #map > div, #help > div'),
+                    ...document.querySelectorAll('#about section > div, #facilities > div, #calendar > div, #requests > div, #map > div, #help > div'),
                     ...document.querySelectorAll('#about > section:first-child > div > div, #about article, .facility-card, #requests details, #help details'),
                 ];
 

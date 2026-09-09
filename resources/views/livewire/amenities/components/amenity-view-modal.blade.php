@@ -30,12 +30,21 @@
                 </div>
                 <div class="sm:col-span-2">
                     <dt class="text-xs font-bold text-zinc-500">Assigned facilities</dt>
-                    <dd class="mt-2 flex flex-wrap gap-2">
-                        @forelse ($amenity->facilities as $facility)
-                            <x-ui::badge color="blue">{{ $facility->Facility_Name }}{{ $facility->Office ? ' · '.$facility->Office : '' }}</x-ui::badge>
-                        @empty
+                    <dd class="mt-2 max-h-72 overflow-y-auto rounded-xl border border-zinc-200 bg-zinc-100 p-4 dark:border-zinc-700 dark:bg-zinc-900">
+                        @if ($amenity->facilities->isNotEmpty())
+                            <ul class="list-disc space-y-2 pl-5 text-sm text-zinc-700 marker:text-zinc-500 dark:text-zinc-300 dark:marker:text-zinc-500">
+                                @foreach ($amenity->facilities as $facility)
+                                    <li class="pl-1 leading-5">
+                                        <span class="font-semibold text-zinc-800 dark:text-zinc-200">{{ $facility->Facility_Name }}</span>
+                                        @if ($facility->Office)
+                                            <span class="text-zinc-500 dark:text-zinc-400"> — {{ $facility->Office }}</span>
+                                        @endif
+                                    </li>
+                                @endforeach
+                            </ul>
+                        @else
                             <span class="text-sm text-zinc-500">No facilities assigned.</span>
-                        @endforelse
+                        @endif
                     </dd>
                 </div>
                 <div class="sm:col-span-2">

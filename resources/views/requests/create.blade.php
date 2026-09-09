@@ -198,7 +198,7 @@
                 x-on:keydown.left.window="if (activePhoto !== null && photos.length > 1) previousPhoto()"
                 x-on:keydown.right.window="if (activePhoto !== null && photos.length > 1) nextPhoto()"
             >
-                <section aria-labelledby="facility-gallery-heading" class="order-2 rounded-3xl border border-emerald-900/10 bg-white p-5 shadow-lg shadow-emerald-950/5 dark:border-white/10 dark:bg-zinc-950 sm:p-6 lg:order-1">
+                <section id="facility-overview" aria-labelledby="facility-gallery-heading" class="order-2 scroll-mt-24 rounded-3xl border border-emerald-900/10 bg-white p-5 shadow-lg shadow-emerald-950/5 dark:border-white/10 dark:bg-zinc-950 sm:p-6 lg:order-1">
                     <div class="mb-5 flex items-end justify-between gap-4">
                         <div>
                             <p class="text-xs font-bold text-emerald-700 dark:text-emerald-300">Facility overview</p>

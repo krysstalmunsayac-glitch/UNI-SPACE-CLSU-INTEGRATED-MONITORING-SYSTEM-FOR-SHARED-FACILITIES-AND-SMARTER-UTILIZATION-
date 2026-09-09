@@ -113,10 +113,6 @@ new #[Layout('components.layouts.auth')] class extends Component
         {{ __('Back to Home') }}
     </a>
 
-    <div class="lg:hidden">
-        <x-auth-header title="Sign in" description="or use your account" />
-    </div>
-
     <!-- Session Status -->
     <x-auth-session-status class="text-center" :status="session('status')" />
 
@@ -125,9 +121,6 @@ new #[Layout('components.layouts.auth')] class extends Component
             <!-- Email Address or CLSU ID -->
             <x-ui::input wire:model="email" label="{{ __('Email address or CLSU ID') }}" type="text" name="email" required autofocus autocomplete="username" placeholder="name@email.com" />
 
-            <p class="text-xs leading-5 text-emerald-950/80 dark:text-emerald-100/80 lg:hidden">
-                By signing in, you acknowledge our <a href="{{ route('terms') }}#privacy-notice" target="_blank" rel="noopener noreferrer" class="rounded font-semibold text-emerald-900 underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 dark:text-emerald-100">Privacy Notice<span class="sr-only"> (opens in a new tab)</span></a> and consent to the processing of your personal information in accordance with the Data Privacy Act of 2012.
-            </p>
         </div>
 
         <!-- Password -->

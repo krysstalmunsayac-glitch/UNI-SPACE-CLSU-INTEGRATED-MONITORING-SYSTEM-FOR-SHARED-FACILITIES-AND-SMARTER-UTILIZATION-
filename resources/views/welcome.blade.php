@@ -1,261 +1,181 @@
 <x-layouts.home.header>
     <style>
-        #about {
-            overflow-x: clip;
-        }
-
-        .home-reveal {
-            opacity: 0;
-            transform: translateY(1.25rem);
-            transition: opacity 700ms ease, transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
-            will-change: opacity, transform;
-        }
-
-        .home-reveal.is-visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .home-reveal.about-from-left {
-            transform: translateX(-1.5rem);
-        }
-
-        .home-reveal.about-from-right {
-            transform: translateX(1.5rem);
-        }
-
-        .home-reveal.about-from-left.is-visible,
-        .home-reveal.about-from-right.is-visible {
-            transform: translateX(0);
-        }
-
+        #facility-grid .facility-card { border-radius: .5rem; box-shadow: none; }
+        #facility-grid .facility-card:hover { border-color: #009639; box-shadow: 0 10px 24px rgba(24, 24, 27, .08); }
+        #map { background: #f4f4f5; }
+        #map .campus-map-layout > div { border-radius: .5rem; }
+        #map .campus-map-layout > div:last-child { box-shadow: none; }
         @media (prefers-reduced-motion: reduce) {
-            .home-reveal {
-                opacity: 1;
-                transform: none;
-                transition: none;
-            }
+            .home-hero-slide { transition: none; }
         }
     </style>
 
-    <section id="home" class="scroll-mt-20 bg-white dark:bg-zinc-950">
-        <div class="mx-auto grid min-h-[520px] max-w-7xl items-center gap-10 px-4 py-20 sm:px-6 lg:grid-cols-[0.95fr_1.05fr] lg:px-8">
-            <div class="mx-auto max-w-2xl lg:mx-0">
-                <h1 class="text-5xl font-black leading-[0.95] tracking-tight text-emerald-950 dark:text-white sm:text-6xl lg:text-7xl">
-                    Book campus spaces in seconds
-                </h1>
-                <p class="mt-8 max-w-xl text-xl leading-8 text-emerald-900/75 dark:text-emerald-100/80">
-                    From study rooms to event halls, find and reserve the perfect space for your academic needs. Real-time availability, simple requests, and clear schedules.
-                </p>
-                <div class="mt-10 flex flex-col gap-4 sm:flex-row">
-                    <a href="#facilities" class="group inline-flex items-center justify-center rounded-xl bg-emerald-700 px-7 py-4 text-base font-bold text-white shadow-lg shadow-emerald-900/15 transition hover:bg-emerald-800">
-                        Browse Facilities
-                        <svg aria-hidden="true" class="ml-3 h-5 w-5 transition-transform group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M5 12h14"></path>
-                            <path d="m13 6 6 6-6 6"></path>
-                        </svg>
-                    </a>
-                    <a href="#calendar" class="inline-flex items-center justify-center rounded-xl bg-emerald-50 px-7 py-4 text-base font-bold text-emerald-950 transition hover:bg-emerald-100 dark:bg-zinc-900 dark:text-emerald-100 dark:hover:bg-zinc-800">
-                        View Calendar
-                        <svg aria-hidden="true" class="ml-3 h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect width="18" height="18" x="3" y="4" rx="2"></rect>
-                            <path d="M16 2v4M8 2v4M3 10h18"></path>
-                        </svg>
-                    </a>
+    @php
+        $heroSlides = [
+            ['image' => 'images/siel-space-slide-01.jpg', 'alt' => 'CLSU athletic field and grandstand'],
+            ['image' => 'images/siel-space-slide-02.jpg', 'alt' => 'CLSU auditorium viewed from the balcony'],
+            ['image' => 'images/siel-space-slide-03.jpg', 'alt' => 'Rows of seats inside the CLSU auditorium'],
+            ['image' => 'images/siel-space-slide-04.jpg', 'alt' => 'Central aisle and seating inside the CLSU auditorium'],
+            ['image' => 'images/siel-space-slide-05.jpg', 'alt' => 'Front entrance of the CLSU auditorium'],
+            ['image' => 'images/siel-space-slide-06.jpg', 'alt' => 'Angled exterior view of the CLSU auditorium'],
+        ];
+    @endphp
+
+    <section
+        id="home"
+        class="relative min-h-[100svh] scroll-mt-20 overflow-hidden bg-zinc-950 text-white"
+        x-data="{
+            active: 0,
+            total: {{ count($heroSlides) }},
+            timer: null,
+            init() { this.start(); },
+            start() {
+                clearInterval(this.timer);
+                this.timer = setInterval(() => this.active = (this.active + 1) % this.total, 10000);
+            },
+            goTo(index) { this.active = index; this.start(); },
+            destroy() { clearInterval(this.timer); }
+        }"
+    >
+        @foreach ($heroSlides as $slide)
+            <img
+                src="{{ asset($slide['image']) }}"
+                alt="{{ $slide['alt'] }}"
+                class="home-hero-slide absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-1000 ease-in-out"
+                style="opacity: {{ $loop->first ? '1' : '0' }}"
+                x-bind:style="{ opacity: active === {{ $loop->index }} ? 1 : 0 }"
+                x-bind:aria-hidden="active !== {{ $loop->index }}"
+                @if ($loop->first) fetchpriority="high" @endif
+            >
+        @endforeach
+        <div class="absolute inset-0 bg-black/55" aria-hidden="true"></div>
+        <div class="relative mx-auto grid min-h-[100svh] max-w-[1536px] items-center gap-12 px-4 pb-16 pt-24 sm:px-6 lg:grid-cols-[1.25fr_.75fr] lg:px-8">
+            <div class="max-w-3xl">
+                <p class="text-sm font-black uppercase tracking-[.28em] text-yellow-400">SIEL SPACE</p>
+                <h1 class="mt-4 text-5xl font-black leading-[.98] tracking-tight sm:text-6xl lg:text-7xl">Find. Schedule. Reserve.</h1>
+                <p class="mt-7 max-w-2xl text-lg leading-8 text-white/85 sm:text-xl">The centralized facility reservation platform of Central Luzon State University. Compare spaces, check schedules, and submit a request in one place.</p>
+                <div class="mt-9 flex flex-col gap-3 sm:flex-row">
+                    <a href="#facilities" class="inline-flex min-h-12 items-center justify-center bg-[#009639] px-7 py-3 font-bold text-white transition hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-yellow-400">Browse Facilities</a>
+                    <a href="{{ route('login') }}" class="inline-flex min-h-12 items-center justify-center border border-white bg-white px-7 py-3 font-bold text-zinc-950 transition hover:bg-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400">Request a Facility</a>
                 </div>
             </div>
+            <aside class="border-t-4 border-yellow-400 bg-white p-7 text-zinc-950 sm:p-8" aria-label="Facility information available on SIEL Space">
+                <p class="text-xs font-black uppercase tracking-[.2em] text-[#009639]">Plan with confidence</p>
+                <h2 class="mt-3 text-3xl font-black tracking-tight">Find the right space.</h2>
+                <p class="mt-3 leading-7 text-zinc-600">Each listing gives you the details needed to compare facilities before booking.</p>
+                <dl class="mt-7 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-zinc-200 pt-6">
+                    @foreach ([['Availability', 'Current status'], ['Capacity', 'Number of people'], ['Location', 'Campus directions'], ['Amenities', 'Included equipment']] as [$term, $description])
+                        <div><dt class="font-black text-[#009639]">{{ $term }}</dt><dd class="mt-1 text-sm text-zinc-500">{{ $description }}</dd></div>
+                    @endforeach
+                </dl>
+            </aside>
+        </div>
+        <div class="absolute bottom-5 left-1/2 z-10 flex -translate-x-1/2 gap-2" role="group" aria-label="Choose hero image">
+            @foreach ($heroSlides as $slide)
+                <button
+                    type="button"
+                    class="h-2.5 w-8 border border-white transition-colors"
+                    x-bind:class="active === {{ $loop->index }} ? 'bg-yellow-400' : 'bg-white/40 hover:bg-white'"
+                    x-on:click="goTo({{ $loop->index }})"
+                    aria-label="Show image {{ $loop->iteration }} of {{ count($heroSlides) }}"
+                    x-bind:aria-current="active === {{ $loop->index }} ? 'true' : null"
+                ></button>
+            @endforeach
+        </div>
+    </section>
 
-            <div class="hidden lg:block">
-                <div class="rounded-[2rem] border border-emerald-900/10 bg-white p-6 shadow-2xl shadow-emerald-950/10 dark:border-white/10 dark:bg-zinc-900">
-                    <div class="grid grid-cols-7 gap-3 text-center text-sm font-semibold text-emerald-900/70 dark:text-zinc-300">
-                        @foreach (['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as $day)
-                            <div>{{ $day }}</div>
-                        @endforeach
-                        @foreach ([18, 19, 20, 21, 22, 23, 24] as $day)
-                            <div @class([
-                                'rounded-xl py-3 text-2xl font-black',
-                                'bg-emerald-600 text-white' => $day === 20,
-                                'text-emerald-950 dark:text-white' => $day !== 20,
-                            ])>{{ $day }}</div>
-                        @endforeach
-                    </div>
-                    <div class="mt-6 grid grid-cols-[80px_repeat(7,minmax(0,1fr))] overflow-hidden rounded-2xl border border-emerald-900/10 text-sm dark:border-white/10">
-                        @foreach (['08:00', '09:00', '10:00', '11:00', '12:00', '13:00'] as $time)
-                            <div class="border-b border-emerald-900/10 bg-emerald-50 p-4 font-semibold text-emerald-700 dark:border-white/10 dark:bg-zinc-950 dark:text-emerald-300">{{ $time }}</div>
-                            @for ($i = 0; $i < 7; $i++)
-                                <div class="min-h-16 overflow-hidden border-b border-l border-emerald-900/10 p-2 dark:border-white/10">
-                                    @if (($time === '09:00' && $i === 4) || ($time === '10:00' && $i === 3) || ($time === '13:00' && $i === 4))
-                                        <div class="{{ $time === '13:00' ? 'bg-yellow-400 text-emerald-950' : 'bg-emerald-600 text-white' }} max-w-full truncate rounded-xl px-2 py-2 text-center text-[10px] font-bold leading-none shadow-sm">
-                                            {{ $time === '13:00' ? 'Workshop' : 'Reserved' }}
-                                        </div>
-                                    @endif
-                                </div>
-                            @endfor
-                        @endforeach
-                    </div>
+    <section aria-label="SIEL Space statistics" class="border-b border-zinc-200 bg-white">
+        <div class="mx-auto grid max-w-7xl grid-cols-2 px-4 sm:px-6 lg:grid-cols-4 lg:px-8">
+            @foreach ([[$homepageStats['available_facilities'], 'Available facilities'], [$homepageStats['facility_types'], 'Facility types'], [$homepageStats['requests_this_month'], 'Requests this month'], [$homepageStats['upcoming_reservations'], 'Upcoming reservations']] as [$value, $label])
+                <div class="border-b border-zinc-200 px-4 py-7 first:pl-0 even:border-l sm:px-7 lg:border-b-0 lg:border-l lg:first:border-l-0">
+                    <p class="text-3xl font-black text-[#009639]">{{ number_format($value) }}</p>
+                    <p class="mt-1 text-sm font-semibold text-zinc-600">{{ $label }}</p>
                 </div>
+            @endforeach
+        </div>
+    </section>
+
+    <section id="about" class="scroll-mt-20 bg-white py-20 sm:py-24">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div class="grid gap-12 lg:grid-cols-[.75fr_1.25fr] lg:items-end">
+                <div><p class="text-sm font-black uppercase tracking-[.2em] text-[#009639]">Simple reservations</p><h2 class="mt-3 text-4xl font-black tracking-tight text-zinc-950 sm:text-5xl">How SIEL Space works</h2></div>
+                <p class="max-w-2xl text-lg leading-8 text-zinc-600">Spend less time searching for venues and more time preparing your activity. SIEL Space brings facility information and booking schedules together.</p>
+            </div>
+            <div class="mt-12 grid border-y border-zinc-200 md:grid-cols-3">
+                @foreach ([['01', 'Find', 'Browse campus venues and compare their capacity, location, amenities, and rate.'], ['02', 'Check Availability', 'Use the public calendar to confirm that your preferred date and time are open.'], ['03', 'Send Request', 'Choose a facility, complete the required details, and track the request status.']] as [$number, $title, $description])
+                    <article class="border-b border-zinc-200 py-8 md:border-b-0 md:border-l md:px-8 md:first:border-l-0 md:first:pl-0">
+                        <p class="text-sm font-black text-[#009639]">{{ $number }}</p><h3 class="mt-4 text-2xl font-black text-zinc-950">{{ $title }}</h3><p class="mt-3 leading-7 text-zinc-600">{{ $description }}</p>
+                    </article>
+                @endforeach
             </div>
         </div>
     </section>
 
-    @include('pages.partials.about-content')
-
-    <section id="facilities" class="border-t border-emerald-900/10 bg-white py-20 dark:border-white/10 dark:bg-zinc-950">
+    <section id="facilities" class="scroll-mt-20 bg-zinc-100 py-20 sm:py-24">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div class="mx-auto max-w-3xl text-center">
-                <h2 class="text-5xl font-black tracking-tight text-emerald-950 dark:text-white">Find your perfect space</h2>
-                <p class="mt-5 text-xl text-emerald-900/70 dark:text-zinc-300">
-                    Browse our collection of study rooms, event halls, laboratories, and collaborative workspaces.
-                </p>
+            @if ($facilityCategories->isNotEmpty())
+                <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+                    <div><p class="text-sm font-black uppercase tracking-[.2em] text-[#009639]">Explore the campus</p><h2 class="mt-3 text-4xl font-black tracking-tight text-zinc-950 sm:text-5xl">Browse by facility type</h2></div>
+                    <p class="max-w-md text-zinc-600">Choose a category to narrow the available spaces shown below.</p>
+                </div>
+                <div class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                    @foreach ($facilityCategories as $category)
+                        <button type="button" data-category-filter="{{ $category['type'] }}" class="group relative min-h-52 overflow-hidden border border-zinc-300 bg-zinc-900 text-left focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                            <img src="{{ $category['image'] }}" alt="" class="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-105">
+                            <span class="absolute inset-0 bg-black/50 transition group-hover:bg-black/65" aria-hidden="true"></span>
+                            <span class="absolute inset-x-0 bottom-0 block p-5 text-white"><span class="block text-xl font-black leading-tight">{{ $category['name'] }}</span><span class="mt-2 block text-sm font-semibold text-yellow-300">{{ $category['count'] }} {{ Str::plural('space', $category['count']) }}</span></span>
+                        </button>
+                    @endforeach
+                </div>
+            @endif
+
+            <div class="mt-20 border-t border-zinc-300 pt-14">
+                <p class="text-sm font-black uppercase tracking-[.2em] text-[#009639]">Facility directory</p><h2 class="mt-3 text-4xl font-black tracking-tight text-zinc-950 sm:text-5xl">Available facilities</h2><p class="mt-4 max-w-2xl text-lg text-zinc-600">Compare spaces using their essential details, then book the one that fits your activity.</p>
             </div>
-
-            <div class="mt-14 grid gap-4 rounded-2xl border border-emerald-900/10 bg-white/80 p-3 shadow-sm dark:border-white/10 dark:bg-zinc-900/70 lg:grid-cols-[1fr_190px_220px]">
-                <label class="block">
-                    <span class="mb-2 block text-xs font-black uppercase tracking-wide text-emerald-800 dark:text-emerald-300">Search</span>
-                    <span class="relative block">
-                        <span class="absolute left-5 top-1/2 -translate-y-1/2 text-emerald-700 dark:text-emerald-300">⌕</span>
-                        <input id="facility-search" type="search" placeholder="Search facilities..." class="h-14 w-full rounded-xl border border-emerald-900/10 bg-white pl-12 pr-4 text-base text-emerald-950 shadow-sm outline-none transition focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-950 dark:text-white">
-                    </span>
-                </label>
-
-                <label class="block">
-                    <span class="mb-2 block text-xs font-black uppercase tracking-wide text-emerald-800 dark:text-emerald-300">Capacity</span>
-                    <span class="relative block">
-                        <select id="capacity-filter" class="h-14 w-full appearance-none rounded-xl border border-emerald-900/10 bg-white px-4 pr-11 text-base font-semibold text-emerald-950 shadow-sm outline-none transition focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-950 dark:text-white">
-                            <option value="all">All capacities</option>
-                            <option value="small">70-150</option>
-                            <option value="medium">151-300</option>
-                            <option value="large">301+</option>
-                            <option value="custom">Other / Specific capacity</option>
-                        </select>
-
-                    </span>
-                    <input id="capacity-custom" type="number" min="70" max="2000" placeholder="Enter 70-2,000" class="mt-2 hidden h-12 w-full rounded-xl border border-emerald-900/10 bg-white px-4 text-base font-semibold text-emerald-950 shadow-sm outline-none transition focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-950 dark:text-white">
-                </label>
-
-                <label class="block">
-                    <span class="mb-2 block text-xs font-black uppercase tracking-wide text-emerald-800 dark:text-emerald-300">Facility type</span>
-                    <span class="relative block">
-                        <select id="type-filter" class="h-14 w-full appearance-none rounded-xl border border-emerald-900/10 bg-white px-4 pr-11 text-base font-semibold text-emerald-950 shadow-sm outline-none transition focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-950 dark:text-white">
-                            <option value="all">All facility types</option>
-                            @foreach ($facilities->pluck('facility_type')->filter()->unique()->sort()->values() as $type)
-                                <option value="{{ strtolower($type) }}">{{ ucfirst($type) }}</option>
-                            @endforeach
-                        </select>
-
-                    </span>
-                </label>
+            <div class="mt-10 grid gap-4 border border-zinc-200 bg-white p-5 lg:grid-cols-[1fr_190px_220px]">
+                <label class="block"><span class="mb-2 block text-xs font-black uppercase tracking-wide text-zinc-700">Search</span><input id="facility-search" type="search" placeholder="Search facilities..." class="h-14 w-full border border-zinc-300 bg-white px-4 text-zinc-950 outline-none focus:border-[#009639] focus:ring-2 focus:ring-[#009639]/15"></label>
+                <label class="block"><span class="mb-2 block text-xs font-black uppercase tracking-wide text-zinc-700">Capacity</span><select id="capacity-filter" class="h-14 w-full border border-zinc-300 bg-white px-4 font-semibold text-zinc-950 outline-none focus:border-[#009639] focus:ring-2 focus:ring-[#009639]/15"><option value="all">All capacities</option><option value="small">70-150</option><option value="medium">151-300</option><option value="large">301+</option><option value="custom">Other / Specific</option></select><input id="capacity-custom" type="number" min="1" max="2000" placeholder="Required capacity" class="mt-2 hidden h-12 w-full border border-zinc-300 bg-white px-4 text-zinc-950 outline-none focus:border-[#009639]"></label>
+                <label class="block"><span class="mb-2 block text-xs font-black uppercase tracking-wide text-zinc-700">Facility type</span><select id="type-filter" class="h-14 w-full border border-zinc-300 bg-white px-4 font-semibold text-zinc-950 outline-none focus:border-[#009639] focus:ring-2 focus:ring-[#009639]/15"><option value="all">All facility types</option>@foreach ($facilities->pluck('facility_type')->filter()->unique()->sort()->values() as $type)<option value="{{ strtolower($type) }}">{{ ucfirst($type) }}</option>@endforeach</select></label>
             </div>
-
-            <p class="mt-5 inline-flex items-center gap-1 rounded-full bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-800 dark:bg-emerald-400/10 dark:text-emerald-300">
-                <span>Showing</span>
-                <span id="facility-count">{{ $facilities->count() }}</span>
-                <span>of {{ $facilities->count() }} facilities</span>
-            </p>
-
-            <div id="facility-grid" class="mt-14 grid gap-8 md:grid-cols-2 xl:grid-cols-3">
+            <p class="mt-5 text-sm font-bold text-zinc-600"><span id="facility-count">{{ min(6, $facilities->count()) }}</span> of {{ $facilities->count() }} facilities shown</p>
+            <div id="facility-grid" class="mt-8 grid gap-7 md:grid-cols-2 xl:grid-cols-3">
                 @forelse ($facilities as $facility)
-                    @php
-                        $capacity = (int) ($facility->Capacity ?? 0);
-                        $capacityGroup = $capacity > 300 ? 'large' : ($capacity > 150 ? 'medium' : 'small');
-                        $facilityType = strtolower($facility->facility_type ?? 'other');
-                    @endphp
-                    <article
-                        class="facility-card group {{ $loop->index >= 6 ? 'hidden' : '' }} flex h-full flex-col overflow-hidden rounded-2xl border border-emerald-900/10 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-950/10 dark:border-white/10 dark:bg-zinc-900"
-                        data-name="{{ strtolower($facility->Facility_Name.' '.$facility->Description.' '.$facility->Location) }}"
-                        data-capacity="{{ $capacityGroup }}"
-                        data-capacity-value="{{ $capacity }}"
-                        data-type="{{ $facilityType }}"
-                    >
-                        <a href="{{ route('requests.create', $facility) }}" class="relative block aspect-[16/10] overflow-hidden bg-emerald-50 dark:bg-zinc-800">
-                            <img
-                                src="{{ $facility->primaryImageUrl() }}"
-                                alt="{{ $facility->Facility_Name }}"
-                                class="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                                loading="lazy"
-                            >
-                            <span class="absolute left-4 top-4 rounded-full bg-yellow-400 px-3 py-1 text-xs font-black uppercase tracking-wide text-emerald-950">
-                                {{ $facility->facility_type ? ucfirst($facility->facility_type) : 'Facility' }}
-                            </span>
-                        </a>
-                        <div class="flex flex-1 flex-col p-5">
-                            <div class="flex items-start justify-between gap-4">
-                                <div>
-                                    <h3 class="text-xl font-black text-emerald-950 dark:text-white">{{ $facility->Facility_Name }}</h3>
-                                    <p class="mt-2 line-clamp-2 text-sm leading-6 text-emerald-900/70 dark:text-zinc-300">
-                                        {{ $facility->Description ?? 'Campus facility available for reservation.' }}
-                                    </p>
-                                </div>
-                            </div>
-                            <div class="mt-5 flex flex-wrap items-center gap-3 text-sm font-semibold text-emerald-800 dark:text-emerald-300">
-                                <span>{{ $facility->Location ?? 'Campus' }}</span>
-                                <span>•</span>
-                                <span>{{ $facility->Capacity ?? 'N/A' }} capacity</span>
-                            </div>
-                            <div class="mt-auto pt-6">
-                                <a href="{{ route('requests.create', $facility) }}" class="inline-flex w-full items-center justify-center rounded-xl bg-emerald-700 px-5 py-3 font-bold text-white transition hover:bg-emerald-800">
-                                    Book
-                                </a>
-                            </div>
-                        </div>
-                    </article>
+                    @include('pages.partials.facility-summary-card', ['facility' => $facility, 'hidden' => $loop->index >= 6])
                 @empty
-                    <div class="col-span-full rounded-2xl border border-dashed border-emerald-900/20 bg-emerald-50 p-10 text-center text-emerald-900 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-300">
-                        No facilities are currently available for reservation.
-                    </div>
+                    <div class="col-span-full border border-dashed border-zinc-300 bg-white p-10 text-center text-zinc-600">No facilities are currently available for reservation.</div>
                 @endforelse
             </div>
-
             @if ($facilities->count() > 6)
-                <div class="mt-10 flex justify-center">
-                    <button
-                        id="facility-see-more"
-                        type="button"
-                        class="rounded-xl border-2 border-emerald-600 bg-white px-7 py-3 text-sm font-black text-emerald-700 transition hover:bg-emerald-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2 dark:bg-zinc-900 dark:text-emerald-300"
-                    >
-                        See more
-                    </button>
-                </div>
+                <div class="mt-10 flex justify-center"><button id="facility-see-more" type="button" class="border-2 border-[#009639] bg-white px-7 py-3 text-sm font-black text-[#007a2f] transition hover:bg-[#009639] hover:text-white focus:outline-none focus:ring-2 focus:ring-yellow-400">See more</button></div>
             @endif
         </div>
     </section>
 
-    <section id="calendar" class="bg-white dark:bg-zinc-950">
-        <div class="bg-emerald-800 py-20 text-white">
-            <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                <h2 class="text-5xl font-black tracking-tight">Booking calendar</h2>
-                <p class="mt-5 text-xl text-emerald-50">View all upcoming events and facility reservations at a glance.</p>
-            </div>
-        </div>
-
-        <div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-            <x-public-booking-calendar calendar-id="public-calendar" :events="$schedules" />
+    <section id="calendar" class="scroll-mt-20 bg-white py-20 sm:py-24">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <p class="text-sm font-black uppercase tracking-[.2em] text-[#009639]">Plan your visit</p>
+            <div class="mt-3 flex flex-col justify-between gap-4 lg:flex-row lg:items-end"><h2 class="text-4xl font-black tracking-tight text-zinc-950 sm:text-5xl">Booking calendar</h2><p class="max-w-xl text-zinc-600">Check upcoming events and facility reservations before choosing your date.</p></div>
+            <div class="mt-10 border-t border-zinc-200 pt-8"><x-public-booking-calendar calendar-id="public-calendar" :events="$schedules" /></div>
         </div>
     </section>
 
     @include('partials.campus-map', ['mapFacilities' => $facilities])
 
-    <section id="help" class="bg-white py-20 dark:bg-zinc-950">
-        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div class="mx-auto max-w-3xl text-center">
-                <h2 class="text-5xl font-black tracking-tight text-emerald-950 dark:text-white">How can we help?</h2>
-                <p class="mt-5 text-xl text-emerald-900/70 dark:text-zinc-300">Find answers to common questions and learn how to make the most of SIEL SPACE.</p>
-            </div>
+    <section class="relative overflow-hidden bg-zinc-950 text-white">
+        <img src="{{ asset('images/siel-space-slide-02.jpg') }}" alt="Interior of a CLSU auditorium" class="absolute inset-0 h-full w-full object-cover object-center">
+        <div class="absolute inset-0 bg-black/65" aria-hidden="true"></div>
+        <div class="relative mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8 lg:py-32">
+            <p class="text-sm font-black uppercase tracking-[.2em] text-yellow-400">Ready when you are</p><h2 class="mt-4 max-w-3xl text-4xl font-black tracking-tight sm:text-6xl">Need a space for your next activity?</h2><p class="mt-5 max-w-2xl text-lg leading-8 text-white/80">Explore CLSU facilities, review what each venue offers, and send your reservation request.</p>
+            <div class="mt-8 flex flex-col gap-3 sm:flex-row"><a href="#facilities" class="inline-flex min-h-12 items-center justify-center bg-[#009639] px-7 py-3 font-bold text-white transition hover:bg-emerald-800">Browse Facilities</a><a href="#calendar" class="inline-flex min-h-12 items-center justify-center border border-white bg-white px-7 py-3 font-bold text-zinc-950 transition hover:bg-yellow-400">Check Calendar</a></div>
+        </div>
+    </section>
 
-            <div class="mt-14 space-y-5">
-                @foreach ([
-                    'How do I create an account?' => 'Use the Sign In button, then choose create an account if you are new to SIEL SPACE.',
-                    'Who can use SIEL SPACE?' => 'Students, faculty, and authorized staff can browse available facilities and submit requests.',
-                    'Is there a cost to book facilities?' => 'Some facilities may have a listed rate or office approval requirement.',
-                    'How far in advance can I book a facility?' => 'Submit your request as early as possible. Requests are handled first-come, first-served.',
-                ] as $question => $answer)
-                    <details class="group rounded-xl border border-emerald-900/10 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-zinc-900">
-                        <summary class="flex cursor-pointer list-none items-center justify-between text-lg font-black text-emerald-950 dark:text-white">
-                            {{ $question }}
-                            <span class="text-emerald-700 transition group-open:rotate-180">⌄</span>
-                        </summary>
-                        <p class="mt-4 text-emerald-900/70 dark:text-zinc-300">{{ $answer }}</p>
-                    </details>
+    <section id="help" class="scroll-mt-20 bg-white py-20 sm:py-24">
+        <div class="mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 lg:grid-cols-[.7fr_1.3fr] lg:px-8">
+            <div><p class="text-sm font-black uppercase tracking-[.2em] text-[#009639]">Support</p><h2 class="mt-3 text-4xl font-black tracking-tight text-zinc-950">How can we help?</h2><p class="mt-5 leading-7 text-zinc-600">Central Luzon State University<br>Science City of Muñoz, Nueva Ecija 3120</p></div>
+            <div class="border-t border-zinc-200">
+                @foreach (['How do I create an account?' => 'Use the Sign In button, then choose create an account if you are new to SIEL SPACE.', 'Who can use SIEL SPACE?' => 'Students, faculty, and authorized staff can browse available facilities and submit requests.', 'Is there a cost to book facilities?' => 'Some facilities may have a listed rate or office approval requirement.', 'How far in advance can I book a facility?' => 'Submit your request as early as possible. Requests are handled first-come, first-served.'] as $question => $answer)
+                    <details class="group border-b border-zinc-200 py-5"><summary class="flex cursor-pointer list-none items-center justify-between text-lg font-black text-zinc-950">{{ $question }}<span class="ml-4 text-[#009639] transition group-open:rotate-180">⌄</span></summary><p class="mt-3 max-w-2xl leading-7 text-zinc-600">{{ $answer }}</p></details>
                 @endforeach
             </div>
         </div>
@@ -264,39 +184,6 @@
     @push('scripts')
         <script>
             document.addEventListener('DOMContentLoaded', () => {
-                const revealElements = [
-                    ...document.querySelectorAll('#home > div, #about section > div, #facilities > div, #calendar > div, #map > div, #help > div'),
-                    ...document.querySelectorAll('#about > section:first-child > div > div, #about article, .facility-card, #help details'),
-                ];
-                const uniqueRevealElements = [...new Set(revealElements)];
-
-                uniqueRevealElements.forEach((element, index) => {
-                    element.classList.add('home-reveal');
-                    if (element.matches('#about article')) {
-                        const aboutCards = [...document.querySelectorAll('#about article')];
-                        element.classList.add(aboutCards.indexOf(element) % 2 === 0 ? 'about-from-left' : 'about-from-right');
-                    } else if (element.matches('#about > section:first-child > div > div')) {
-                        const aboutIntroColumns = [...document.querySelectorAll('#about > section:first-child > div > div')];
-                        element.classList.add(aboutIntroColumns.indexOf(element) === 0 ? 'about-from-left' : 'about-from-right');
-                    }
-                    element.style.transitionDelay = `${Math.min(index % 4, 3) * 70}ms`;
-                });
-
-                if ('IntersectionObserver' in window && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-                    const revealObserver = new IntersectionObserver(entries => {
-                        entries.forEach(entry => {
-                            if (!entry.isIntersecting) return;
-
-                            entry.target.classList.add('is-visible');
-                            revealObserver.unobserve(entry.target);
-                        });
-                    }, { threshold: 0.12, rootMargin: '0px 0px -48px' });
-
-                    uniqueRevealElements.forEach(element => revealObserver.observe(element));
-                } else {
-                    uniqueRevealElements.forEach(element => element.classList.add('is-visible'));
-                }
-
                 const searchInput = document.getElementById('facility-search');
                 const capacityFilter = document.getElementById('capacity-filter');
                 const customCapacity = document.getElementById('capacity-custom');
@@ -305,57 +192,43 @@
                 const count = document.getElementById('facility-count');
                 const seeMoreButton = document.getElementById('facility-see-more');
                 let facilitiesExpanded = false;
-
                 const filterFacilities = () => {
-                    const search = searchInput.value.trim().toLowerCase();
-                    const capacity = capacityFilter.value;
-                    const requestedCapacity = Math.min(2000, Math.max(70, Number(customCapacity?.value) || 70));
-                    const type = typeFilter.value;
-                    const matchingCards = cards.filter((card) => {
+                    const search = searchInput?.value.trim().toLowerCase() ?? '';
+                    const capacity = capacityFilter?.value ?? 'all';
+                    const requestedCapacity = Math.min(2000, Math.max(1, Number(customCapacity?.value) || 1));
+                    const type = typeFilter?.value ?? 'all';
+                    const matchingCards = cards.filter(card => {
                         const matchesSearch = !search || card.dataset.name.includes(search);
-                        const matchesCapacity = capacity === 'all'
-                            || (capacity === 'custom'
-                                ? Number(card.dataset.capacityValue) >= requestedCapacity
-                                : card.dataset.capacity === capacity);
-                        const matchesType = type === 'all' || card.dataset.type === type;
-
-                        return matchesSearch && matchesCapacity && matchesType;
+                        const matchesCapacity = capacity === 'all' || (capacity === 'custom' ? Number(card.dataset.capacityValue) >= requestedCapacity : card.dataset.capacity === capacity);
+                        return matchesSearch && matchesCapacity && (type === 'all' || card.dataset.type === type);
                     });
-
-                    cards.forEach((card) => card.classList.add('hidden'));
+                    cards.forEach(card => card.classList.add('hidden'));
                     const visibleCards = facilitiesExpanded ? matchingCards : matchingCards.slice(0, 6);
-                    visibleCards.forEach((card) => {
-                        card.classList.remove('hidden');
-                    });
-
-                    count.textContent = visibleCards.length;
-
+                    visibleCards.forEach(card => card.classList.remove('hidden'));
+                    if (count) count.textContent = visibleCards.length;
                     if (seeMoreButton) {
                         seeMoreButton.classList.toggle('hidden', matchingCards.length <= 6);
-                        seeMoreButton.textContent = facilitiesExpanded
-                            ? 'Show less'
-                            : `See more (${matchingCards.length - 6})`;
+                        seeMoreButton.textContent = facilitiesExpanded ? 'Show less' : `See more (${matchingCards.length - 6})`;
                     }
                 };
-
                 const resetAndFilter = () => {
                     facilitiesExpanded = false;
-                    customCapacity?.classList.toggle('hidden', capacityFilter.value !== 'custom');
+                    customCapacity?.classList.toggle('hidden', capacityFilter?.value !== 'custom');
                     filterFacilities();
                 };
-
                 searchInput?.addEventListener('input', resetAndFilter);
                 capacityFilter?.addEventListener('change', resetAndFilter);
                 customCapacity?.addEventListener('input', resetAndFilter);
                 typeFilter?.addEventListener('change', resetAndFilter);
-                seeMoreButton?.addEventListener('click', () => {
-                    facilitiesExpanded = !facilitiesExpanded;
-                    filterFacilities();
-                });
+                seeMoreButton?.addEventListener('click', () => { facilitiesExpanded = !facilitiesExpanded; filterFacilities(); });
+                document.querySelectorAll('[data-category-filter]').forEach(button => button.addEventListener('click', () => {
+                    typeFilter.value = button.dataset.categoryFilter;
+                    resetAndFilter();
+                    document.querySelector('#facility-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }));
                 filterFacilities();
 
                 @include('partials.campus-map-script', ['mapFacilities' => $facilities])
-
             });
         </script>
     @endpush
