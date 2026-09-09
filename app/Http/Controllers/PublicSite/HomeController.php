@@ -37,7 +37,7 @@ class HomeController extends Controller
                         'id' => $schedule->SID,
                         'title' => $eventTitle,
                         'facility' => $facilityName,
-                        'requester' => $request?->user?->name,
+                        'requester' => $request?->requesterName(),
                         'status' => $isEnded ? 'Ended' : $schedule->Status,
                         'start' => Carbon::parse($schedule->Date)->toDateString().'T'.Carbon::parse($schedule->Start_Time)->format('H:i:s'),
                         'end' => Carbon::parse($schedule->Date)->toDateString().'T'.Carbon::parse($schedule->End_Time)->format('H:i:s'),

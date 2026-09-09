@@ -155,8 +155,8 @@ class AdminReportExporter
             ['Request ID', 'Requester', 'Email', 'Facility', 'First Day', 'Last Day', 'Start Time', 'End Time', 'Attendees', 'Status', 'Purpose'],
             $requests->map(fn ($request) => [
                 $request->RID,
-                $request->user?->name ?? '',
-                $request->user?->email ?? '',
+                $request->requesterName(),
+                $request->requesterEmail() ?? '',
                 $request->facility?->Facility_Name ?? '',
                 $request->Proposed_Date?->format('Y-m-d') ?? '',
                 $request->Proposed_End_Date?->format('Y-m-d') ?? $request->Proposed_Date?->format('Y-m-d') ?? '',
@@ -214,7 +214,7 @@ class AdminReportExporter
         $widths = [12, 38, 45, 25, 29, 21, 27, 80];
         $rows = $requests->map(fn ($request) => [
             $request->RID,
-            $request->user?->name ?? 'N/A',
+            $request->requesterName(),
             $request->facility?->Facility_Name ?? 'N/A',
             ($request->Proposed_Date?->format('Y-m-d') ?? 'N/A').' – '.($request->Proposed_End_Date?->format('Y-m-d') ?? $request->Proposed_Date?->format('Y-m-d') ?? 'N/A'),
             ($request->Proposed_Start_Time?->format('H:i') ?? '--:--').'-'.($request->Proposed_End_Time?->format('H:i') ?? '--:--'),

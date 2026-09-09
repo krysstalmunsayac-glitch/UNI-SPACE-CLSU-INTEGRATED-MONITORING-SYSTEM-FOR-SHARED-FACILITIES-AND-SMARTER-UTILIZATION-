@@ -94,7 +94,7 @@
                     @forelse ($recentRequests as $request)
                         <article class="flex items-center justify-between gap-4 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950">
                             <div class="min-w-0">
-                                <p class="truncate text-sm font-bold">#{{ $request->RID ?? 'N/A' }} {{ $request->user?->name ?? 'Unknown' }}</p>
+                                <p class="truncate text-sm font-bold">#{{ $request->RID ?? 'N/A' }} {{ $request->requesterName() }}</p>
                                 <p class="mt-1 truncate text-xs text-slate-500 dark:text-zinc-400">{{ $request->facility?->Facility_Name ?? 'No facility selected' }}</p>
                             </div>
                             <span class="shrink-0 rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-600 dark:bg-zinc-900 dark:text-zinc-300">

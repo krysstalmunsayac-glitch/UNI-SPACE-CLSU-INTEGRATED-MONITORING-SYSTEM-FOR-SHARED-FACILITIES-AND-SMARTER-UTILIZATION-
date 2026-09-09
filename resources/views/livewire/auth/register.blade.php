@@ -1,12 +1,13 @@
 <?php
 
-use App\Models\User;
 use App\Models\PendingRegistration;
+use App\Models\User;
 use App\Notifications\VerifyPendingRegistration;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
@@ -15,6 +16,8 @@ use Livewire\Volt\Component;
 new #[Layout('components.layouts.auth')] class extends Component
 {
     public string $name = '';
+
+    public string $clsu_id = '';
 
     public string $email = '';
 
@@ -32,14 +35,48 @@ new #[Layout('components.layouts.auth')] class extends Component
 
     public int $step = 1;
 
+    public function usesClsuEmail(): bool
+    {
+        return User::usesClsuEmail($this->email);
+    }
+
+    private function clsuIdRules(): array
+    {
+        return [
+            Rule::excludeIf(fn (): bool => ! $this->usesClsuEmail()),
+            Rule::requiredIf(fn (): bool => $this->usesClsuEmail()),
+            'string',
+            'regex:'.User::CLSU_ID_REGEX,
+            'unique:users,clsu_id',
+            Rule::unique('pending_registrations', 'clsu_id')->ignore(
+                PendingRegistration::query()
+                    ->where('email', Str::lower(trim($this->email)))
+                    ->value('id')
+            ),
+        ];
+    }
+
+    private function clearExpiredPendingRegistrations(): void
+    {
+        PendingRegistration::query()
+            ->where('pin_expires_at', '<', now())
+            ->delete();
+    }
+
     public function nextStep(): void
     {
+        $this->clearExpiredPendingRegistrations();
+
         $this->validate([
             'name' => ['required', 'string', 'min:2', 'max:100'],
+            'clsu_id' => $this->clsuIdRules(),
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'contact_number' => ['required', 'string', 'regex:'.User::PH_CONTACT_REGEX],
             'address' => ['required', 'string', 'min:5', 'max:500'],
         ], [
+            'clsu_id.required' => 'Enter your unique CLSU ID.',
+            'clsu_id.regex' => 'Enter a valid CLSU ID in the format 22-1773.',
+            'clsu_id.unique' => 'This CLSU ID is already associated with an account or pending registration.',
             'contact_number.regex' => 'Enter a valid PH mobile number: 09XXXXXXXXX or +639XXXXXXXXX.',
         ]);
 
@@ -56,6 +93,8 @@ new #[Layout('components.layouts.auth')] class extends Component
      */
     public function register(): void
     {
+        $this->clearExpiredPendingRegistrations();
+
         $throttleKey = 'register|'.request()->ip();
 
         if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
@@ -70,6 +109,7 @@ new #[Layout('components.layouts.auth')] class extends Component
 
         $validated = $this->validate([
             'name' => ['required', 'string', 'min:2', 'max:100'],
+            'clsu_id' => $this->clsuIdRules(),
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => [
                 'required',
@@ -82,11 +122,15 @@ new #[Layout('components.layouts.auth')] class extends Component
             'terms' => ['accepted'],
             'website' => ['prohibited'],
         ], [
+            'clsu_id.required' => 'Enter your unique CLSU ID.',
+            'clsu_id.regex' => 'Enter a valid CLSU ID in the format 22-1773.',
+            'clsu_id.unique' => 'This CLSU ID is already associated with an account or pending registration.',
             'contact_number.regex' => 'Enter a valid PH mobile number: 09XXXXXXXXX or +639XXXXXXXXX.',
         ]);
 
         unset($validated['terms']);
         unset($validated['website']);
+        $validated['clsu_id'] = $validated['clsu_id'] ?? null;
         $validated['password'] = Hash::make($validated['password']);
 
         $pin = (string) random_int(100000, 999999);
@@ -96,6 +140,7 @@ new #[Layout('components.layouts.auth')] class extends Component
             ['email' => $validated['email']],
             [
                 'token' => $token,
+                'clsu_id' => $validated['clsu_id'],
                 'registration_data' => $validated,
                 'pin_hash' => Hash::make($pin),
                 'pin_expires_at' => now()->addMinutes(10),
@@ -160,8 +205,19 @@ new #[Layout('components.layouts.auth')] class extends Component
             </div>
 
             <div class="grid gap-2">
-                <x-ui::input wire:model="email" id="email" label="{{ __('Email address') }}" type="email" name="email" required maxlength="255" autocomplete="email" placeholder="email@example.com" />
+                <x-ui::input wire:model.live.debounce.400ms="email" id="email" label="{{ __('Email address') }}" type="email" name="email" required maxlength="255" autocomplete="email" placeholder="name@clsu.edu.ph" />
             </div>
+
+            @if ($this->usesClsuEmail())
+                <div class="grid gap-2" wire:key="clsu-id-field">
+                    <x-ui::input wire:model="clsu_id" id="clsu_id" label="{{ __('CLSU ID') }}" type="text" name="clsu_id" required maxlength="7" inputmode="numeric" pattern="[0-9]{2}-[0-9]{4}" title="Use the format 25-1234." placeholder="25-1234" />
+                    <p class="text-xs font-semibold text-emerald-900/60 dark:text-zinc-400">This unique CLSU ID will be linked to your institutional email.</p>
+                </div>
+            @elseif (filter_var($email, FILTER_VALIDATE_EMAIL))
+                <p class="text-xs font-semibold leading-5 text-emerald-900/60 dark:text-zinc-400">
+                    A separate SIEL SPACE account ID will be created for this personal email. It will not be linked to another user's CLSU ID.
+                </p>
+            @endif
 
             <div class="grid gap-2">
                 <x-ui::input wire:model="contact_number" id="contact_number" label="{{ __('Contact Number') }}" type="tel" name="contact_number" required minlength="11" maxlength="13" pattern="(?:09[0-9]{9}|\+639[0-9]{9})" title="Use 09XXXXXXXXX or +639XXXXXXXXX." autocomplete="tel" placeholder="09123456789" />

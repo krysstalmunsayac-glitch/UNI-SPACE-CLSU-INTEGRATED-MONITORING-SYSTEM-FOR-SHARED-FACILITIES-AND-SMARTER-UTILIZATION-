@@ -12,6 +12,7 @@
         selectedLabel() {
             if (!this.value) return 'Select time';
             const [hour, minute] = this.value.split(':');
+            if (Number(hour) === 24) return '12:' + minute + ' AM';
             return ((Number(hour) + 11) % 12 + 1) + ':' + minute + (Number(hour) >= 12 ? ' PM' : ' AM');
         },
         showOptions() {

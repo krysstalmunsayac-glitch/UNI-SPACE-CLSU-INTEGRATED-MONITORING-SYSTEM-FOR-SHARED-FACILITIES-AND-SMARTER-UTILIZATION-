@@ -113,6 +113,12 @@ new #[Layout('components.layouts.app')] class extends Component
 
     public ?string $Requester_Office = null;
 
+    public bool $Is_Guest_Booking = false;
+
+    public ?string $Guest_Organization = null;
+
+    public ?string $Created_By_Name = null;
+
     public array $Requested_Amenities = [];
 
     public array $Purpose_Categories = [];
@@ -185,6 +191,9 @@ new #[Layout('components.layouts.app')] class extends Component
         $this->Requester_Email = null;
         $this->Requester_Contact = null;
         $this->Requester_Office = null;
+        $this->Is_Guest_Booking = false;
+        $this->Guest_Organization = null;
+        $this->Created_By_Name = null;
         $this->Requested_Amenities = [];
         $this->Purpose_Categories = [];
         $this->Other_Purpose = null;
@@ -203,7 +212,7 @@ new #[Layout('components.layouts.app')] class extends Component
     public function showRequest(int $requestId): void
     {
         $request = $this->getScopedRequest($requestId)
-            ->load(['user', 'event', 'facility.amenities']);
+            ->load(['user', 'creator', 'event', 'facility', 'amenities']);
 
         $this->viewingArchived = false;
         $this->fillRequestDetails($request);
@@ -219,7 +228,7 @@ new #[Layout('components.layouts.app')] class extends Component
         }
 
         $request = $query->findOrFail($requestId)
-            ->load(['user', 'event', 'facility.amenities']);
+            ->load(['user', 'creator', 'event', 'facility', 'amenities']);
 
         $this->viewingArchived = true;
         $this->fillRequestDetails($request);
@@ -242,12 +251,15 @@ new #[Layout('components.layouts.app')] class extends Component
         $this->Event_Title = $request->event?->Event_Title;
         $this->Event_Type = $request->event?->Type_Event;
         $this->Facility_Name = $request->facility?->Facility_Name;
-        $this->Requester_Name = $request->user?->name;
-        $this->Requester_Email = $request->user?->email;
-        $this->Requester_Contact = $request->user?->contact_number;
-        $this->Requester_Office = $request->user?->office;
+        $this->Is_Guest_Booking = $request->Is_Guest_Booking;
+        $this->Requester_Name = $request->requesterName();
+        $this->Requester_Email = $request->requesterEmail();
+        $this->Requester_Contact = $request->Is_Guest_Booking ? $request->Guest_Contact : $request->user?->contact_number;
+        $this->Requester_Office = $request->Is_Guest_Booking ? $request->Guest_Organization : $request->user?->office;
+        $this->Guest_Organization = $request->Guest_Organization;
+        $this->Created_By_Name = $request->creator?->name;
         $this->attachmentPath = $request->attachment_path;
-        $this->Requested_Amenities = $request->facility?->amenities
+        $this->Requested_Amenities = $request->amenities
             ->pluck('name')
             ->filter()
             ->values()
@@ -501,7 +513,13 @@ new #[Layout('components.layouts.app')] class extends Component
     public function openReviewModal(int $requestId): void
     {
         $request = $this->getScopedRequest($requestId)
-            ->load(['user', 'event', 'facility.amenities']);
+            ->load(['user', 'creator', 'event', 'facility', 'amenities']);
+
+        if ($request->Is_Guest_Booking) {
+            Ui::toast(text: 'Guest requests can be edited directly by an administrator instead of being returned for revision.', variant: 'warning');
+
+            return;
+        }
 
         if (! $request->canBeReviewed()) {
             Ui::toast(text: 'This request can no longer be returned for revision.', variant: 'warning');
@@ -527,6 +545,7 @@ new #[Layout('components.layouts.app')] class extends Component
             ->load(['user', 'facility']);
 
         abort_unless($request->canBeReviewed(), 409);
+        abort_if($request->Is_Guest_Booking, 409, 'Guest requests cannot be returned to an End User for revision.');
 
         $request->schedules()->delete();
         $request->update([
@@ -765,6 +784,8 @@ new #[Layout('components.layouts.app')] class extends Component
                 $query->where('RID', 'like', $term)
                     ->orWhere('Purpose', 'like', $term)
                     ->orWhere('Status', 'like', $term)
+                    ->orWhere('Guest_Name', 'like', $term)
+                    ->orWhere('Guest_Organization', 'like', $term)
                     ->orWhereHas('user', fn ($userQuery) => $userQuery->where('name', 'like', $term))
                     ->orWhereHas('facility', fn ($facilityQuery) => $facilityQuery->where('Facility_Name', 'like', $term));
             });
@@ -772,6 +793,7 @@ new #[Layout('components.layouts.app')] class extends Component
 
         return $query->with([
             'user:id,name,email',
+            'creator:id,name',
             'facility:FID,Facility_Name',
         ])
             ->orderByDesc('deleted_at')
@@ -784,12 +806,15 @@ new #[Layout('components.layouts.app')] class extends Component
         return Requests::query()
             ->with([
                 'user:id,name,email',
+                'creator:id,name',
                 'facility:FID,Facility_Name',
             ])
             ->when(auth()->user()->isAdmin(), fn ($query) => $query->whereHas('facility.assignedAdmins', fn ($facilityQuery) => $facilityQuery->where('users.id', auth()->id())
             ))
             ->when($this->search, fn ($query) => $query->where(function ($query) {
-                $query->whereHas('user', fn ($q) => $q->where('name', 'like', "%{$this->search}%"))
+                $query->where('Guest_Name', 'like', "%{$this->search}%")
+                    ->orWhere('Guest_Organization', 'like', "%{$this->search}%")
+                    ->orWhereHas('user', fn ($q) => $q->where('name', 'like', "%{$this->search}%"))
                     ->orWhereHas('facility', fn ($q) => $q->where('Facility_Name', 'like', "%{$this->search}%"))
                     ->orWhere('Purpose', 'like', "%{$this->search}%")
                     ->orWhere('Status', 'like', "%{$this->search}%");

@@ -8,6 +8,9 @@ A new facility request has been submitted and is ready for review.
 <x-mail::panel>
 **Request #:** {{ $requestId }}  
 **Requester:** {{ $requesterName }}{{ $requesterEmail ? ' <'.$requesterEmail.'>' : '' }}  
+@if ($createdBy)
+**Created by:** {{ $createdBy }}<br>
+@endif
 **Facility:** {{ $facilityName }}  
 **Date:** {{ $proposedDate }}  
 **Time:** {{ $startTime }} - {{ $endTime }}  

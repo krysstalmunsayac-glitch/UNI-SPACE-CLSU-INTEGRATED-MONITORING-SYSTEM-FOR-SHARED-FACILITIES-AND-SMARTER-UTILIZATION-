@@ -9,6 +9,7 @@ use App\Models\Requests;
 use App\Models\User;
 use App\Notifications\NewRequestSubmitted;
 use App\Notifications\RequestCancelledByUser;
+use App\Services\BookingPolicy;
 use App\Services\FacilityAvailabilityService;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
@@ -18,14 +19,26 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 
 class FacilitiesController extends Controller
 {
     public function showRequest(Facilities $facility, FacilityAvailabilityService $availability)
+    {
+        return $this->renderRequestForm($facility, $availability, false);
+    }
+
+    public function showGuestRequest(Facilities $facility, FacilityAvailabilityService $availability)
+    {
+        $this->authorizeGuestFacility($facility);
+
+        return $this->renderRequestForm($facility, $availability, true);
+    }
+
+    private function renderRequestForm(Facilities $facility, FacilityAvailabilityService $availability, bool $guestBooking)
     {
         abort_unless($facility->Status === 'Available', 409, 'This facility is not currently available for requests.');
 
@@ -50,17 +63,26 @@ class FacilitiesController extends Controller
             'closes_at' => $availability::CLOSES_AT,
             'minimum_minutes' => $availability::MINIMUM_MINUTES,
             'buffer_minutes' => $availability::BUFFER_MINUTES,
-            'availability_url' => route('requests.availability', $facility),
+            'availability_url' => $guestBooking
+                ? route('admin.requests.availability', $facility)
+                : route('requests.availability', $facility),
         ];
 
-        return view('requests.create', compact('facility', 'events', 'availableAmenities', 'scheduling'));
+        return view('requests.create', compact('facility', 'events', 'availableAmenities', 'scheduling', 'guestBooking'));
+    }
+
+    public function guestAvailability(Request $request, Facilities $facility, FacilityAvailabilityService $availability)
+    {
+        $this->authorizeGuestFacility($facility);
+
+        return $this->availability($request, $facility, $availability);
     }
 
     public function availability(Request $request, Facilities $facility, FacilityAvailabilityService $availability)
     {
         abort_unless($facility->Status === 'Available', 409);
         $validated = $request->validate([
-            'from' => ['required', 'date', 'after_or_equal:'.app(\App\Services\BookingPolicy::class)->earliestDate(auth()->user())],
+            'from' => ['required', 'date', 'after_or_equal:'.app(BookingPolicy::class)->earliestDate(auth()->user())],
             'to' => ['required', 'date', 'after_or_equal:from'],
         ]);
 
@@ -73,11 +95,27 @@ class FacilitiesController extends Controller
 
     public function storeRequest(Request $request, Facilities $facility, FacilityAvailabilityService $availability)
     {
+        return $this->storeFacilityRequest($request, $facility, $availability, false);
+    }
+
+    public function storeGuestRequest(Request $request, Facilities $facility, FacilityAvailabilityService $availability)
+    {
+        $this->authorizeGuestFacility($facility);
+
+        return $this->storeFacilityRequest($request, $facility, $availability, true);
+    }
+
+    private function storeFacilityRequest(Request $request, Facilities $facility, FacilityAvailabilityService $availability, bool $guestBooking)
+    {
         abort_unless($facility->Status === 'Available', 409, 'This facility is not currently available for requests.');
 
-        $earliestReservationDate = app(\App\Services\BookingPolicy::class)->earliestDate(auth()->user());
+        $earliestReservationDate = app(BookingPolicy::class)->earliestDate(auth()->user());
 
         $validated = $request->validate([
+            'Guest_Name' => [$guestBooking ? 'required' : 'nullable', 'string', 'min:2', 'max:150'],
+            'Guest_Organization' => ['nullable', 'string', 'max:200'],
+            'Guest_Email' => ['nullable', 'email:rfc', 'max:255'],
+            'Guest_Contact' => ['nullable', 'string', 'max:100'],
             'Amenity_ID' => ['array', 'nullable'],
             'Amenity_ID.*' => [
                 'integer',
@@ -94,7 +132,7 @@ class FacilitiesController extends Controller
             'Daily_Schedules' => ['required', 'array', 'min:1', 'max:31'],
             'Daily_Schedules.*.date' => ['required', 'date_format:Y-m-d'],
             'Daily_Schedules.*.start' => ['required', 'date_format:H:i'],
-            'Daily_Schedules.*.end' => ['required', 'date_format:H:i'],
+            'Daily_Schedules.*.end' => ['required', 'regex:/^(?:[01]\d|2[0-3]):[0-5]\d|24:00$/'],
             'Purpose_Categories' => ['required', 'array', 'min:1'],
             'Purpose_Categories.*' => ['string', Rule::in([
                 'Meeting or Conference', 'Seminar or Workshop', 'Training Session',
@@ -119,7 +157,7 @@ class FacilitiesController extends Controller
             'Capacity' => ['nullable', 'integer', 'min:1', 'max:'.($facility->Capacity ?? 100000)],
             'attachment' => ['nullable', 'file', 'mimes:pdf', 'max:5120'],
         ], [
-            'Proposed_Date.after_or_equal' => app(\App\Services\BookingPolicy::class)->noticeMessage(auth()->user()),
+            'Proposed_Date.after_or_equal' => app(BookingPolicy::class)->noticeMessage(auth()->user()),
         ]);
 
         $dailySchedules = $availability->validateSchedules(
@@ -130,7 +168,7 @@ class FacilitiesController extends Controller
         );
         $firstSchedule = $dailySchedules[0];
         $lastSchedule = $dailySchedules[array_key_last($dailySchedules)];
-        app(\App\Services\BookingPolicy::class)->validateFutureStart($firstSchedule['date'], $firstSchedule['start'], 'Daily_Schedules.0.start');
+        app(BookingPolicy::class)->validateFutureStart($firstSchedule['date'], $firstSchedule['start'], 'Daily_Schedules.0.start');
 
         $attachmentPath = null;
 
@@ -143,11 +181,13 @@ class FacilitiesController extends Controller
         }
 
         try {
-            $requestModel = DB::transaction(function () use ($validated, $dailySchedules, $firstSchedule, $lastSchedule, $facility, $attachmentPath, $availability): Requests {
+            $requestModel = DB::transaction(function () use ($validated, $dailySchedules, $firstSchedule, $lastSchedule, $facility, $attachmentPath, $availability, $guestBooking): Requests {
                 User::query()->whereKey(auth()->id())->lockForUpdate()->firstOrFail();
                 Facilities::query()->whereKey($facility->FID)->lockForUpdate()->firstOrFail();
 
-                $this->validateDailyRequestLimit($validated['Proposed_Date'], $validated['Proposed_End_Date'], lockForUpdate: true);
+                if (! $guestBooking) {
+                    $this->validateDailyRequestLimit($validated['Proposed_Date'], $validated['Proposed_End_Date'], lockForUpdate: true);
+                }
                 $availability->validateSchedules($facility->FID, $validated['Proposed_Date'], $validated['Proposed_End_Date'], $dailySchedules, lock: true);
 
                 foreach ($dailySchedules as $schedule) {
@@ -162,14 +202,20 @@ class FacilitiesController extends Controller
                 }
 
                 $event = Events::create([
-                    'User_ID' => auth()->id(),
+                    'User_ID' => $guestBooking ? null : auth()->id(),
                     'Event_Title' => $validated['Event_Title'],
                     'Description' => $validated['Description'],
                     'Type_Event' => $validated['Type_Event'],
                 ]);
 
                 $requestModel = Requests::create([
-                    'User_ID' => auth()->id(),
+                    'User_ID' => $guestBooking ? null : auth()->id(),
+                    'Is_Guest_Booking' => $guestBooking,
+                    'Guest_Name' => $guestBooking ? trim($validated['Guest_Name']) : null,
+                    'Guest_Organization' => $guestBooking ? ($validated['Guest_Organization'] ?? null) : null,
+                    'Guest_Email' => $guestBooking ? ($validated['Guest_Email'] ?? null) : null,
+                    'Guest_Contact' => $guestBooking ? ($validated['Guest_Contact'] ?? null) : null,
+                    'Created_By' => $guestBooking ? auth()->id() : null,
                     'Event_ID' => $event->EID,
                     'Facility_ID' => $facility->FID,
                     'Proposed_Date' => $validated['Proposed_Date'],
@@ -198,10 +244,14 @@ class FacilitiesController extends Controller
                 return $requestModel;
             }, 3);
         } catch (ValidationException $exception) {
-            if ($attachmentPath) Storage::disk('local')->delete($attachmentPath);
+            if ($attachmentPath) {
+                Storage::disk('local')->delete($attachmentPath);
+            }
             throw $exception;
         } catch (Throwable $exception) {
-            if ($attachmentPath) Storage::disk('local')->delete($attachmentPath);
+            if ($attachmentPath) {
+                Storage::disk('local')->delete($attachmentPath);
+            }
 
             Log::error('Facility request submission failed.', [
                 'user_id' => auth()->id(),
@@ -220,13 +270,27 @@ class FacilitiesController extends Controller
         );
 
         return redirect()
-            ->route('dashboard')
-            ->with('success', 'Your request has been submitted successfully.')
+            ->route($guestBooking ? 'Request' : 'dashboard', $guestBooking ? ['request' => $requestModel->RID] : [])
+            ->with('success', $guestBooking
+                ? 'The guest facility request has been submitted successfully.'
+                : 'Your request has been submitted successfully.')
             ->with('sweet_alert', [
                 'title' => 'Request sent',
-                'text' => 'Your request has been submitted successfully.',
+                'text' => $guestBooking
+                    ? 'The guest facility request has been submitted successfully.'
+                    : 'Your request has been submitted successfully.',
                 'icon' => 'success',
             ]);
+    }
+
+    private function authorizeGuestFacility(Facilities $facility): void
+    {
+        $user = auth()->user();
+        abort_unless($user?->isSuperAdminOrAdmin(), 403);
+
+        if ($user->isAdmin()) {
+            abort_unless($facility->assignedAdmins()->where('users.id', $user->id)->exists(), 403);
+        }
     }
 
     public function waitingList()
@@ -248,7 +312,7 @@ class FacilitiesController extends Controller
                 ->with('warning', "This request is {$status}. Its submitted information is read-only.");
         }
 
-        $earliestReservationDate = app(\App\Services\BookingPolicy::class)->earliestDate(auth()->user());
+        $earliestReservationDate = app(BookingPolicy::class)->earliestDate(auth()->user());
 
         $validated = $request->validate([
             'Event_Title' => ['nullable', 'string', 'min:3', 'max:255'],
@@ -257,15 +321,15 @@ class FacilitiesController extends Controller
             'Proposed_Date' => ['required', 'date', 'after_or_equal:'.$earliestReservationDate],
             'Proposed_End_Date' => ['required', 'date', 'after_or_equal:Proposed_Date'],
             'Proposed_Start_Time' => ['required', 'date_format:H:i'],
-            'Proposed_End_Time' => ['required', 'date_format:H:i', 'after:Proposed_Start_Time'],
+            'Proposed_End_Time' => ['required', 'regex:/^(?:[01]\d|2[0-3]):[0-5]\d|24:00$/', 'after:Proposed_Start_Time'],
             'Purpose' => ['required', 'string', 'min:5', 'max:1000'],
             'Capacity' => ['nullable', 'integer', 'min:1', 'max:100000'],
             'attachment' => ['nullable', 'file', 'mimes:pdf', 'max:5120'],
         ], [
-            'Proposed_Date.after_or_equal' => app(\App\Services\BookingPolicy::class)->noticeMessage(auth()->user()),
+            'Proposed_Date.after_or_equal' => app(BookingPolicy::class)->noticeMessage(auth()->user()),
         ]);
 
-        app(\App\Services\BookingPolicy::class)->validateFutureStart($validated['Proposed_Date'], $validated['Proposed_Start_Time'], 'Proposed_Start_Time');
+        app(BookingPolicy::class)->validateFutureStart($validated['Proposed_Date'], $validated['Proposed_Start_Time'], 'Proposed_Start_Time');
 
         $this->validateBookingDuration(
             $validated['Proposed_Start_Time'],
@@ -592,7 +656,7 @@ class FacilitiesController extends Controller
 
     public function storeEventRequest(Request $request, Events $event)
     {
-        $earliestReservationDate = app(\App\Services\BookingPolicy::class)->earliestDate(auth()->user());
+        $earliestReservationDate = app(BookingPolicy::class)->earliestDate(auth()->user());
 
         $validated = $request->validate([
             'Amenity_ID' => ['nullable', 'array'],
@@ -600,14 +664,14 @@ class FacilitiesController extends Controller
             'Proposed_Date' => ['required', 'date', 'after_or_equal:'.$earliestReservationDate],
             'Proposed_End_Date' => ['required', 'date', 'after_or_equal:Proposed_Date'],
             'Proposed_Start_Time' => ['required', 'date_format:H:i'],
-            'Proposed_End_Time' => ['required', 'date_format:H:i', 'after:Proposed_Start_Time'],
+            'Proposed_End_Time' => ['required', 'regex:/^(?:[01]\d|2[0-3]):[0-5]\d|24:00$/', 'after:Proposed_Start_Time'],
             'Purpose' => ['required', 'string', 'min:5', 'max:1000'],
             'Capacity' => ['nullable', 'integer', 'min:1', 'max:100000'],
         ], [
-            'Proposed_Date.after_or_equal' => app(\App\Services\BookingPolicy::class)->noticeMessage(auth()->user()),
+            'Proposed_Date.after_or_equal' => app(BookingPolicy::class)->noticeMessage(auth()->user()),
         ]);
 
-        app(\App\Services\BookingPolicy::class)->validateFutureStart($validated['Proposed_Date'], $validated['Proposed_Start_Time'], 'Proposed_Start_Time');
+        app(BookingPolicy::class)->validateFutureStart($validated['Proposed_Date'], $validated['Proposed_Start_Time'], 'Proposed_Start_Time');
 
         $this->validateBookingDuration(
             $validated['Proposed_Start_Time'],

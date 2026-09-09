@@ -84,8 +84,18 @@ new #[Layout('components.layouts.auth')] class extends Component
             }
 
             $registration = $pending->registration_data;
+
+            $clsuId = $pending->clsu_id ?? ($registration['clsu_id'] ?? null);
+
+            if ($clsuId && User::query()->where('clsu_id', $clsuId)->exists()) {
+                $pending->delete();
+
+                return 'This CLSU ID is already associated with another account. Please register again.';
+            }
+
             $user = User::query()->create([
                 'name' => $registration['name'],
+                'clsu_id' => $clsuId,
                 'email' => $registration['email'],
                 'password' => $registration['password'],
                 'contact_number' => $registration['contact_number'],

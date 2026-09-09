@@ -49,21 +49,6 @@ class ClsuFacilitySeeder extends Seeder
             $this->facility('Alumni Social Hall', 'conference', 'Shared', 3000, '₱3,000 for 3 hours; ₱500 for each succeeding hour. 25% discount for CLSU alumni and 20% for senior citizens with Alumni ID.', 'CLSU Alumni Association Inc.', 'Multi-purpose facility for alumni gatherings, meetings, fellowships, worship services, and university-related social activities.', 100, 'Available', ['Television', 'Sound System', 'Whiteboard'], $standardProtocols, 'CLSU Alumni Association Inc. · (044) 803-9412 · 0955-991-0575', 'https://drive.google.com/drive/folders/1t3zhtEsC-PVyka4MgcdtivK2Te1IMLXZ?usp=sharing', 'Uses a separate booking reservation process; hostel bookings: https://alumni.clsu.edu.ph/hostel'),
         ];
 
-        $excludedFacilityNames = collect($facilities)
-            ->filter(fn (array $facility): bool => $facility['Capacity'] !== null && $facility['Capacity'] < 70)
-            ->pluck('Facility_Name');
-
-        // Archive only previously seeded directory entries that no longer meet
-        // the minimum capacity. Unknown capacities remain until verified.
-        Facilities::query()
-            ->whereIn('Facility_Name', $excludedFacilityNames)
-            ->each(fn (Facilities $facility) => $facility->delete());
-
-        $facilities = collect($facilities)
-            ->reject(fn (array $facility): bool => $facility['Capacity'] !== null && $facility['Capacity'] < 70)
-            ->values()
-            ->all();
-
         $amenityNames = collect($facilities)->pluck('amenities')->flatten()->unique()->sort()->values();
         $amenities = $amenityNames->mapWithKeys(function (string $name): array {
             $amenity = Amenities::withTrashed()->updateOrCreate(
@@ -79,12 +64,26 @@ class ClsuFacilitySeeder extends Seeder
 
         foreach ($facilities as $data) {
             $facilityAmenities = $data['amenities'];
-            unset($data['amenities']);
+            $facilityType = $data['facility_type'];
+            unset($data['amenities'], $data['facility_type']);
 
-            $facility = Facilities::withTrashed()->updateOrCreate(
-                ['Facility_Name' => $data['Facility_Name']],
-                $data
+            $matchingNames = array_merge(
+                [$data['Facility_Name']],
+                $this->facilityAliases()[$data['Facility_Name']] ?? [],
             );
+
+            $facility = Facilities::withTrashed()
+                ->whereIn('Facility_Name', $matchingNames)
+                ->first();
+
+            if ($facility) {
+                // Preserve the facility type already assigned to existing records.
+                $facility->fill($data)->save();
+            } else {
+                // New records use only the existing type mapping defined by this seeder.
+                $facility = Facilities::query()->create($data + ['facility_type' => $facilityType]);
+            }
+
             if ($facility->trashed()) {
                 $facility->restore();
             }
@@ -113,10 +112,12 @@ class ClsuFacilitySeeder extends Seeder
             'facility_type' => $type,
             'Access_Type' => $accessType,
             'Price' => $price,
+            'rates' => $rateDetails,
             'Rate_Details' => $rateDetails,
             'Office' => $office,
             'Description' => $description,
             'Protocols' => $protocols,
+            'protocols_and_guidelines' => $protocols,
             'Contact_Details' => $contact,
             'Reference_URL' => $referenceUrl,
             'Data_Notes' => $notes,
@@ -124,6 +125,20 @@ class ClsuFacilitySeeder extends Seeder
             'Capacity' => $capacity,
             'Status' => $status,
             'amenities' => $amenities,
+        ];
+    }
+
+    private function facilityAliases(): array
+    {
+        return [
+            'CEd Teachers’ Hall (College of Education)' => ["CED Teachers' Hall (College of Education)", 'CED Teachers’ Hall (College of Education)'],
+            'RM-CARES Organic Farming Training Facility' => ['RM CARES Organic Farming Training Facility'],
+            'RM-CARES Conference Room' => ['RM CARES Conference Room'],
+            'Reimers Hall' => ["Reimer's Hall", 'Reimer’s Hall'],
+            'Multi-purpose Gym (MPG)' => ['Multi-Purpose Gym (MPG)', 'Multi-purpose Gym'],
+            'Oval Ground / Grandstand' => ['Oval Ground/Grandstand', 'Oval Ground /Grandstand'],
+            'CenTrAD Amphitheater' => ['Center for Transboundary Animal Diseases (CenTrAD) Amphitheater'],
+            'CCC Amphitheatre' => ['CCC Amphitheater'],
         ];
     }
 }

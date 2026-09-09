@@ -1,4 +1,4 @@
-<x-layouts.home.header>
+<x-dynamic-component :component="$guestBooking ? 'layouts.app' : 'layouts.home.header'">
     <x-ui::main class="bg-gradient-to-b from-emerald-50/70 via-white to-white px-4 py-8 dark:from-emerald-950/20 dark:via-zinc-950 dark:to-zinc-950 sm:px-6 lg:px-8">
         <div class="mx-auto max-w-7xl space-y-6">
             <div class="overflow-hidden rounded-3xl border border-emerald-900/10 bg-white shadow-xl shadow-emerald-950/5 dark:border-white/10 dark:bg-zinc-950">
@@ -8,10 +8,14 @@
                         <div class="max-w-3xl">
                             <div class="mb-3 inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-200">
                                 <span class="size-2 rounded-full bg-emerald-600"></span>
-                                Facility reservation
+                                {{ $guestBooking ? 'Guest facility reservation' : 'Facility reservation' }}
                             </div>
                             <h1 class="text-3xl font-black tracking-tight text-emerald-950 dark:text-white sm:text-4xl">{{ $facility->Facility_Name }}</h1>
-                            <p class="mt-3 max-w-2xl text-sm leading-6 text-emerald-900/65 dark:text-zinc-300">Tell us about your event, choose a schedule, and select the amenities you need.</p>
+                            <p class="mt-3 max-w-2xl text-sm leading-6 text-emerald-900/65 dark:text-zinc-300">
+                                {{ $guestBooking
+                                    ? 'Reserve this facility on behalf of an authorized guest, visitor, VIP, partner, or university official.'
+                                    : 'Tell us about your event, choose a schedule, and select the amenities you need.' }}
+                            </p>
                         </div>
 
                         <div class="grid gap-3 text-sm sm:grid-cols-3 lg:min-w-[34rem]">
@@ -51,6 +55,8 @@
                     availability: {},
                     availabilityLoading: false,
                     availabilityError: '',
+                    bookingToday: @js(today()->toDateString()),
+                    bookingCurrentTime: @js(now()->format('H:i')),
                     customizeDailyTimes: @js(collect(old('Daily_Schedules', []))->map(fn ($schedule) => ($schedule['start'] ?? '').'|'.($schedule['end'] ?? ''))->unique()->count() > 1),
                     eventType: @js(old('Type_Event', '')),
                     photos: @js($facility->images->map(fn ($image) => asset('storage/'.ltrim($image->image_path, '/')))->values()),
@@ -110,12 +116,12 @@
                         if (!startTime) return null;
                         const [hours, minutes] = startTime.split(':').map(Number);
                         const minimumMinutes = (hours * 60) + minutes + 60;
-                        if (minimumMinutes >= 1440) return '23:59';
+                        if (minimumMinutes >= 1440) return '24:00';
                         return `${String(Math.floor(minimumMinutes / 60)).padStart(2, '0')}:${String(minimumMinutes % 60).padStart(2, '0')}`;
                     },
                     addMinutes(time, minutes) {
                         const [hours, mins] = time.split(':').map(Number);
-                        const total = Math.min((hours * 60) + mins + minutes, 20 * 60);
+                        const total = Math.min((hours * 60) + mins + minutes, 24 * 60);
                         return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
                     },
                     chooseSharedStart(time) {
@@ -146,6 +152,7 @@
                         } finally { this.availabilityLoading = false; }
                     },
                     slotStatus(date, start, end) {
+                        if (date < this.bookingToday || (date === this.bookingToday && start <= this.bookingCurrentTime)) return 'past';
                         const day = this.availability[date];
                         if (!day || day.closed) return 'unavailable';
                         let status = 'available';
@@ -161,16 +168,26 @@
                     hasApprovedConflict() { return this.dailySchedules.some(schedule => this.scheduleStatus(schedule) === 'approved'); },
                     hasPendingWarning() { return !this.hasApprovedConflict() && this.dailySchedules.some(schedule => this.scheduleStatus(schedule) === 'pending'); },
                     hasClosure() { return this.dailySchedules.some(schedule => this.scheduleStatus(schedule) === 'unavailable'); },
-                    hasBlockingConflict() { return this.hasApprovedConflict() || this.hasClosure(); },
-                    sharedStartDisabled(slot) { return this.dailySchedules.some(schedule => ['approved', 'unavailable'].includes(this.slotStatus(schedule.date, slot, this.addMinutes(slot, 60)))); },
-                    sharedEndDisabled(slot) { return this.dailySchedules.some(schedule => ['approved', 'unavailable'].includes(this.slotStatus(schedule.date, this.sharedStartTime, slot))); },
+                    hasPastTime() { return this.dailySchedules.some(schedule => this.scheduleStatus(schedule) === 'past'); },
+                    hasBlockingConflict() { return this.hasApprovedConflict() || this.hasClosure() || this.hasPastTime(); },
+                    sharedStartDisabled(slot) { return this.dailySchedules.some(schedule => ['approved', 'unavailable', 'past'].includes(this.slotStatus(schedule.date, slot, this.addMinutes(slot, 60)))); },
+                    sharedEndDisabled(slot) { return this.dailySchedules.some(schedule => ['approved', 'unavailable', 'past'].includes(this.slotStatus(schedule.date, this.sharedStartTime, slot))); },
+                    slotLabel(status) {
+                        return status === 'approved' ? ' — Already Booked'
+                            : status === 'past' ? ' — Time Elapsed'
+                            : status === 'unavailable' ? ' — Unavailable'
+                            : '';
+                    },
                     duration(schedule) {
                         if (!schedule?.start || !schedule?.end) return 0;
                         const parts = value => value.split(':').map(Number);
                         const [sh, sm] = parts(schedule.start); const [eh, em] = parts(schedule.end);
                         return ((eh * 60) + em) - ((sh * 60) + sm);
                     },
-                    formatTime(time) { return new Date(`2000-01-01T${time}:00`).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); },
+                    formatTime(time) {
+                        if (time === '24:00') return '12:00 AM';
+                        return new Date(`2000-01-01T${time}:00`).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+                    },
                     useOneTimeForAllDays() {
                         this.customizeDailyTimes = false;
                         this.applySharedTime();
@@ -235,6 +252,24 @@
                         <div class="mt-5 border-t border-emerald-900/10 pt-5 dark:border-white/10">
                             <p class="text-xs font-bold text-emerald-700 dark:text-emerald-300">About the facility</p>
                             <p class="mt-2 text-sm leading-6 text-emerald-900/70 dark:text-zinc-300">{{ $facility->Description }}</p>
+                        </div>
+                    @endif
+
+                    @if ($facility->rates || $facility->protocols_and_guidelines)
+                        <div class="mt-5 grid gap-4 border-t border-emerald-900/10 pt-5 dark:border-white/10 sm:grid-cols-2">
+                            @if ($facility->rates)
+                                <div class="rounded-2xl bg-emerald-50 p-4 dark:bg-emerald-950/30">
+                                    <p class="text-xs font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Rates</p>
+                                    <p class="mt-2 whitespace-pre-line text-sm leading-6 text-emerald-900/75 dark:text-zinc-300">{{ $facility->rates }}</p>
+                                </div>
+                            @endif
+
+                            @if ($facility->protocols_and_guidelines)
+                                <div class="rounded-2xl bg-yellow-50 p-4 dark:bg-yellow-400/10">
+                                    <p class="text-xs font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Protocols and Guidelines</p>
+                                    <p class="mt-2 whitespace-pre-line text-sm leading-6 text-emerald-900/75 dark:text-zinc-300">{{ $facility->protocols_and_guidelines }}</p>
+                                </div>
+                            @endif
                         </div>
                     @endif
                 </section>
@@ -322,7 +357,7 @@
 
                         <form
                             x-ref="requestForm"
-                            action="{{ route('requests.store', $facility) }}"
+                            action="{{ $guestBooking ? route('admin.requests.store', $facility) : route('requests.store', $facility) }}"
                             method="POST"
                             enctype="multipart/form-data"
                             x-on:submit="submitting = true"
@@ -335,6 +370,31 @@
                             <div x-ref="eventDetails" x-show="step === 1" x-cloak class="space-y-4">
                                 <x-ui::heading size="lg">Event details</x-ui::heading>
                                 <p class="text-sm text-emerald-900/70 dark:text-zinc-300">Tell us about the event this request is for.</p>
+
+                                @if ($guestBooking)
+                                    <div class="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-800 dark:bg-emerald-950/20">
+                                        <h3 class="text-sm font-black text-emerald-950 dark:text-white">Guest information</h3>
+                                        <p class="mt-1 text-xs text-emerald-900/65 dark:text-zinc-300">The request will be recorded as created by {{ auth()->user()->name }} for audit purposes.</p>
+                                        <div class="mt-4 grid gap-4 sm:grid-cols-2">
+                                            <div>
+                                                <x-ui::input label="Guest name" name="Guest_Name" value="{{ old('Guest_Name') }}" required minlength="2" maxlength="150" />
+                                                @error('Guest_Name') <span class="text-sm text-red-600">{{ $message }}</span> @enderror
+                                            </div>
+                                            <div>
+                                                <x-ui::input label="Organization or affiliation" name="Guest_Organization" value="{{ old('Guest_Organization') }}" maxlength="200" placeholder="Optional" />
+                                                @error('Guest_Organization') <span class="text-sm text-red-600">{{ $message }}</span> @enderror
+                                            </div>
+                                            <div>
+                                                <x-ui::input label="Guest email" name="Guest_Email" type="email" value="{{ old('Guest_Email') }}" maxlength="255" placeholder="Optional" />
+                                                @error('Guest_Email') <span class="text-sm text-red-600">{{ $message }}</span> @enderror
+                                            </div>
+                                            <div>
+                                                <x-ui::input label="Contact number or details" name="Guest_Contact" value="{{ old('Guest_Contact') }}" maxlength="100" placeholder="Optional" />
+                                                @error('Guest_Contact') <span class="text-sm text-red-600">{{ $message }}</span> @enderror
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endif
 
                                 <div>
                                     <x-ui::input
@@ -410,6 +470,17 @@
                             {{-- STEP 2: Facility request details --}}
                             <div x-show="step === 2" x-cloak class="space-y-4">
                                 <x-ui::heading size="lg">Schedule & amenities</x-ui::heading>
+
+                                @if ($errors->hasAny(['Proposed_Date', 'Proposed_End_Date', 'Daily_Schedules', 'Daily_Schedules.*']))
+                                    <div role="alert" class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-500/30 dark:bg-red-950/30 dark:text-red-200">
+                                        <p class="font-bold">Please choose a valid future schedule.</p>
+                                        <ul class="mt-2 list-disc space-y-1 pl-5">
+                                            @foreach ($errors->all() as $message)
+                                                <li>{{ $message }}</li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
+                                @endif
 
                                 <div>
                                     <x-ui::checkbox.group label="Amenities">
@@ -492,34 +563,34 @@
                                             <div class="block">
                                                 <span class="mb-2 block text-sm font-medium text-emerald-900 dark:text-zinc-300">Start time</span>
                                                 <x-ui::time-dropdown selection="sharedStartTime" label="Start time"><select size="6" x-ref="options" x-cloak x-show="expanded" aria-label="Start time" x-on:click="if ($event.target.tagName === 'OPTION' &amp;&amp; !$event.target.disabled) { expanded = false; $refs.trigger.focus() }" x-on:keydown.enter.prevent="expanded = false; $refs.trigger.focus()" style="position: absolute; bottom: 100%; left: 0; z-index: 50; margin-bottom: 0.25rem; height: calc(12rem + 2px); padding: 0; overflow-y: auto;" x-model="sharedStartTime" x-on:change="chooseSharedStart($event.target.value)" x-bind:required="!customizeDailyTimes" class="h-11 w-full rounded-xl border border-emerald-900/10 bg-white px-3 text-sm text-emerald-950 shadow-sm focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-950 dark:text-white">
-                                                    <template x-for="slot in slots" :key="slot"><option style="height: 2rem; padding: 0.375rem 0.75rem;" :value="slot" :disabled="sharedStartDisabled(slot)" x-text="`${formatTime(slot)}${sharedStartDisabled(slot) ? ' — Already Booked' : ''}`"></option></template>
+                                                    <template x-for="slot in slots" :key="slot"><option style="height: 2rem; padding: 0.375rem 0.75rem;" :value="slot" :disabled="sharedStartDisabled(slot)" x-text="`${formatTime(slot)}${slotLabel(dailySchedules.map(schedule => slotStatus(schedule.date, slot, addMinutes(slot, 60))).find(status => ['approved', 'past', 'unavailable'].includes(status)) ?? 'available')}`"></option></template>
                                                 </select></x-ui::time-dropdown>
                                             </div>
                                             <div class="block">
                                                 <span class="mb-2 block text-sm font-medium text-emerald-900 dark:text-zinc-300">End time <span class="font-normal text-zinc-500">(1 hour minimum)</span></span>
                                                 <x-ui::time-dropdown selection="sharedEndTime" label="End time"><select size="6" x-ref="options" x-cloak x-show="expanded" aria-label="End time" x-on:click="if ($event.target.tagName === 'OPTION' &amp;&amp; !$event.target.disabled) { expanded = false; $refs.trigger.focus() }" x-on:keydown.enter.prevent="expanded = false; $refs.trigger.focus()" style="position: absolute; bottom: 100%; left: 0; z-index: 50; margin-bottom: 0.25rem; height: calc(12rem + 2px); padding: 0; overflow-y: auto;" x-model="sharedEndTime" x-on:change="applySharedTime()" x-bind:required="!customizeDailyTimes" class="h-11 w-full rounded-xl border border-emerald-900/10 bg-white px-3 text-sm text-emerald-950 shadow-sm focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-950 dark:text-white">
-                                                    <template x-for="slot in endSlots.filter(slot => slot >= minimumEndTime(sharedStartTime))" :key="slot"><option style="height: 2rem; padding: 0.375rem 0.75rem;" :value="slot" :disabled="sharedEndDisabled(slot)" x-text="`${formatTime(slot)}${sharedEndDisabled(slot) ? ' — Already Booked' : ''}`"></option></template>
+                                                    <template x-for="slot in endSlots.filter(slot => slot >= minimumEndTime(sharedStartTime))" :key="slot"><option style="height: 2rem; padding: 0.375rem 0.75rem;" :value="slot" :disabled="sharedEndDisabled(slot)" x-text="`${formatTime(slot)}${slotLabel(dailySchedules.map(schedule => slotStatus(schedule.date, sharedStartTime, slot)).find(status => ['approved', 'past', 'unavailable'].includes(status)) ?? 'available')}`"></option></template>
                                                 </select></x-ui::time-dropdown>
                                             </div>
                                         </div>
 
                                         <div class="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900" aria-live="polite">
                                             <div class="flex flex-wrap items-center justify-between gap-2">
-                                                <p class="text-sm font-bold text-emerald-950 dark:text-white">Available booking hours: 7:00 AM–8:00 PM</p>
+                                                <p class="text-sm font-bold text-emerald-950 dark:text-white">Available booking hours: 5:00 AM–12:00 AM</p>
                                                 <p class="text-xs text-zinc-500">30-minute preparation + 30-minute cleanup buffer</p>
                                             </div>
                                             <div class="mt-3 flex flex-wrap gap-2 text-xs" aria-label="Availability color guide">
                                                 <span class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1"><i class="inline-block h-3 w-3 shrink-0 rounded-full" style="background:#10b981"></i> Available</span>
                                                 <span class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1"><i class="inline-block h-3 w-3 shrink-0 rounded-full" style="background:#f59e0b"></i> Pending request</span>
                                                 <span class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1"><i class="inline-block h-3 w-3 shrink-0 rounded-full" style="background:#ef4444"></i> Already booked</span>
-                                                <span class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1"><i class="inline-block h-3 w-3 shrink-0 rounded-full" style="background:#a1a1aa"></i> Closed / maintenance</span>
+                                                <span class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1"><i class="inline-block h-3 w-3 shrink-0 rounded-full" style="background:#a1a1aa"></i> Elapsed / closed</span>
                                             </div>
                                             <p x-show="availabilityLoading" class="mt-3 text-sm text-zinc-500">Checking availability…</p>
                                             <p x-show="availabilityError" x-text="availabilityError" class="mt-3 text-sm font-medium text-red-600"></p>
                                             <div x-show="!availabilityLoading && !availabilityError" class="mt-4 space-y-3">
                                                 <template x-for="schedule in dailySchedules" :key="`timeline-${schedule.date}`">
                                                     <div>
-                                                        <div class="mb-1 flex justify-between text-xs"><span class="font-semibold" x-text="new Date(`${schedule.date}T12:00:00`).toLocaleDateString(undefined, {weekday:'short', month:'short', day:'numeric'})"></span><span class="capitalize" x-text="scheduleStatus(schedule) === 'approved' ? 'Already Booked' : scheduleStatus(schedule) === 'pending' ? 'Pending Request' : scheduleStatus(schedule)"></span></div>
+                                                        <div class="mb-1 flex justify-between text-xs"><span class="font-semibold" x-text="new Date(`${schedule.date}T12:00:00`).toLocaleDateString(undefined, {weekday:'short', month:'short', day:'numeric'})"></span><span class="capitalize" x-text="scheduleStatus(schedule) === 'approved' ? 'Already Booked' : scheduleStatus(schedule) === 'pending' ? 'Pending Request' : scheduleStatus(schedule) === 'past' ? 'Time Elapsed' : scheduleStatus(schedule)"></span></div>
                                                         <div class="flex h-5 overflow-hidden rounded-full bg-zinc-200" role="img" :aria-label="`Daily availability for ${schedule.date}`">
                                                             <template x-for="slot in slots" :key="`${schedule.date}-${slot}`"><span class="flex-1 border-r border-white/40" :style="`background:${slotStatus(schedule.date, slot, addMinutes(slot, 30)) === 'available' ? '#10b981' : slotStatus(schedule.date, slot, addMinutes(slot, 30)) === 'pending' ? '#f59e0b' : slotStatus(schedule.date, slot, addMinutes(slot, 30)) === 'approved' ? '#ef4444' : '#a1a1aa'}`"></span></template>
                                                         </div>
@@ -543,11 +614,11 @@
                                                     </div>
                                                     <div class="block">
                                                         <span class="mb-2 block text-sm font-medium text-emerald-900 dark:text-zinc-300">Start time</span>
-                                                        <x-ui::time-dropdown selection="schedule.start" label="Start time"><select size="6" x-ref="options" x-cloak x-show="expanded" aria-label="Start time" x-on:click="if ($event.target.tagName === 'OPTION' &amp;&amp; !$event.target.disabled) { expanded = false; $refs.trigger.focus() }" x-on:keydown.enter.prevent="expanded = false; $refs.trigger.focus()" style="position: absolute; bottom: 100%; left: 0; z-index: 50; margin-bottom: 0.25rem; height: calc(12rem + 2px); padding: 0; overflow-y: auto;" x-bind:name="customizeDailyTimes ? `Daily_Schedules[${index}][start]` : null" x-model="schedule.start" x-on:change="chooseDayStart(schedule, $event.target.value)" x-bind:required="customizeDailyTimes" class="h-11 w-full rounded-xl border border-emerald-900/10 bg-white px-3 text-sm text-emerald-950 shadow-sm dark:border-white/10 dark:bg-zinc-950 dark:text-white"><template x-for="slot in slots" :key="slot"><option style="height: 2rem; padding: 0.375rem 0.75rem;" :value="slot" :disabled="['approved', 'unavailable'].includes(slotStatus(schedule.date, slot, addMinutes(slot, 60)))" x-text="`${formatTime(slot)}${slotStatus(schedule.date, slot, addMinutes(slot, 60)) === 'approved' ? ' — Already Booked' : ''}`"></option></template></select></x-ui::time-dropdown>
+                                                        <x-ui::time-dropdown selection="schedule.start" label="Start time"><select size="6" x-ref="options" x-cloak x-show="expanded" aria-label="Start time" x-on:click="if ($event.target.tagName === 'OPTION' &amp;&amp; !$event.target.disabled) { expanded = false; $refs.trigger.focus() }" x-on:keydown.enter.prevent="expanded = false; $refs.trigger.focus()" style="position: absolute; bottom: 100%; left: 0; z-index: 50; margin-bottom: 0.25rem; height: calc(12rem + 2px); padding: 0; overflow-y: auto;" x-bind:name="customizeDailyTimes ? `Daily_Schedules[${index}][start]` : null" x-model="schedule.start" x-on:change="chooseDayStart(schedule, $event.target.value)" x-bind:required="customizeDailyTimes" class="h-11 w-full rounded-xl border border-emerald-900/10 bg-white px-3 text-sm text-emerald-950 shadow-sm dark:border-white/10 dark:bg-zinc-950 dark:text-white"><template x-for="slot in slots" :key="slot"><option style="height: 2rem; padding: 0.375rem 0.75rem;" :value="slot" :disabled="['approved', 'unavailable', 'past'].includes(slotStatus(schedule.date, slot, addMinutes(slot, 60)))" x-text="`${formatTime(slot)}${slotLabel(slotStatus(schedule.date, slot, addMinutes(slot, 60)))}`"></option></template></select></x-ui::time-dropdown>
                                                     </div>
                                                     <div class="block">
                                                         <span class="mb-2 block text-sm font-medium text-emerald-900 dark:text-zinc-300">End time <span class="font-normal text-zinc-500">(1 hour minimum)</span></span>
-                                                        <x-ui::time-dropdown selection="schedule.end" label="End time"><select size="6" x-ref="options" x-cloak x-show="expanded" aria-label="End time" x-on:click="if ($event.target.tagName === 'OPTION' &amp;&amp; !$event.target.disabled) { expanded = false; $refs.trigger.focus() }" x-on:keydown.enter.prevent="expanded = false; $refs.trigger.focus()" style="position: absolute; bottom: 100%; left: 0; z-index: 50; margin-bottom: 0.25rem; height: calc(12rem + 2px); padding: 0; overflow-y: auto;" x-bind:name="customizeDailyTimes ? `Daily_Schedules[${index}][end]` : null" x-model="schedule.end" x-bind:required="customizeDailyTimes" class="h-11 w-full rounded-xl border border-emerald-900/10 bg-white px-3 text-sm text-emerald-950 shadow-sm dark:border-white/10 dark:bg-zinc-950 dark:text-white"><template x-for="slot in endSlots.filter(slot => slot >= minimumEndTime(schedule.start))" :key="slot"><option style="height: 2rem; padding: 0.375rem 0.75rem;" :value="slot" :disabled="['approved', 'unavailable'].includes(slotStatus(schedule.date, schedule.start, slot))" x-text="`${formatTime(slot)}${slotStatus(schedule.date, schedule.start, slot) === 'approved' ? ' — Already Booked' : ''}`"></option></template></select></x-ui::time-dropdown>
+                                                        <x-ui::time-dropdown selection="schedule.end" label="End time"><select size="6" x-ref="options" x-cloak x-show="expanded" aria-label="End time" x-on:click="if ($event.target.tagName === 'OPTION' &amp;&amp; !$event.target.disabled) { expanded = false; $refs.trigger.focus() }" x-on:keydown.enter.prevent="expanded = false; $refs.trigger.focus()" style="position: absolute; bottom: 100%; left: 0; z-index: 50; margin-bottom: 0.25rem; height: calc(12rem + 2px); padding: 0; overflow-y: auto;" x-bind:name="customizeDailyTimes ? `Daily_Schedules[${index}][end]` : null" x-model="schedule.end" x-bind:required="customizeDailyTimes" class="h-11 w-full rounded-xl border border-emerald-900/10 bg-white px-3 text-sm text-emerald-950 shadow-sm dark:border-white/10 dark:bg-zinc-950 dark:text-white"><template x-for="slot in endSlots.filter(slot => slot >= minimumEndTime(schedule.start))" :key="slot"><option style="height: 2rem; padding: 0.375rem 0.75rem;" :value="slot" :disabled="['approved', 'unavailable', 'past'].includes(slotStatus(schedule.date, schedule.start, slot))" x-text="`${formatTime(slot)}${slotLabel(slotStatus(schedule.date, schedule.start, slot))}`"></option></template></select></x-ui::time-dropdown>
                                                     </div>
                                                 </div>
                                             </div>
@@ -596,10 +667,10 @@
                                         x-bind:disabled="submitting || availabilityLoading || availabilityError || hasBlockingConflict()"
                                         x-bind:aria-busy="submitting"
                                     >
-                                        <span x-show="!submitting">Send request</span>
+                                        <span x-show="!submitting">{{ $guestBooking ? 'Submit guest request' : 'Send request' }}</span>
                                         <span x-cloak x-show="submitting">Submitting…</span>
                                     </button>
-                                    <a href="{{ route('home') }}" class="inline-flex items-center justify-center rounded-xl border border-emerald-900/10 px-4 py-2 text-sm font-medium text-emerald-900 transition hover:border-emerald-700 hover:bg-emerald-50 dark:border-white/10 dark:text-zinc-200 dark:hover:bg-zinc-800">Back to home</a>
+                                    <a href="{{ $guestBooking ? (auth()->user()->isSuperAdmin() ? route('Facility.SuperAdmin') : route('Facility.OfficeAdmin')) : route('home') }}" class="inline-flex items-center justify-center rounded-xl border border-emerald-900/10 px-4 py-2 text-sm font-medium text-emerald-900 transition hover:border-emerald-700 hover:bg-emerald-50 dark:border-white/10 dark:text-zinc-200 dark:hover:bg-zinc-800">{{ $guestBooking ? 'Back to facilities' : 'Back to home' }}</a>
                                 </div>
                             </div>
                         </form>
@@ -609,4 +680,4 @@
             </div>
         </div>
     </x-ui::main>
-</x-layouts.home.header>
+</x-dynamic-component>

@@ -3,6 +3,34 @@
         <x-ui::heading size="lg">Facilities</x-ui::heading>
 
         <div class="flex w-full flex-wrap gap-2 lg:w-auto lg:justify-end">
+            @if ($this->requestableFacilities->isNotEmpty())
+                <x-ui::dropdown position="bottom" align="end">
+                    <x-ui::button variant="primary" icon="calendar-days">
+                        Request Facility
+                    </x-ui::button>
+
+                    <x-ui::menu class="max-h-80 min-w-72 overflow-y-auto">
+                        @foreach ($this->requestableFacilities as $requestableFacility)
+                            <x-ui::menu.item
+                                icon="calendar-days"
+                                href="{{ route('admin.requests.create', $requestableFacility) }}"
+                            >
+                                <span class="block">
+                                    <span class="block font-semibold">{{ $requestableFacility->Facility_Name }}</span>
+                                    @if ($requestableFacility->Office)
+                                        <span class="block text-xs text-zinc-500 dark:text-zinc-400">{{ $requestableFacility->Office }}</span>
+                                    @endif
+                                </span>
+                            </x-ui::menu.item>
+                        @endforeach
+                    </x-ui::menu>
+                </x-ui::dropdown>
+            @else
+                <x-ui::button variant="primary" icon="calendar-days" disabled title="No facilities are currently available">
+                    Request Facility
+                </x-ui::button>
+            @endif
+
             <x-ui::button
                 wire:click="create"
                 icon="plus"
@@ -22,8 +50,8 @@
                 Facility type
             </x-ui::table.column>
             <x-ui::table.column>Capacity</x-ui::table.column>
-            <x-ui::table.column>Location</x-ui::table.column>
             <x-ui::table.column>Office</x-ui::table.column>
+            <x-ui::table.column>Rates</x-ui::table.column>
             <x-ui::table.column class="min-w-32 whitespace-nowrap" sortable :sorted="$sortBy === 'Status'" :direction="$sortDirection" wire:click="sort('Status')">
                 Status
             </x-ui::table.column>
@@ -54,8 +82,10 @@
                         </x-ui::badge>
                     </x-ui::table.cell>
                     <x-ui::table.cell>{{ $facility->Capacity ?? '—' }}</x-ui::table.cell>
-                    <x-ui::table.cell>{{ $facility->Location ?? '—' }}</x-ui::table.cell>
                     <x-ui::table.cell>{{ $facility->Office ?? '—' }}</x-ui::table.cell>
+                    <x-ui::table.cell>
+                        <p class="max-w-56 line-clamp-3 whitespace-pre-line text-xs leading-5 text-zinc-600 dark:text-zinc-300">{{ $facility->rates ?: '—' }}</p>
+                    </x-ui::table.cell>
 
                     <x-ui::table.cell class="min-w-32 whitespace-nowrap">
                         <button
@@ -81,37 +111,39 @@
                     </x-ui::table.cell>
 
                     <x-ui::table.cell>
-                        <x-ui::dropdown :position="$loop->remaining < 2 ? 'top' : 'bottom'" align="end">
-                            <x-ui::button variant="ghost" size="sm" icon="ellipsis-horizontal" />
+                        <div class="flex items-center justify-end gap-2">
+                            <x-ui::dropdown :position="$loop->remaining < 2 ? 'top' : 'bottom'" align="end">
+                                <x-ui::button variant="ghost" size="sm" icon="ellipsis-horizontal" />
 
-                            <x-ui::menu>
-                                <x-ui::menu.item icon="eye" wire:click="viewFacility({{ $facility->FID }})">
-                                    View
-                                </x-ui::menu.item>
+                                <x-ui::menu>
+                                    <x-ui::menu.item icon="eye" wire:click="viewFacility({{ $facility->FID }})">
+                                        View
+                                    </x-ui::menu.item>
 
-                                <x-ui::menu.item icon="pencil" wire:click="edit({{ $facility->FID }})">
-                                    Edit
-                                </x-ui::menu.item>
+                                    <x-ui::menu.item icon="pencil" wire:click="edit({{ $facility->FID }})">
+                                        Edit
+                                    </x-ui::menu.item>
 
-                                <x-ui::menu.item icon="power" wire:click="requestToggleStatus({{ $facility->FID }})">
-                                    {{ $facility->Status === 'Unavailable' ? 'Activate' : 'Deactivate' }}
-                                </x-ui::menu.item>
+                                    <x-ui::menu.item icon="power" wire:click="requestToggleStatus({{ $facility->FID }})">
+                                        {{ $facility->Status === 'Unavailable' ? 'Activate' : 'Deactivate' }}
+                                    </x-ui::menu.item>
 
-                                <x-ui::menu.separator />
+                                    <x-ui::menu.separator />
 
-                                <x-ui::menu.item
-                                    icon="archive-box"
-                                    variant="danger"
-                                    wire:click="archiveFacility({{ $facility->FID }})"
-                                    data-ui-confirm="Archive this facility?"
-                                    data-ui-confirm-title="Confirm archive"
-                                    data-ui-confirm-label="Archive facility"
-                                    data-ui-confirm-variant="danger"
-                                >
-                                    Archive
-                                </x-ui::menu.item>
-                            </x-ui::menu>
-                        </x-ui::dropdown>
+                                    <x-ui::menu.item
+                                        icon="archive-box"
+                                        variant="danger"
+                                        wire:click="archiveFacility({{ $facility->FID }})"
+                                        data-ui-confirm="Archive this facility?"
+                                        data-ui-confirm-title="Confirm archive"
+                                        data-ui-confirm-label="Archive facility"
+                                        data-ui-confirm-variant="danger"
+                                    >
+                                        Archive
+                                    </x-ui::menu.item>
+                                </x-ui::menu>
+                            </x-ui::dropdown>
+                        </div>
                     </x-ui::table.cell>
                 </x-ui::table.row>
             @empty

@@ -712,7 +712,8 @@ new #[Layout('components.layouts.app')] class extends Component
                 $query->where(function ($searchQuery) use ($term) {
                     $searchQuery
                         ->where('name', 'like', $term)
-                        ->orWhere('email', 'like', $term);
+                        ->orWhere('email', 'like', $term)
+                        ->orWhere('clsu_id', 'like', $term);
                 });
             })
             ->orderBy($this->sortBy, $this->sortDirection)
@@ -730,6 +731,7 @@ new #[Layout('components.layouts.app')] class extends Component
             ->when($this->search, fn ($query) => $query->where(function ($query) {
                 $query->where('name', 'like', '%'.$this->search.'%')
                     ->orWhere('email', 'like', '%'.$this->search.'%')
+                    ->orWhere('clsu_id', 'like', '%'.$this->search.'%')
                     ->orWhere('user_type', 'like', '%'.$this->search.'%');
             }))
             ->orderByDesc('deleted_at')

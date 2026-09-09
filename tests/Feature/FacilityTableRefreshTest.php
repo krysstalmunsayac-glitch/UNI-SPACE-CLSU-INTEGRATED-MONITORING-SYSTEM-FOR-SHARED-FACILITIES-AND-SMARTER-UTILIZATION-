@@ -106,3 +106,48 @@ it('shows stored image URLs and pauses polling while editing', function () {
         ->call('edit', $facility->FID)
         ->assertDontSee('wire:poll.15s', false);
 });
+
+it('creates, displays, and edits facility rates and protocols', function () {
+    $superAdmin = User::factory()->create(['user_type' => 'super_admin']);
+    $this->actingAs($superAdmin);
+
+    Volt::test('facility.super-admin-facility')
+        ->set('Facility_Name', 'Rates Test Hall')
+        ->set('facility_type', 'conference')
+        ->set('rates', '₱3,500 for 3 hours; ₱500 per succeeding hour.')
+        ->set('Office', 'Testing Office')
+        ->set('Description', 'A facility used to verify detailed rate and protocol editing.')
+        ->set('protocols_and_guidelines', 'Submit a request form. Observe proper waste disposal.')
+        ->set('Location', 'CLSU Main Campus')
+        ->set('Capacity', 25)
+        ->set('Status', 'Available')
+        ->call('save', true)
+        ->assertHasNoErrors()
+        ->assertSee('₱3,500 for 3 hours')
+        ->assertDontSee('Submit a request form')
+        ->call('edit', Facilities::query()->where('Facility_Name', 'Rates Test Hall')->value('FID'))
+        ->assertSet('protocols_and_guidelines', 'Submit a request form. Observe proper waste disposal.');
+
+    $facility = Facilities::query()->where('Facility_Name', 'Rates Test Hall')->firstOrFail();
+    expect($facility->rates)->toContain('₱3,500')
+        ->and($facility->Rate_Details)->toBe($facility->rates)
+        ->and($facility->protocols_and_guidelines)->toContain('request form')
+        ->and($facility->Protocols)->toBe($facility->protocols_and_guidelines);
+
+    $officeAdmin = User::factory()->create(['user_type' => 'admin']);
+    $officeAdmin->facilities()->attach($facility->FID);
+    $this->actingAs($officeAdmin);
+
+    Volt::test('facility.office-admin-facility')
+        ->call('edit', $facility->FID)
+        ->assertSet('rates', $facility->rates)
+        ->assertSet('protocols_and_guidelines', $facility->protocols_and_guidelines)
+        ->set('rates', 'No rental fees.')
+        ->set('protocols_and_guidelines', 'Prior approval is required.')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect($facility->refresh()->rates)->toBe('No rental fees.')
+        ->and($facility->protocols_and_guidelines)->toBe('Prior approval is required.')
+        ->and($facility->facility_type)->toBe('conference');
+});

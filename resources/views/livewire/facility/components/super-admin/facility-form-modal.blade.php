@@ -1,4 +1,4 @@
-<x-ui::modal wire:model.self="showModal" class="w-[95vw] max-w-5xl">
+<x-ui::modal wire:model.self="showModal" class="!w-[94vw] !max-w-7xl sm:!p-7">
     <div class="space-y-6">
         <div>
             <x-ui::heading size="lg">
@@ -14,12 +14,13 @@
             <x-ui::input wire:model="Facility_Name" label="Facility Name" placeholder="Enter facility name" required minlength="2" maxlength="150" />
         </div>
 
-        <div>
-            <x-ui::input wire:model="Price" type="number" min="0" max="9999999.99" step="0.01" label="Price (optional)" placeholder="Leave empty if not applicable" />
+        <div class="md:col-span-2">
+            <x-ui::textarea wire:model="rates" label="Rates" placeholder="Enter detailed rates, duration, succeeding-hour charges, discounts, or fee conditions" rows="4" maxlength="10000" />
+            <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Use this field for detailed or conditional pricing. Leave it empty when no information is available.</p>
         </div>
 
         <div>
-            <x-ui::input wire:model="Capacity" type="number" min="70" max="100000" label="Capacity" placeholder="Minimum 70" required />
+            <x-ui::input wire:model="Capacity" type="number" min="1" max="100000" label="Capacity" placeholder="Enter facility capacity" required />
         </div>
 
         <div>
@@ -161,6 +162,10 @@
 
         <div>
             <x-ui::textarea wire:model="Description" label="Description" placeholder="Enter facility description" rows="3" required minlength="5" maxlength="2000" />
+        </div>
+
+        <div class="md:col-span-2">
+            <x-ui::textarea wire:model="protocols_and_guidelines" label="Protocols and Guidelines" placeholder="Enter facility rules, restrictions, approval requirements, and booking procedures" rows="5" maxlength="10000" />
         </div>
 
         <div>

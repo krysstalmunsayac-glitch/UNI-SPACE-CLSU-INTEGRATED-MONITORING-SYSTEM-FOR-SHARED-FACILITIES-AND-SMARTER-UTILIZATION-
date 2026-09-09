@@ -93,8 +93,8 @@ it('rejects administrative schedule times outside operating hours', function () 
 
     Volt::test('schedule.schedule')
         ->call('edit', $schedule->SID)
-        ->set('Start_Time', '06:30')
-        ->set('End_Time', '08:00')
+        ->set('Start_Time', '04:30')
+        ->set('End_Time', '06:00')
         ->call('save')
         ->assertHasErrors(['Start_Time']);
 });

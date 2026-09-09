@@ -28,6 +28,12 @@ class Requests extends Model
     protected $fillable = [
         'Event_ID',
         'User_ID',
+        'Is_Guest_Booking',
+        'Guest_Name',
+        'Guest_Organization',
+        'Guest_Email',
+        'Guest_Contact',
+        'Created_By',
         'Facility_ID',
         'Proposed_Date',
         'Proposed_End_Date',
@@ -59,6 +65,7 @@ class Requests extends Model
         'Capacity' => 'integer',
         'Purpose_Categories' => 'array',
         'Review_Requested_At' => 'datetime',
+        'Is_Guest_Booking' => 'boolean',
     ];
 
     /** @var array<string, list<string>> */
@@ -92,9 +99,11 @@ class Requests extends Model
             AuditLog::recordRequest(
                 $request,
                 'request_submitted',
-                "Submitted request #{$request->RID}.",
+                $request->Is_Guest_Booking
+                    ? "Submitted guest request #{$request->RID} on behalf of {$request->Guest_Name}."
+                    : "Submitted request #{$request->RID}.",
                 null,
-                $request->only(['User_ID', 'Facility_ID', 'Proposed_Date', 'Status', 'Purpose']),
+                $request->only(['User_ID', 'Created_By', 'Is_Guest_Booking', 'Guest_Name', 'Guest_Organization', 'Facility_ID', 'Proposed_Date', 'Status', 'Purpose']),
             );
         });
 
@@ -162,6 +171,21 @@ class Requests extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'User_ID')->withTrashed();
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'Created_By')->withTrashed();
+    }
+
+    public function requesterName(): string
+    {
+        return $this->Is_Guest_Booking ? (string) $this->Guest_Name : ($this->user?->name ?? 'Unknown requester');
+    }
+
+    public function requesterEmail(): ?string
+    {
+        return $this->Is_Guest_Booking ? $this->Guest_Email : $this->user?->email;
     }
 
     public function event(): BelongsTo

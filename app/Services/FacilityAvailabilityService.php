@@ -6,7 +6,6 @@ use App\Models\Facilities;
 use App\Models\FacilityBlackout;
 use App\Models\Requests;
 use App\Notifications\FacilityUnavailable;
-use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -15,9 +14,9 @@ use Illuminate\Validation\ValidationException;
 
 class FacilityAvailabilityService
 {
-    public const OPENS_AT = '07:00';
+    public const OPENS_AT = '05:00';
 
-    public const CLOSES_AT = '20:00';
+    public const CLOSES_AT = '24:00';
 
     public const SLOT_MINUTES = 30;
 
@@ -78,14 +77,21 @@ class FacilityAvailabilityService
     public function slots(): array
     {
         $slots = [];
-        $cursor = Carbon::createFromFormat('H:i', self::OPENS_AT);
-        $last = Carbon::createFromFormat('H:i', self::CLOSES_AT)->subMinutes(self::MINIMUM_MINUTES);
-        while ($cursor->lessThanOrEqualTo($last)) {
-            $slots[] = $cursor->format('H:i');
-            $cursor->addMinutes(self::SLOT_MINUTES);
+        $lastStart = $this->timeToMinutes(self::CLOSES_AT) - self::MINIMUM_MINUTES;
+
+        for ($minute = $this->timeToMinutes(self::OPENS_AT); $minute <= $lastStart; $minute += self::SLOT_MINUTES) {
+            $slots[] = $this->formatMinutes($minute);
         }
 
         return $slots;
+    }
+
+    public function endSlots(): array
+    {
+        return collect($this->slots())
+            ->map(fn (string $time): string => $this->formatMinutes($this->timeToMinutes($time) + self::MINIMUM_MINUTES))
+            ->values()
+            ->all();
     }
 
     public function validateSchedules(int $facilityId, string $firstDate, string $lastDate, array $submitted, ?int $ignoreRequestId = null, bool $lock = false): array
@@ -106,15 +112,15 @@ class FacilityAvailabilityService
 
         $schedules = $expected->map(fn ($date) => ['date' => $date, 'start' => $byDate[$date]['start'], 'end' => $byDate[$date]['end']])->all();
         foreach ($schedules as $index => $schedule) {
-            $start = Carbon::createFromFormat('H:i', $schedule['start']);
-            $end = Carbon::createFromFormat('H:i', $schedule['end']);
-            if ((int) $start->format('i') % self::SLOT_MINUTES !== 0 || (int) $end->format('i') % self::SLOT_MINUTES !== 0) {
+            $start = $this->timeToMinutes($schedule['start']);
+            $end = $this->timeToMinutes($schedule['end']);
+            if ($start % self::SLOT_MINUTES !== 0 || $end % self::SLOT_MINUTES !== 0) {
                 throw ValidationException::withMessages(["Daily_Schedules.{$index}.start" => 'Choose a time in 30-minute intervals.']);
             }
-            if ($schedule['start'] < self::OPENS_AT || $schedule['end'] > self::CLOSES_AT) {
-                throw ValidationException::withMessages(["Daily_Schedules.{$index}.start" => 'Bookings must be between 7:00 AM and 8:00 PM.']);
+            if ($start < $this->timeToMinutes(self::OPENS_AT) || $end > $this->timeToMinutes(self::CLOSES_AT)) {
+                throw ValidationException::withMessages(["Daily_Schedules.{$index}.start" => 'Bookings must be between 5:00 AM and 12:00 AM.']);
             }
-            if ($end->lessThanOrEqualTo($start) || $start->diffInMinutes($end) < self::MINIMUM_MINUTES) {
+            if ($end <= $start || ($end - $start) < self::MINIMUM_MINUTES) {
                 throw ValidationException::withMessages(["Daily_Schedules.{$index}.end" => 'A booking must be at least 1 hour.']);
             }
             if ($this->blackout($facilityId, $schedule['date'])) {
@@ -147,11 +153,16 @@ class FacilityAvailabilityService
                 if (! $existing) {
                     return null;
                 }
-                $blockedStart = Carbon::createFromFormat('H:i', $existing['start'])->subMinutes(self::BUFFER_MINUTES)->format('H:i');
-                $blockedEnd = Carbon::createFromFormat('H:i', $existing['end'])->addMinutes(self::BUFFER_MINUTES)->format('H:i');
-                if ($candidate['start'] >= $blockedEnd || $candidate['end'] <= $blockedStart) {
+                $blockedStartMinutes = max(0, $this->timeToMinutes($existing['start']) - self::BUFFER_MINUTES);
+                $blockedEndMinutes = min(24 * 60, $this->timeToMinutes($existing['end']) + self::BUFFER_MINUTES);
+                $candidateStart = $this->timeToMinutes($candidate['start']);
+                $candidateEnd = $this->timeToMinutes($candidate['end']);
+                if ($candidateStart >= $blockedEndMinutes || $candidateEnd <= $blockedStartMinutes) {
                     return null;
                 }
+
+                $blockedStart = $this->formatMinutes($blockedStartMinutes);
+                $blockedEnd = $this->formatMinutes($blockedEndMinutes);
 
                 return ['request_id' => $request->RID, 'date' => $candidate['date'], 'status' => strtolower($request->Status), 'start' => $existing['start'], 'end' => $existing['end'], 'blocked_start' => $blockedStart, 'blocked_end' => $blockedEnd];
             })->filter();
@@ -175,5 +186,27 @@ class FacilityAvailabilityService
     private function blackout(int $facilityId, string $date): ?FacilityBlackout
     {
         return FacilityBlackout::query()->where('facility_id', $facilityId)->whereDate('starts_on', '<=', $date)->whereDate('ends_on', '>=', $date)->first();
+    }
+
+    private function timeToMinutes(string $time): int
+    {
+        if (! preg_match('/^(?<hour>[01]\d|2[0-3]):(?<minute>[0-5]\d)$|^24:00$/', $time, $matches)) {
+            throw ValidationException::withMessages(['Daily_Schedules' => 'Choose a valid booking time.']);
+        }
+
+        if ($time === '24:00') {
+            return 24 * 60;
+        }
+
+        return ((int) $matches['hour'] * 60) + (int) $matches['minute'];
+    }
+
+    private function formatMinutes(int $minutes): string
+    {
+        if ($minutes >= 24 * 60) {
+            return '24:00';
+        }
+
+        return sprintf('%02d:%02d', intdiv($minutes, 60), $minutes % 60);
     }
 }

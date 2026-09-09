@@ -1,7 +1,7 @@
 <?php
 
-use App\Models\User;
 use App\Models\Facilities;
+use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -22,11 +22,13 @@ it('restores a matching archived seed user instead of violating the unique email
         ->and($restoredUser->name)->toBe('Ana Garcia');
 });
 
-it('does not seed facilities with a known capacity below seventy', function (): void {
+it('seeds documented facilities regardless of capacity', function (): void {
     $this->seed(DatabaseSeeder::class);
 
     expect(Facilities::query()
         ->whereNotNull('Capacity')
         ->where('Capacity', '<', 70)
-        ->exists())->toBeFalse();
+        ->exists())->toBeTrue()
+        ->and(Facilities::query()->where('Facility_Name', 'RIE Training Function Room B')->exists())->toBeTrue()
+        ->and(Facilities::query()->where('Facility_Name', 'Armando N. Espino Jr. Conference Hall (PreDiCt)')->exists())->toBeTrue();
 });

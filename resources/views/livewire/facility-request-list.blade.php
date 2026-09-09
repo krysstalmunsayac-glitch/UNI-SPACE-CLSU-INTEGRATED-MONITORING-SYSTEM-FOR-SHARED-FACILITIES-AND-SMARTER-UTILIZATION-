@@ -369,7 +369,7 @@ new class extends Component {
                                 </div>
                                 <div>
                                     <label id="end-time-{{ $request->RID }}-label" for="end-time-{{ $request->RID }}" class="mb-2 block text-xs font-black uppercase tracking-wide text-emerald-700 dark:text-emerald-300">End time</label>
-                                    <x-ui::time-select id="end-time-{{ $request->RID }}" aria-labelledby="end-time-{{ $request->RID }}-label" name="Proposed_End_Time" :value="old('Proposed_End_Time', $request->Proposed_End_Time?->format('H:i'))" :options="collect(app(\App\Services\FacilityAvailabilityService::class)->slots())->map(fn ($time) => \Carbon\Carbon::createFromFormat('H:i', $time)->addHour()->format('H:i'))->all()" />
+                                    <x-ui::time-select id="end-time-{{ $request->RID }}" aria-labelledby="end-time-{{ $request->RID }}-label" name="Proposed_End_Time" :value="old('Proposed_End_Time', data_get($request->Daily_Schedules, '0.end', $request->Proposed_End_Time?->format('H:i')))" :options="app(\App\Services\FacilityAvailabilityService::class)->endSlots()" />
                                 </div>
                                 <div>
                                     <label for="purpose-{{ $request->RID }}" class="mb-2 block text-xs font-black uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Purpose</label>

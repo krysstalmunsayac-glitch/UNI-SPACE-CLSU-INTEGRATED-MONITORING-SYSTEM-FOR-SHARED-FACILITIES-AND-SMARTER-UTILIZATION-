@@ -26,9 +26,10 @@ function schedulingFixture(string $status = 'Approved', string $start = '09:00',
 
 it('generates thirty minute booking slots within operating hours', function () {
     $slots = app(FacilityAvailabilityService::class)->slots();
-    expect(array_slice($slots, 0, 3))->toBe(['07:00', '07:30', '08:00'])
-        ->and(array_slice($slots, -3))->toBe(['18:00', '18:30', '19:00'])
-        ->and(count($slots))->toBe(25);
+    expect(array_slice($slots, 0, 3))->toBe(['05:00', '05:30', '06:00'])
+        ->and(array_slice($slots, -3))->toBe(['22:00', '22:30', '23:00'])
+        ->and(count($slots))->toBe(37)
+        ->and(app(FacilityAvailabilityService::class)->endSlots())->toContain('24:00');
 });
 
 it('blocks approved reservations including preparation and cleanup buffers', function () {
@@ -58,13 +59,22 @@ it('allows an adjacent booking outside the cleanup buffer and excludes the edite
         ->and($service->validateSchedules($facility->FID, $date, $date, [['date' => $date, 'start' => '09:00', 'end' => '10:00']], $request->RID))->toHaveCount(1);
 });
 
+it('detects conflicts for reservations ending at midnight', function () {
+    [, $facility, , $date] = schedulingFixture('Approved', '23:00', '24:00');
+    $service = app(FacilityAvailabilityService::class);
+
+    expect(fn () => $service->validateSchedules($facility->FID, $date, $date, [['date' => $date, 'start' => '22:30', 'end' => '23:30']]))
+        ->toThrow(ValidationException::class);
+});
+
 it('enforces hours duration intervals complete date ranges and blackouts', function () {
     [, $facility, , $date] = schedulingFixture('Cancelled');
     $service = app(FacilityAvailabilityService::class);
 
-    expect(fn () => $service->validateSchedules($facility->FID, $date, $date, [['date' => $date, 'start' => '06:30', 'end' => '08:00']]))->toThrow(ValidationException::class)
+    expect(fn () => $service->validateSchedules($facility->FID, $date, $date, [['date' => $date, 'start' => '04:30', 'end' => '06:00']]))->toThrow(ValidationException::class)
         ->and(fn () => $service->validateSchedules($facility->FID, $date, $date, [['date' => $date, 'start' => '07:15', 'end' => '08:15']]))->toThrow(ValidationException::class)
-        ->and(fn () => $service->validateSchedules($facility->FID, $date, $date, [['date' => $date, 'start' => '07:00', 'end' => '07:30']]))->toThrow(ValidationException::class);
+        ->and(fn () => $service->validateSchedules($facility->FID, $date, $date, [['date' => $date, 'start' => '07:00', 'end' => '07:30']]))->toThrow(ValidationException::class)
+        ->and($service->validateSchedules($facility->FID, $date, $date, [['date' => $date, 'start' => '23:00', 'end' => '24:00']]))->toHaveCount(1);
 
     FacilityBlackout::create(['facility_id' => $facility->FID, 'starts_on' => $date, 'ends_on' => $date, 'reason' => 'Maintenance']);
     expect(fn () => $service->validateSchedules($facility->FID, $date, $date, [['date' => $date, 'start' => '07:00', 'end' => '08:00']]))->toThrow(ValidationException::class);

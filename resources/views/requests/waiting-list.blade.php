@@ -180,7 +180,7 @@
                                 </div>
                                 <div>
                                     <label class="mb-2 block text-sm font-medium text-emerald-900 dark:text-zinc-300" id="Proposed_End_Time_{{ $request->RID }}-label" for="Proposed_End_Time_{{ $request->RID }}">End time</label>
-                                    <x-ui::time-select id="Proposed_End_Time_{{ $request->RID }}" aria-labelledby="Proposed_End_Time_{{ $request->RID }}-label" name="Proposed_End_Time" :value="old('Proposed_End_Time', $request->Proposed_End_Time?->format('H:i'))" :options="collect(app(\App\Services\FacilityAvailabilityService::class)->slots())->map(fn ($time) => \Carbon\Carbon::createFromFormat('H:i', $time)->addHour()->format('H:i'))->all()" />
+                                    <x-ui::time-select id="Proposed_End_Time_{{ $request->RID }}" aria-labelledby="Proposed_End_Time_{{ $request->RID }}-label" name="Proposed_End_Time" :value="old('Proposed_End_Time', data_get($request->Daily_Schedules, '0.end', $request->Proposed_End_Time?->format('H:i')))" :options="app(\App\Services\FacilityAvailabilityService::class)->endSlots()" />
                                 </div>
                                 <div>
                                     <label class="mb-2 block text-sm font-medium text-emerald-900 dark:text-zinc-300" for="Purpose_{{ $request->RID }}">Purpose</label>

@@ -45,8 +45,8 @@ function scheduleCalendar(initialEvents, livewireView) {
 
                 height: 'auto',
                 nowIndicator: true,
-                slotMinTime: '07:00:00',
-                slotMaxTime: '21:00:00',
+                slotMinTime: '05:00:00',
+                slotMaxTime: '24:00:00',
                 allDaySlot: false,
                 events: this.events,
 

@@ -16,6 +16,10 @@ class User extends Authenticatable implements MustVerifyEmail
 {
     public const PH_CONTACT_REGEX = '/^(?:09\d{9}|\+639\d{9})$/';
 
+    public const CLSU_ID_REGEX = '/^\d{2}-\d{4}$/';
+
+    public const CLSU_EMAIL_DOMAINS = ['clsu.edu.ph', 'clsu2.edu.ph'];
+
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, SoftDeletes;
 
@@ -26,6 +30,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     protected $fillable = [
         'name',
+        'clsu_id',
         'email',
         'password',
         'email_verified_at',
@@ -115,6 +120,14 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Guest requests created by this administrator on someone else's behalf.
+     */
+    public function createdGuestRequests(): HasMany
+    {
+        return $this->hasMany(Requests::class, 'Created_By');
+    }
+
+    /**
      * Feedback submitted by this user.
      */
     public function feedbacks(): HasMany
@@ -173,6 +186,19 @@ class User extends Authenticatable implements MustVerifyEmail
             'admin' => 'Office Admin',
             default => 'End User',
         };
+    }
+
+    public static function usesClsuEmail(string $email): bool
+    {
+        $email = Str::lower(trim($email));
+
+        return collect(self::CLSU_EMAIL_DOMAINS)
+            ->contains(fn (string $domain): bool => str_ends_with($email, '@'.$domain));
+    }
+
+    public function accountIdentifier(): string
+    {
+        return $this->clsu_id ?: 'USR-'.str_pad((string) $this->id, 5, '0', STR_PAD_LEFT);
     }
 
     public function hasrole(string $role): bool

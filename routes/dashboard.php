@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\ReportExportController;
 use App\Http\Controllers\Dashboard\DashboardController;
+use App\Http\Controllers\FacilitiesController;
 use App\Http\Controllers\FeedbacksController;
 use App\Http\Middleware\PreventBackHistory;
 use Illuminate\Support\Facades\Route;
@@ -93,6 +94,15 @@ Route::middleware([
     */
 
     Route::middleware('role:super_admin,office_admin')->group(function () {
+        Route::prefix('facility/{facility}/guest-request')
+            ->name('admin.requests.')
+            ->controller(FacilitiesController::class)
+            ->group(function () {
+                Route::get('/', 'showGuestRequest')->name('create');
+                Route::get('/availability', 'guestAvailability')->middleware('throttle:60,1')->name('availability');
+                Route::post('/', 'storeGuestRequest')->name('store');
+            });
+
         Route::get('/facility', [DashboardController::class, 'facilityRedirect'])
             ->name('Facility');
 

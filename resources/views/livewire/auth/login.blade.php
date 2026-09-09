@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\User;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
@@ -10,8 +11,9 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Validate;
 use Livewire\Volt\Component;
 
-new #[Layout('components.layouts.auth')] class extends Component {
-    #[Validate('required|string|email')]
+new #[Layout('components.layouts.auth')] class extends Component
+{
+    #[Validate('required|string|max:255')]
     public string $email = '';
 
     #[Validate('required|string')]
@@ -24,12 +26,19 @@ new #[Layout('components.layouts.auth')] class extends Component {
      */
     public function login(): void
     {
+        $this->email = Str::lower(trim($this->email));
+
         $this->validate();
 
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt([
-            'email' => $this->email,
+        $user = User::query()
+            ->where('email', $this->email)
+            ->orWhere('clsu_id', $this->email)
+            ->first();
+
+        if (! $user || ! Auth::attempt([
+            'id' => $user->id,
             'password' => $this->password,
             'is_active' => true,
         ], $this->remember)) {
@@ -112,8 +121,14 @@ new #[Layout('components.layouts.auth')] class extends Component {
     <x-auth-session-status class="text-center" :status="session('status')" />
 
     <form wire:submit="login" class="flex flex-col gap-6">
-        <!-- Email Address -->
-        <x-ui::input wire:model="email" label="{{ __('Email address') }}" type="email" name="email" required autofocus autocomplete="email" placeholder="email@example.com" />
+        <div class="space-y-3">
+            <!-- Email Address or CLSU ID -->
+            <x-ui::input wire:model="email" label="{{ __('Email address or CLSU ID') }}" type="text" name="email" required autofocus autocomplete="username" placeholder="name@email.com" />
+
+            <p class="text-xs leading-5 text-emerald-950/80 dark:text-emerald-100/80 lg:hidden">
+                By signing in, you acknowledge our <a href="{{ route('terms') }}#privacy-notice" target="_blank" rel="noopener noreferrer" class="rounded font-semibold text-emerald-900 underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 dark:text-emerald-100">Privacy Notice<span class="sr-only"> (opens in a new tab)</span></a> and consent to the processing of your personal information in accordance with the Data Privacy Act of 2012.
+            </p>
+        </div>
 
         <!-- Password -->
         <div class="relative">

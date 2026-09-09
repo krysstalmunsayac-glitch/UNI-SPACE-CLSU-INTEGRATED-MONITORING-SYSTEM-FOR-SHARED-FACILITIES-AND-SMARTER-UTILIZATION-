@@ -26,8 +26,9 @@ class NewRequestSubmitted extends Notification
             ->markdown('emails.new-request-submitted', [
                 'adminName' => $notifiable->name ?? 'there',
                 'requestId' => $this->request->RID,
-                'requesterName' => $this->request->user?->name ?? 'Unknown requester',
-                'requesterEmail' => $this->request->user?->email,
+                'requesterName' => $this->request->requesterName(),
+                'requesterEmail' => $this->request->requesterEmail(),
+                'createdBy' => $this->request->creator?->name,
                 'facilityName' => $this->request->facility?->Facility_Name ?? 'N/A',
                 'proposedDate' => $this->request->Proposed_Date?->format('F j, Y') ?? 'N/A',
                 'startTime' => $this->request->Proposed_Start_Time?->format('H:i') ?? 'N/A',
@@ -51,8 +52,12 @@ class NewRequestSubmitted extends Notification
                 ->unique()
                 ->implode(', '),
             'user_id' => $this->request->User_ID,
-            'user_name' => $this->request->user?->name,
-            'message' => 'A new facility request has been submitted.',
+            'user_name' => $this->request->requesterName(),
+            'is_guest_booking' => $this->request->Is_Guest_Booking,
+            'created_by' => $this->request->creator?->name,
+            'message' => $this->request->Is_Guest_Booking
+                ? 'A guest facility request has been submitted by an administrator.'
+                : 'A new facility request has been submitted.',
             'status' => $this->request->Status,
         ];
     }

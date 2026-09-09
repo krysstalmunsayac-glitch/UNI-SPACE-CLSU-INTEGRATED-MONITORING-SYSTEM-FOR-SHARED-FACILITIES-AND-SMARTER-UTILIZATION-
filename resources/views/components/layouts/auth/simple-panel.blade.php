@@ -1,8 +1,6 @@
 <section class="relative hidden min-h-[640px] overflow-hidden bg-emerald-700 px-10 py-10 text-center text-white dark:bg-emerald-900 lg:flex">
     <div class="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,215,0,0.22),transparent_28%),linear-gradient(135deg,#009639,#1e6031)]"></div>
-    <div class="relative z-10 flex min-h-full w-full flex-col items-center justify-between">
-        <div aria-hidden="true"></div>
-
+    <div class="relative z-10 flex min-h-full w-full flex-col items-center justify-center">
         <div class="max-w-sm">
             @if (request()->routeIs('login', 'register'))
                 <h1 class="text-3xl font-black tracking-tight">{{ $panelTitle }}</h1>
@@ -24,6 +22,18 @@
             </div>
         </div>
 
-        <span class="text-xs font-bold text-emerald-50/65">Central Luzon State University</span>
+        <div class="absolute inset-x-0 bottom-0 flex flex-col items-center gap-2.5">
+            @if (request()->routeIs('login'))
+                <p class="mx-auto max-w-lg px-4 text-center text-[10px] font-medium leading-4 text-emerald-50/70">
+                    By signing in, you acknowledge our <a href="{{ route('terms') }}#privacy-notice" target="_blank" rel="noopener noreferrer" class="rounded font-bold text-white underline decoration-yellow-300/70 underline-offset-2 hover:decoration-yellow-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-300">Privacy Notice<span class="sr-only"> (opens in a new tab)</span></a> and consent to the processing of your personal information under the Data Privacy Act of 2012.
+                </p>
+            @elseif (request()->routeIs('register'))
+                <p class="mx-auto max-w-lg px-4 text-center text-[10px] font-medium leading-4 text-emerald-50/70">
+                    By creating an account, you acknowledge our <a href="{{ route('terms') }}#privacy-notice" target="_blank" rel="noopener noreferrer" class="rounded font-bold text-white underline decoration-yellow-300/70 underline-offset-2 hover:decoration-yellow-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-300">Privacy Notice<span class="sr-only"> (opens in a new tab)</span></a> and consent to the processing of your personal information under the Data Privacy Act of 2012.
+                </p>
+            @endif
+
+            <span class="text-xs font-bold text-emerald-50/65">Central Luzon State University</span>
+        </div>
     </div>
 </section>

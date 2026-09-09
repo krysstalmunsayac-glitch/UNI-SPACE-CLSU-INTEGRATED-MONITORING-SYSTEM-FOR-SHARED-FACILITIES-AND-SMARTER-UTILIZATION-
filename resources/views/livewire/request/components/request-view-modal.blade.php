@@ -28,6 +28,9 @@
                     <div class="min-w-0 flex-1">
                         <p class="text-base font-black text-emerald-950 dark:text-white">{{ $Requester_Name ?? 'Unknown user' }}</p>
                         <p class="break-all text-sm text-emerald-800/70 dark:text-emerald-100/70">{{ $Requester_Email ?? 'No email available' }}</p>
+                        @if ($Is_Guest_Booking)
+                            <p class="mt-1 text-xs font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Guest booking</p>
+                        @endif
                     </div>
                     <dl class="grid min-w-0 gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
                         <div>
@@ -35,13 +38,19 @@
                             <dd class="font-medium">{{ $Requester_Contact ?: 'Not provided' }}</dd>
                         </div>
                         <div>
-                            <dt class="text-xs font-semibold text-zinc-500 dark:text-zinc-400">Office</dt>
+                            <dt class="text-xs font-semibold text-zinc-500 dark:text-zinc-400">{{ $Is_Guest_Booking ? 'Organization / affiliation' : 'Office' }}</dt>
                             <dd class="font-medium">{{ $Requester_Office ?: 'Not provided' }}</dd>
                         </div>
                         <div>
                             <dt class="text-xs font-semibold text-zinc-500 dark:text-zinc-400">User ID</dt>
-                            <dd class="font-medium">{{ $User_ID ? '#'.$User_ID : '—' }}</dd>
+                            <dd class="font-medium">{{ $Is_Guest_Booking ? 'No End User account' : ($User_ID ? '#'.$User_ID : '—') }}</dd>
                         </div>
+                        @if ($Is_Guest_Booking)
+                            <div>
+                                <dt class="text-xs font-semibold text-zinc-500 dark:text-zinc-400">Created by</dt>
+                                <dd class="font-medium">{{ $Created_By_Name ?? 'Unknown administrator' }}</dd>
+                            </div>
+                        @endif
                     </dl>
                 </div>
             </section>

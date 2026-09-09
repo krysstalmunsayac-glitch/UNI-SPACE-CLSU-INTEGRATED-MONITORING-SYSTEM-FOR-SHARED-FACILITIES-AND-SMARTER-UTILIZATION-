@@ -76,8 +76,8 @@ class ReportExportController extends Controller
             foreach ($requests as $facilityRequest) {
                 fputcsv($output, [
                     $facilityRequest->RID,
-                    $facilityRequest->user?->name,
-                    $facilityRequest->user?->email,
+                    $facilityRequest->requesterName(),
+                    $facilityRequest->requesterEmail(),
                     $facilityRequest->facility?->Facility_Name,
                     $facilityRequest->Proposed_Date
                         ? '="'.$facilityRequest->Proposed_Date->format('M d, Y').'"'

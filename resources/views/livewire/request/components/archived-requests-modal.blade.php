@@ -38,10 +38,13 @@
                                 </x-ui::table.cell>
                                 <x-ui::table.cell>
                                     <div class="flex min-w-44 items-center gap-3">
-                                        <x-ui::avatar size="xs" :name="$request->user?->name ?? '—'" />
+                                        <x-ui::avatar size="xs" :name="$request->requesterName()" />
                                         <div class="min-w-0">
-                                            <div class="font-medium">{{ $request->user?->name ?? '—' }}</div>
-                                            <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ $request->user?->email ?? 'No email' }}</div>
+                                            <div class="font-medium">{{ $request->requesterName() }}</div>
+                                            <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ $request->requesterEmail() ?? ($request->Guest_Organization ?: 'No email') }}</div>
+                                            @if ($request->Is_Guest_Booking)
+                                                <div class="text-[11px] font-semibold text-emerald-700 dark:text-emerald-300">Guest · created by {{ $request->creator?->name ?? 'Unknown admin' }}</div>
+                                            @endif
                                         </div>
                                     </div>
                                 </x-ui::table.cell>

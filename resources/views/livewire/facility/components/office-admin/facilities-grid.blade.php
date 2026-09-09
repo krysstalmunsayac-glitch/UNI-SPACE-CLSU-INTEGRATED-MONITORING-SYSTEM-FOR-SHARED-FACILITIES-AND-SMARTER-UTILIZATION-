@@ -76,7 +76,23 @@
                         </div>
                     </div>
 
+                    <div class="grid gap-3 border-t border-slate-200 pt-3 text-xs dark:border-slate-700">
+                        <div>
+                            <p class="font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Rates</p>
+                            <p class="mt-1 line-clamp-2 whitespace-pre-line leading-5 text-slate-600 dark:text-slate-300">{{ $facility->rates ?: 'No rate information provided.' }}</p>
+                        </div>
+                        <div>
+                            <p class="font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Protocols</p>
+                            <p class="mt-1 line-clamp-2 whitespace-pre-line leading-5 text-slate-600 dark:text-slate-300">{{ $facility->protocols_and_guidelines ?: 'No protocols provided.' }}</p>
+                        </div>
+                    </div>
+
                     <div class="grid gap-2">
+                        @if ($facility->Status === 'Available')
+                            <x-ui::button size="sm" variant="primary" href="{{ route('admin.requests.create', $facility) }}" class="w-full">
+                                Request Facility
+                            </x-ui::button>
+                        @endif
                         <x-ui::button
                             size="sm"
                             variant="primary"

@@ -57,7 +57,7 @@
                                             </div>
 
                                             <div class="text-xs text-zinc-500">
-                                                USR-{{ str_pad((string) $archivedUser->id, 5, '0', STR_PAD_LEFT) }}
+                                                {{ $archivedUser->clsu_id ? 'CLSU ID' : 'Account ID' }}: {{ $archivedUser->accountIdentifier() }}
                                             </div>
                                         </div>
                                     </div>

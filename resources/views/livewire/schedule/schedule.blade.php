@@ -91,11 +91,10 @@ new #[Layout('components.layouts.app')] class extends Component {
     public function updatedStartTime(string $value): void
     {
         try {
-            $end = Carbon::createFromFormat('H:i', $value)
-                ->addMinutes(FacilityAvailabilityService::MINIMUM_MINUTES);
+            $endMinutes = $this->timeToMinutes($value) + FacilityAvailabilityService::MINIMUM_MINUTES;
 
-            if ($end->format('H:i') <= FacilityAvailabilityService::CLOSES_AT) {
-                $this->End_Time = $end->format('H:i');
+            if ($endMinutes <= $this->timeToMinutes(FacilityAvailabilityService::CLOSES_AT)) {
+                $this->End_Time = $this->formatMinutes($endMinutes);
             }
         } catch (\Throwable) {
             // Validation will present a useful message for malformed values.
@@ -134,7 +133,7 @@ new #[Layout('components.layouts.app')] class extends Component {
             'Request_ID' => ['required', 'exists:requests,RID'],
             'Date' => ['required', 'date', 'after_or_equal:'.app(BookingPolicy::class)->earliestDate(auth()->user())],
             'Start_Time' => ['required', 'date_format:H:i'],
-            'End_Time' => ['required', 'date_format:H:i', 'after:Start_Time'],
+            'End_Time' => ['required', 'regex:/^(?:[01]\d|2[0-3]):[0-5]\d|24:00$/', 'after:Start_Time'],
             'Status' => ['required', 'in:Booked,Blocked'],
         ], [
             'Date.after_or_equal' => app(BookingPolicy::class)->noticeMessage(auth()->user()),
@@ -142,22 +141,22 @@ new #[Layout('components.layouts.app')] class extends Component {
 
         app(BookingPolicy::class)->validateFutureStart($validated['Date'], $validated['Start_Time'], 'Start_Time');
 
-        $startTime = Carbon::createFromFormat('H:i', $validated['Start_Time']);
-        $endTime = Carbon::createFromFormat('H:i', $validated['End_Time']);
+        $startTime = $this->timeToMinutes($validated['Start_Time']);
+        $endTime = $this->timeToMinutes($validated['End_Time']);
 
-        if ($startTime->diffInMinutes($endTime) < 60) {
+        if (($endTime - $startTime) < 60) {
             $this->addError('End_Time', 'A booking must be at least 1 hour.');
 
             return;
         }
 
         if (
-            $validated['Start_Time'] < FacilityAvailabilityService::OPENS_AT
-            || $validated['End_Time'] > FacilityAvailabilityService::CLOSES_AT
-            || (int) $startTime->format('i') % FacilityAvailabilityService::SLOT_MINUTES !== 0
-            || (int) $endTime->format('i') % FacilityAvailabilityService::SLOT_MINUTES !== 0
+            $startTime < $this->timeToMinutes(FacilityAvailabilityService::OPENS_AT)
+            || $endTime > $this->timeToMinutes(FacilityAvailabilityService::CLOSES_AT)
+            || $startTime % FacilityAvailabilityService::SLOT_MINUTES !== 0
+            || $endTime % FacilityAvailabilityService::SLOT_MINUTES !== 0
         ) {
-            $this->addError('Start_Time', 'Choose a 30-minute time slot between 7:00 AM and 8:00 PM.');
+            $this->addError('Start_Time', 'Choose a 30-minute time slot between 5:00 AM and 12:00 AM.');
 
             return;
         }
@@ -246,19 +245,34 @@ new #[Layout('components.layouts.app')] class extends Component {
     #[Computed]
     public function endTimeSlots(): array
     {
-        $minimum = Carbon::createFromFormat('H:i', $this->Start_Time ?: FacilityAvailabilityService::OPENS_AT)
-            ->addMinutes(FacilityAvailabilityService::MINIMUM_MINUTES)
-            ->format('H:i');
-
         $slots = [];
-        $cursor = Carbon::createFromFormat('H:i', $minimum);
-        $close = Carbon::createFromFormat('H:i', FacilityAvailabilityService::CLOSES_AT);
-        while ($cursor->lessThanOrEqualTo($close)) {
-            $slots[] = $cursor->format('H:i');
-            $cursor->addMinutes(FacilityAvailabilityService::SLOT_MINUTES);
+        $minimum = $this->timeToMinutes($this->Start_Time ?: FacilityAvailabilityService::OPENS_AT)
+            + FacilityAvailabilityService::MINIMUM_MINUTES;
+        $close = $this->timeToMinutes(FacilityAvailabilityService::CLOSES_AT);
+
+        for ($minute = $minimum; $minute <= $close; $minute += FacilityAvailabilityService::SLOT_MINUTES) {
+            $slots[] = $this->formatMinutes($minute);
         }
 
         return $slots;
+    }
+
+    private function timeToMinutes(string $time): int
+    {
+        if ($time === '24:00') {
+            return 24 * 60;
+        }
+
+        [$hour, $minute] = array_map('intval', explode(':', $time));
+
+        return ($hour * 60) + $minute;
+    }
+
+    private function formatMinutes(int $minutes): string
+    {
+        return $minutes >= 24 * 60
+            ? '24:00'
+            : sprintf('%02d:%02d', intdiv($minutes, 60), $minutes % 60);
     }
 
     public function edit(int $scheduleId): void
@@ -269,7 +283,8 @@ new #[Layout('components.layouts.app')] class extends Component {
         $this->Request_ID = $schedule->Request_ID;
         $this->Date       = Carbon::parse($schedule->Date)->toDateString();
         $this->Start_Time = Carbon::parse($schedule->Start_Time)->format('H:i');
-        $this->End_Time   = Carbon::parse($schedule->End_Time)->format('H:i');
+        $rawEndTime = substr((string) $schedule->getRawOriginal('End_Time'), 0, 5);
+        $this->End_Time   = $rawEndTime === '24:00' ? '24:00' : Carbon::parse($schedule->End_Time)->format('H:i');
         $this->Status     = $schedule->Status;
         $this->showModal  = true;
     }
@@ -439,7 +454,7 @@ new #[Layout('components.layouts.app')] class extends Component {
     {
         return Schedule::query()
             ->with([
-                'request:RID,Event_ID,Facility_ID,User_ID,Purpose,Status',
+                'request:RID,Event_ID,Facility_ID,User_ID,Is_Guest_Booking,Guest_Name,Purpose,Status',
                 'request.facility:FID,Facility_Name',
                 'request.event:EID,Event_Title',
                 'request.user:id,name',
@@ -472,7 +487,10 @@ new #[Layout('components.layouts.app')] class extends Component {
             ->map(function ($schedule) {
                 $date = Carbon::parse($schedule->Date)->toDateString();
                 $start = Carbon::parse($schedule->Start_Time)->format('H:i:s');
-                $end = Carbon::parse($schedule->End_Time)->format('H:i:s');
+                $rawEnd = substr((string) $schedule->getRawOriginal('End_Time'), 0, 5);
+                $endsAtMidnight = $rawEnd === '24:00';
+                $endDate = $endsAtMidnight ? Carbon::parse($schedule->Date)->addDay()->toDateString() : $date;
+                $end = $endsAtMidnight ? '00:00:00' : Carbon::parse($schedule->End_Time)->format('H:i:s');
 
                 $facility = $schedule->request?->facility?->Facility_Name
                     ?? 'Request #' . $schedule->Request_ID;
@@ -486,7 +504,7 @@ new #[Layout('components.layouts.app')] class extends Component {
                     'id' => $schedule->SID,
                     'title' => ($isBlocked ? 'Blocked' : $eventName).' · '.$facility,
                     'start' => "{$date}T{$start}",
-                    'end' => "{$date}T{$end}",
+                    'end' => "{$endDate}T{$end}",
                     'backgroundColor' => $isEnded
                         ? '#dc2626'
                         : ($schedule->Status === 'Booked' ? $colors['backgroundColor'] : '#9ca3af'),
@@ -499,7 +517,7 @@ new #[Layout('components.layouts.app')] class extends Component {
                         'facility' => $facility,
                         'event' => $eventName,
                         'purpose' => $schedule->request?->Purpose,
-                        'requester' => $schedule->request?->user?->name,
+                        'requester' => $schedule->request?->requesterName(),
                     ],
                 ];
             })

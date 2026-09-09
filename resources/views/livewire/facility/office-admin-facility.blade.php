@@ -11,23 +11,35 @@ use Livewire\Volt\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 
-new #[Layout('components.layouts.app')] class extends Component {
+new #[Layout('components.layouts.app')] class extends Component
+{
     use WithFileUploads;
     use WithPagination;
 
     public string $searchInput = '';
+
     public string $search = '';
+
     public string $statusFilter = '';
+
     public string $sortBy = 'created_at';
+
     public string $sortDirection = 'desc';
 
     public ?int $editingId = null;
+
     public bool $showModal = false;
+
     public bool $showStatusConfirmation = false;
+
     public ?int $pendingStatusId = null;
+
     public string $pendingStatusName = '';
+
     public bool $pendingStatusWillActivate = false;
+
     public string $deactivationConfirmation = '';
+
     public bool $viewMode = false;
 
     #[Validate('required|string|min:2|max:150')]
@@ -37,10 +49,11 @@ new #[Layout('components.layouts.app')] class extends Component {
     public array $images = [];
 
     public array $existingImages = [];
+
     public array $removedImageIds = [];
 
-    #[Validate('nullable|numeric|min:0|max:9999999.99')]
-    public ?float $Price = null;
+    #[Validate('nullable|string|max:10000')]
+    public ?string $rates = null;
 
     #[Validate('required|in:sports,conference,auditorium,classroom,laboratory,other')]
     public ?string $facility_type = null;
@@ -51,10 +64,13 @@ new #[Layout('components.layouts.app')] class extends Component {
     #[Validate('required|string|min:5|max:2000')]
     public ?string $Description = null;
 
+    #[Validate('nullable|string|max:10000')]
+    public ?string $protocols_and_guidelines = null;
+
     #[Validate('required|string|min:2|max:255')]
     public ?string $Location = null;
 
-    #[Validate('required|integer|min:70|max:100000')]
+    #[Validate('required|integer|min:1|max:100000')]
     public ?int $Capacity = null;
 
     #[Validate('required|in:Available,Unavailable')]
@@ -84,9 +100,10 @@ new #[Layout('components.layouts.app')] class extends Component {
             'images',
             'existingImages',
             'removedImageIds',
-            'Price',
+            'rates',
             'Office',
             'Description',
+            'protocols_and_guidelines',
             'Location',
             'Capacity',
         ]);
@@ -105,9 +122,10 @@ new #[Layout('components.layouts.app')] class extends Component {
         $this->editingId = $facility->FID;
         $this->Facility_Name = $facility->Facility_Name;
         $this->facility_type = $facility->facility_type;
-        $this->Price = $facility->Price === null ? null : (float) $facility->Price;
+        $this->rates = $facility->rates;
         $this->Office = $facility->Office;
         $this->Description = $facility->Description;
+        $this->protocols_and_guidelines = $facility->protocols_and_guidelines;
         $this->Location = $facility->Location;
         $this->Capacity = $facility->Capacity;
         $this->Status = $facility->Status;
@@ -136,9 +154,12 @@ new #[Layout('components.layouts.app')] class extends Component {
         $facility->update([
             'Facility_Name' => $this->Facility_Name,
             'facility_type' => $this->facility_type,
-            'Price' => $this->Price,
+            'rates' => $this->rates,
+            'Rate_Details' => $this->rates,
             'Office' => $this->Office,
             'Description' => $this->Description,
+            'protocols_and_guidelines' => $this->protocols_and_guidelines,
+            'Protocols' => $this->protocols_and_guidelines,
             'Location' => $this->Location,
             'Capacity' => $this->Capacity,
             'Status' => $this->Status,
@@ -257,14 +278,16 @@ new #[Layout('components.layouts.app')] class extends Component {
                 fn ($query) => $query->where('Status', $this->statusFilter)
             )
             ->when($this->search !== '', function ($query) {
-                $term = '%' . $this->search . '%';
+                $term = '%'.$this->search.'%';
 
                 $query->where(function ($searchQuery) use ($term) {
                     $searchQuery
                         ->where('Facility_Name', 'like', $term)
                         ->orWhere('Location', 'like', $term)
                         ->orWhere('Office', 'like', $term)
-                        ->orWhere('facility_type', 'like', $term);
+                        ->orWhere('facility_type', 'like', $term)
+                        ->orWhere('rates', 'like', $term)
+                        ->orWhere('protocols_and_guidelines', 'like', $term);
                 });
             })
             ->orderBy($this->sortBy, $this->sortDirection)
