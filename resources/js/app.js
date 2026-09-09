@@ -156,11 +156,12 @@ window.confirmLogout = async () => {
         title: 'Are you sure?',
         text: 'Do you want to log out of your account?',
         icon: 'question',
+        iconColor: '#006b2b',
         position: 'center',
         showCancelButton: true,
         confirmButtonText: 'Yes, log out',
         cancelButtonText: 'Cancel',
-        confirmButtonColor: '#047857',
+        confirmButtonColor: '#006b2b',
         reverseButtons: true,
         customClass: {
             popup: 'rounded-2xl',

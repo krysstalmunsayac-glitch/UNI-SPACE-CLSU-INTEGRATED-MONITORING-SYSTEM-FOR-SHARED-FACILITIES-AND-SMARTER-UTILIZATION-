@@ -38,7 +38,7 @@
         }
     </style>
 
-    <section id="home" class="scroll-mt-20 bg-gradient-to-b from-white to-emerald-50/40 dark:from-zinc-950 dark:to-emerald-950/10">
+    <section id="home" class="scroll-mt-20 bg-white dark:bg-zinc-950">
         <div class="mx-auto grid min-h-[520px] max-w-7xl items-center gap-10 px-4 py-20 sm:px-6 lg:grid-cols-[0.95fr_1.05fr] lg:px-8">
             <div class="mx-auto max-w-2xl lg:mx-0">
                 <h1 class="text-5xl font-black leading-[0.95] tracking-tight text-emerald-950 dark:text-white sm:text-6xl lg:text-7xl">

@@ -1,8 +1,8 @@
 <x-dynamic-component :component="$guestBooking ? 'layouts.app' : 'layouts.home.header'">
-    <x-ui::main class="bg-gradient-to-b from-emerald-50/70 via-white to-white px-4 py-8 dark:from-emerald-950/20 dark:via-zinc-950 dark:to-zinc-950 sm:px-6 lg:px-8">
+    <x-ui::main class="bg-emerald-50/70 px-4 py-8 dark:bg-zinc-950 sm:px-6 lg:px-8">
         <div class="mx-auto max-w-7xl space-y-6">
             <div class="overflow-hidden rounded-3xl border border-emerald-900/10 bg-white shadow-xl shadow-emerald-950/5 dark:border-white/10 dark:bg-zinc-950">
-                <div class="h-1.5 bg-gradient-to-r from-emerald-700 via-emerald-500 to-yellow-400"></div>
+                <div class="h-1.5 bg-emerald-700"></div>
                 <div class="p-6 sm:p-8">
                     <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
                         <div class="max-w-3xl">
@@ -230,7 +230,7 @@
                                     class="h-full w-full object-cover transition duration-300 group-hover:scale-105"
                                     @if ($loop->first) fetchpriority="high" @else loading="lazy" @endif
                                 >
-                                <div class="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-emerald-950/55 to-transparent px-4 pb-3 pt-8">
+                                <div class="pointer-events-none absolute inset-x-0 bottom-0 bg-emerald-950/70 px-4 pb-3 pt-8">
                                     <div class="flex items-center justify-between gap-2">
                                         <span class="text-xs font-semibold text-white">Photo {{ $loop->iteration }}</span>
                                         <span class="rounded-full bg-black/35 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-white backdrop-blur">Expand</span>
@@ -238,7 +238,7 @@
                                 </div>
                             </button>
                         @empty
-                            <div class="col-span-2 flex min-h-52 flex-col items-center justify-center rounded-2xl border border-dashed border-emerald-300 bg-gradient-to-br from-emerald-50 to-white p-8 text-center dark:border-emerald-700 dark:from-emerald-950/30 dark:to-zinc-900">
+                            <div class="col-span-2 flex min-h-52 flex-col items-center justify-center rounded-2xl border border-dashed border-emerald-300 bg-emerald-50 p-8 text-center dark:border-emerald-700 dark:bg-zinc-900">
                                 <div class="mb-4 flex size-20 items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-emerald-900/10 dark:bg-zinc-950 dark:ring-white/10">
                                     <img src="{{ $facility->primaryImageUrl() }}" alt="" class="h-14 w-14 object-contain opacity-80">
                                 </div>

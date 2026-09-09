@@ -232,7 +232,7 @@
 
 .react-app-sidebar nav a.is-active {
     border-color: #009639;
-    background: linear-gradient(135deg, #009639, #007a2f);
+    background: #009639;
     color: white;
     box-shadow: 0 8px 18px rgb(0 150 57 / 0.2);
 }

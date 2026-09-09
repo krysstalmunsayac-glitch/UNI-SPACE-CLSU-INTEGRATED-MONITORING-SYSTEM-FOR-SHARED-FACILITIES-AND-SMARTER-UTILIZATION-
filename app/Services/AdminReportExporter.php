@@ -6,6 +6,151 @@ use Illuminate\Support\Collection;
 
 class AdminReportExporter
 {
+    public function facilityHeaders(): array
+    {
+        return [
+            'Facility ID', 'Facility Name', 'Type', 'Access Type', 'Price (PHP)',
+            'Rates', 'Capacity', 'Location', 'Latitude', 'Longitude', 'Office',
+            'Description', 'Amenities', 'Protocols and Guidelines', 'Contact Details',
+            'Reference URL', 'Data Notes', 'Status',
+        ];
+    }
+
+    public function facilityRow($facility): array
+    {
+        return [
+            $facility->FID,
+            $facility->Facility_Name,
+            $facility->facility_type ? ucfirst($facility->facility_type) : '',
+            $facility->Access_Type ?? '',
+            $facility->Price === null ? '' : (float) $facility->Price,
+            $facility->rates ?: ($facility->Rate_Details ?? ''),
+            $facility->Capacity ?? '',
+            $facility->Location ?? '',
+            $facility->Latitude ?? '',
+            $facility->Longitude ?? '',
+            $facility->Office ?? '',
+            $facility->Description ?? '',
+            $facility->amenities->pluck('name')->join(', '),
+            $facility->protocols_and_guidelines ?: ($facility->Protocols ?? ''),
+            $facility->Contact_Details ?? '',
+            $facility->Reference_URL ?? '',
+            $facility->Data_Notes ?? '',
+            $facility->Status ?? '',
+        ];
+    }
+
+    public function requestHeaders(): array
+    {
+        return [
+            'Request ID', 'Request Type', 'Requester', 'CLSU ID', 'Email', 'Contact Number',
+            'Organization or Office', 'Created By', 'Facility', 'Event', 'Event Type',
+            'First Day', 'Last Day', 'Start Time', 'End Time', 'Daily Schedule',
+            'Attendees', 'Amenities', 'Status', 'Purpose', 'Purpose Categories',
+            'Other Purpose', 'Reservation Frequency', 'Facility Importance',
+            'Requirements Fit', 'Reserve Again Intent', 'Review Requested At',
+            'Review Notes', 'Rejection Reason', 'Cancellation Reason', 'Attachment',
+            'Submitted At', 'Updated At',
+        ];
+    }
+
+    public function requestRow($request): array
+    {
+        return [
+            $request->RID,
+            $request->Is_Guest_Booking ? 'Guest booking' : 'Registered user',
+            $request->requesterName(),
+            $request->Is_Guest_Booking ? '' : ($request->user?->clsu_id ?? ''),
+            $request->requesterEmail() ?? '',
+            $request->Is_Guest_Booking ? ($request->Guest_Contact ?? '') : ($request->user?->contact_number ?? ''),
+            $request->Is_Guest_Booking ? ($request->Guest_Organization ?? '') : ($request->user?->office ?? ''),
+            $request->creator?->name ?? ($request->Is_Guest_Booking ? '' : 'Self-service'),
+            $request->facility?->Facility_Name ?? '',
+            $request->event?->Event_Title ?? '',
+            $request->event?->Type_Event ?? '',
+            $request->Proposed_Date?->format('Y-m-d') ?? '',
+            ($request->Proposed_End_Date ?? $request->Proposed_Date)?->format('Y-m-d') ?? '',
+            $request->Proposed_Start_Time?->format('H:i') ?? '',
+            $request->Proposed_End_Time?->format('H:i') ?? '',
+            $this->dailyScheduleText($request->Daily_Schedules),
+            $request->Capacity ?? '',
+            $request->amenities->pluck('name')->join(', '),
+            $request->Review_Requested_At && $request->Status === 'Pending' ? 'Needs Revision' : ($request->Status ?? ''),
+            $request->Purpose ?? '',
+            collect($request->Purpose_Categories ?? [])->join(', '),
+            $request->Other_Purpose ?? '',
+            $request->Reservation_Frequency ?? '',
+            $request->Facility_Importance ?? '',
+            $request->Requirements_Fit ?? '',
+            $request->Reserve_Again_Intent ?? '',
+            $this->dateTimeText($request->Review_Requested_At),
+            $request->Review_Notes ?? '',
+            $request->Rejection_Reason ?? '',
+            $request->Cancellation_Reason ?? '',
+            $request->attachment_path ? 'Attached' : 'None',
+            $this->dateTimeText($request->Created_at),
+            $this->dateTimeText($request->Updated_at),
+        ];
+    }
+
+    public function userHeaders(): array
+    {
+        return [
+            'User ID', 'CLSU ID', 'Name', 'Email', 'Role', 'Contact Number', 'Office',
+            'Address', 'Assigned Facilities', 'Account Status', 'Registration Status',
+            'Email Verified At', 'Invitation Sent At', 'Invitation Expires At',
+            'Invitation Revoked At', 'Joined At', 'Updated At',
+        ];
+    }
+
+    public function userRow($user): array
+    {
+        return [
+            $user->id,
+            $user->clsu_id ?? '',
+            $user->name,
+            $user->email,
+            $user->roleLabel(),
+            $user->contact_number ?? '',
+            $user->office ?? '',
+            $user->address ?? '',
+            $user->facilities->pluck('Facility_Name')->join(', '),
+            $user->is_active ? 'Active' : 'Inactive',
+            $user->invitationStatus(),
+            $this->dateTimeText($user->email_verified_at),
+            $this->dateTimeText($user->invitation_sent_at),
+            $this->dateTimeText($user->invitation_expires_at),
+            $this->dateTimeText($user->invitation_revoked_at),
+            $this->dateTimeText($user->created_at),
+            $this->dateTimeText($user->updated_at),
+        ];
+    }
+
+    public function amenityHeaders(): array
+    {
+        return [
+            'Amenity ID', 'Name', 'Description', 'Status', 'Reservation Limit',
+            'Facilities', 'Facility Count', 'Request Usage', 'Created By', 'Created At', 'Updated At',
+        ];
+    }
+
+    public function amenityRow($amenity): array
+    {
+        return [
+            $amenity->AID,
+            $amenity->name,
+            $amenity->Description ?? '',
+            $amenity->Status ?? '',
+            $amenity->reservation_limit ?? 'Unlimited',
+            $amenity->facilities->pluck('Facility_Name')->join(', '),
+            $amenity->facilities->count(),
+            $amenity->requests_count ?? $amenity->requests()->count(),
+            $amenity->creator?->name ?? '',
+            $this->dateTimeText($amenity->Created_at),
+            $this->dateTimeText($amenity->Updated_at),
+        ];
+    }
+
     public function analyticsPdf(array $data, string $scopeLabel, string $dateLabel): string
     {
         $pdf = new class('L', 'mm', 'A4') extends \FPDF
@@ -133,18 +278,9 @@ class AdminReportExporter
     {
         return $this->xlsx(
             'Facilities',
-            ['Facility ID', 'Facility Name', 'Type', 'Price (PHP)', 'Capacity', 'Location', 'Office', 'Status'],
-            $facilities->map(fn ($facility) => [
-                $facility->FID,
-                $facility->Facility_Name,
-                $facility->facility_type ? ucfirst($facility->facility_type) : '',
-                $facility->Price === null ? '' : (float) $facility->Price,
-                $facility->Capacity,
-                $facility->Location ?? '',
-                $facility->Office ?? '',
-                $facility->Status,
-            ])->all(),
-            [12, 28, 18, 16, 12, 30, 26, 18],
+            $this->facilityHeaders(),
+            $facilities->map(fn ($facility) => $this->facilityRow($facility))->all(),
+            [12, 34, 18, 16, 16, 55, 12, 35, 16, 16, 30, 55, 45, 60, 40, 50, 50, 16],
         );
     }
 
@@ -152,21 +288,9 @@ class AdminReportExporter
     {
         return $this->xlsx(
             'Facility Requests',
-            ['Request ID', 'Requester', 'Email', 'Facility', 'First Day', 'Last Day', 'Start Time', 'End Time', 'Attendees', 'Status', 'Purpose'],
-            $requests->map(fn ($request) => [
-                $request->RID,
-                $request->requesterName(),
-                $request->requesterEmail() ?? '',
-                $request->facility?->Facility_Name ?? '',
-                $request->Proposed_Date?->format('Y-m-d') ?? '',
-                $request->Proposed_End_Date?->format('Y-m-d') ?? $request->Proposed_Date?->format('Y-m-d') ?? '',
-                $request->Proposed_Start_Time?->format('H:i') ?? '',
-                $request->Proposed_End_Time?->format('H:i') ?? '',
-                $request->Capacity,
-                $request->Review_Requested_At && $request->Status === 'Pending' ? 'Needs Revision' : $request->Status,
-                $request->Purpose,
-            ])->all(),
-            [12, 24, 30, 28, 14, 14, 13, 13, 12, 18, 42],
+            $this->requestHeaders(),
+            $requests->map(fn ($request) => $this->requestRow($request))->all(),
+            [12, 18, 28, 16, 32, 20, 28, 24, 30, 30, 18, 14, 14, 13, 13, 48, 12, 42, 18, 50, 35, 25, 22, 20, 20, 22, 22, 45, 45, 45, 14, 22, 22],
         );
     }
 
@@ -174,9 +298,9 @@ class AdminReportExporter
     {
         return $this->xlsx(
             'Users',
-            ['User ID', 'Name', 'Email', 'Role', 'Contact Number', 'Office', 'Status', 'Email Verified'],
-            $users->map(fn ($user) => [$user->id, $user->name, $user->email, $user->roleLabel(), $user->contact_number ?? '', $user->office ?? '', $user->is_active ? 'Active' : 'Inactive', $user->email_verified_at ? 'Yes' : 'No'])->all(),
-            [12, 28, 34, 20, 20, 28, 14, 18],
+            $this->userHeaders(),
+            $users->map(fn ($user) => $this->userRow($user))->all(),
+            [12, 16, 28, 34, 20, 20, 28, 42, 50, 18, 22, 22, 22, 22, 22, 22, 22],
         );
     }
 
@@ -184,64 +308,239 @@ class AdminReportExporter
     {
         return $this->xlsx(
             'Amenities',
-            ['Amenity ID', 'Name', 'Description', 'Status', 'Reservation Limit', 'Facilities', 'Created By'],
-            $amenities->map(fn ($amenity) => [$amenity->AID, $amenity->name, $amenity->Description ?? '', $amenity->Status, $amenity->reservation_limit ?? 'Unlimited', $amenity->facilities->pluck('Facility_Name')->join(', '), $amenity->creator?->name ?? ''])->all(),
-            [14, 28, 45, 16, 20, 40, 24],
+            $this->amenityHeaders(),
+            $amenities->map(fn ($amenity) => $this->amenityRow($amenity))->all(),
+            [14, 28, 55, 16, 20, 55, 16, 16, 24, 22, 22],
         );
     }
 
     public function facilitiesPdf(Collection $facilities, string $scopeLabel): string
     {
-        $headers = ['ID', 'Facility', 'Type', 'Price (PHP)', 'Capacity', 'Location', 'Office', 'Status'];
-        $widths = [12, 43, 27, 25, 20, 42, 58, 25];
-        $rows = $facilities->map(fn ($facility) => [
-            $facility->FID,
-            $facility->Facility_Name,
-            $facility->facility_type ? ucfirst($facility->facility_type) : 'N/A',
-            $facility->Price === null ? 'N/A' : number_format((float) $facility->Price, 2),
-            $facility->Capacity ?? 'N/A',
-            $facility->Location ?? 'N/A',
-            $facility->Office ?? 'N/A',
-            $facility->Status,
-        ])->all();
+        $pdf = new class('P', 'mm', 'A4') extends \FPDF
+        {
+            public string $scopeLabel = '';
 
-        return $this->tablePdf('Facility List', $scopeLabel, $headers, $widths, $rows);
+            public function Header(): void
+            {
+                $this->SetFont('Arial', 'B', 16);
+                $this->SetTextColor(0, 107, 43);
+                $this->Cell(0, 8, 'SIEL SPACE - FACILITY REPORT', 0, 1);
+                $this->SetFont('Arial', '', 8);
+                $this->SetTextColor(90, 100, 105);
+                $this->Cell(0, 5, 'Scope: '.$this->scopeLabel.' | Generated: '.now()->format('Y-m-d H:i'), 0, 1);
+                $this->Ln(4);
+            }
+
+            public function Footer(): void
+            {
+                $this->SetY(-10);
+                $this->SetFont('Arial', '', 7);
+                $this->SetTextColor(100, 100, 100);
+                $this->Cell(0, 5, 'SIEL SPACE | Page '.$this->PageNo().'/{nb}', 0, 0, 'C');
+            }
+
+            public function facilityTitle(string $title): void
+            {
+                if ($this->GetY() > 245) {
+                    $this->AddPage();
+                }
+
+                $this->SetFillColor(0, 107, 43);
+                $this->SetTextColor(255, 255, 255);
+                $this->SetFont('Arial', 'B', 10);
+                $this->MultiCell(0, 7, $title, 0, 'L', true);
+                $this->Ln(1);
+            }
+
+            public function detailRow(string $label, string $value): void
+            {
+                if ($this->GetY() > 270) {
+                    $this->AddPage();
+                }
+
+                $startY = $this->GetY();
+                $this->SetFont('Arial', 'B', 8);
+                $this->SetTextColor(45, 55, 65);
+                $this->Cell(38, 5, $label, 0, 0);
+                $this->SetFont('Arial', '', 8);
+                $this->SetTextColor(30, 35, 38);
+                $this->MultiCell(0, 5, $value !== '' ? $value : 'N/A');
+
+                if ($this->GetY() === $startY) {
+                    $this->Ln(5);
+                }
+            }
+        };
+
+        $pdf->scopeLabel = $this->pdfText($scopeLabel).' | Records: '.$facilities->count();
+        $pdf->AliasNbPages();
+        $pdf->SetMargins(10, 10, 10);
+        $pdf->SetAutoPageBreak(true, 15);
+        $pdf->SetCompression(false);
+        $pdf->AddPage();
+
+        if ($facilities->isEmpty()) {
+            $pdf->SetFont('Arial', '', 10);
+            $pdf->Cell(0, 12, 'No facilities found.', 1, 1, 'C');
+        }
+
+        foreach ($facilities as $facility) {
+            $pdf->facilityTitle($this->pdfText(sprintf('FAC-%05d - %s', $facility->FID, $facility->Facility_Name)));
+
+            $details = [
+                'Facility type' => $facility->facility_type ? ucfirst($facility->facility_type) : 'N/A',
+                'Access type' => $facility->Access_Type ?? 'N/A',
+                'Status' => $facility->Status ?? 'N/A',
+                'Office' => $facility->Office ?? 'N/A',
+                'Capacity' => $facility->Capacity ?? 'N/A',
+                'Base price (PHP)' => $facility->Price === null ? 'N/A' : number_format((float) $facility->Price, 2),
+                'Rates' => $facility->rates ?: ($facility->Rate_Details ?? 'N/A'),
+                'Location' => $facility->Location ?? 'N/A',
+                'Coordinates' => $facility->Latitude !== null && $facility->Longitude !== null
+                    ? $facility->Latitude.', '.$facility->Longitude
+                    : 'N/A',
+                'Description' => $facility->Description ?? 'N/A',
+                'Amenities' => $facility->amenities->pluck('name')->join(', ') ?: 'None listed',
+                'Protocols and guidelines' => $facility->protocols_and_guidelines ?: ($facility->Protocols ?? 'N/A'),
+                'Contact details' => $facility->Contact_Details ?? 'N/A',
+                'Reference URL' => $facility->Reference_URL ?? 'N/A',
+                'Data notes' => $facility->Data_Notes ?? 'N/A',
+            ];
+
+            foreach ($details as $label => $value) {
+                $pdf->detailRow($this->pdfText($label), $this->pdfText((string) $value));
+            }
+
+            $pdf->Ln(4);
+        }
+
+        return $pdf->Output('S');
     }
 
     public function requestsPdf(Collection $requests, string $scopeLabel): string
     {
-        $headers = ['ID', 'Requester', 'Facility', 'Date', 'Time', 'Attendees', 'Status', 'Purpose'];
-        $widths = [12, 38, 45, 25, 29, 21, 27, 80];
-        $rows = $requests->map(fn ($request) => [
-            $request->RID,
-            $request->requesterName(),
-            $request->facility?->Facility_Name ?? 'N/A',
-            ($request->Proposed_Date?->format('Y-m-d') ?? 'N/A').' – '.($request->Proposed_End_Date?->format('Y-m-d') ?? $request->Proposed_Date?->format('Y-m-d') ?? 'N/A'),
-            ($request->Proposed_Start_Time?->format('H:i') ?? '--:--').'-'.($request->Proposed_End_Time?->format('H:i') ?? '--:--'),
-            $request->Capacity ?? 'N/A',
-            $request->Review_Requested_At && $request->Status === 'Pending' ? 'Needs Revision' : $request->Status,
-            $request->Purpose,
-        ])->all();
+        $headers = $this->requestHeaders();
+        $records = $requests->map(function ($request) use ($headers): array {
+            $row = $this->requestRow($request);
 
-        return $this->tablePdf('Facility Request List', $scopeLabel, $headers, $widths, $rows);
+            return [
+                'title' => sprintf('REQ-%05d - %s', $request->RID, $request->requesterName()),
+                'details' => array_combine(array_slice($headers, 1), array_slice($row, 1)),
+            ];
+        })->all();
+
+        return $this->detailPdf('FACILITY REQUEST REPORT', $scopeLabel, $records);
     }
 
     public function usersPdf(Collection $users): string
     {
-        $headers = ['ID', 'Name', 'Email', 'Role', 'Contact', 'Office', 'Status', 'Verified'];
-        $widths = [12, 38, 48, 27, 30, 42, 22, 20];
-        $rows = $users->map(fn ($user) => [$user->id, $user->name, $user->email, $user->roleLabel(), $user->contact_number ?? 'N/A', $user->office ?? 'N/A', $user->is_active ? 'Active' : 'Inactive', $user->email_verified_at ? 'Yes' : 'No'])->all();
+        $headers = $this->userHeaders();
+        $records = $users->map(function ($user) use ($headers): array {
+            $row = $this->userRow($user);
 
-        return $this->tablePdf('User List', 'All active and inactive accounts', $headers, $widths, $rows);
+            return [
+                'title' => sprintf('USR-%05d - %s', $user->id, $user->name),
+                'details' => array_combine(array_slice($headers, 1), array_slice($row, 1)),
+            ];
+        })->all();
+
+        return $this->detailPdf('USER ACCOUNT REPORT', 'All active and inactive accounts', $records);
     }
 
     public function amenitiesPdf(Collection $amenities): string
     {
-        $headers = ['ID', 'Name', 'Description', 'Status', 'Limit', 'Facilities', 'Created By'];
-        $widths = [12, 38, 72, 25, 24, 66, 35];
-        $rows = $amenities->map(fn ($amenity) => [$amenity->AID, $amenity->name, $amenity->Description ?? 'N/A', $amenity->Status, $amenity->reservation_limit ?? 'Unlimited', $amenity->facilities->pluck('Facility_Name')->join(', ') ?: 'Unassigned', $amenity->creator?->name ?? 'N/A'])->all();
+        $headers = $this->amenityHeaders();
+        $records = $amenities->map(function ($amenity) use ($headers): array {
+            $row = $this->amenityRow($amenity);
 
-        return $this->tablePdf('Amenity List', 'All active amenities', $headers, $widths, $rows);
+            return [
+                'title' => sprintf('AMN-%05d - %s', $amenity->AID, $amenity->name),
+                'details' => array_combine(array_slice($headers, 1), array_slice($row, 1)),
+            ];
+        })->all();
+
+        return $this->detailPdf('AMENITY REPORT', 'All active amenities', $records);
+    }
+
+    private function detailPdf(string $title, string $scopeLabel, array $records): string
+    {
+        $pdf = new class('P', 'mm', 'A4') extends \FPDF
+        {
+            public string $reportTitle = '';
+
+            public string $scopeLabel = '';
+
+            public function Header(): void
+            {
+                $this->SetFont('Arial', 'B', 16);
+                $this->SetTextColor(0, 107, 43);
+                $this->Cell(0, 8, $this->reportTitle, 0, 1);
+                $this->SetFont('Arial', '', 8);
+                $this->SetTextColor(90, 100, 105);
+                $this->Cell(0, 5, 'Scope: '.$this->scopeLabel.' | Generated: '.now()->format('Y-m-d H:i'), 0, 1);
+                $this->Ln(4);
+            }
+
+            public function Footer(): void
+            {
+                $this->SetY(-10);
+                $this->SetFont('Arial', '', 7);
+                $this->SetTextColor(100, 100, 100);
+                $this->Cell(0, 5, 'SIEL SPACE | Page '.$this->PageNo().'/{nb}', 0, 0, 'C');
+            }
+
+            public function recordTitle(string $title): void
+            {
+                if ($this->GetY() > 245) {
+                    $this->AddPage();
+                }
+
+                $this->SetFillColor(0, 107, 43);
+                $this->SetTextColor(255, 255, 255);
+                $this->SetFont('Arial', 'B', 10);
+                $this->MultiCell(0, 7, $title, 0, 'L', true);
+                $this->Ln(1);
+            }
+
+            public function detailRow(string $label, string $value): void
+            {
+                if ($this->GetY() > 270) {
+                    $this->AddPage();
+                }
+
+                $this->SetFont('Arial', 'B', 8);
+                $this->SetTextColor(45, 55, 65);
+                $this->Cell(42, 5, $label, 0, 0);
+                $this->SetFont('Arial', '', 8);
+                $this->SetTextColor(30, 35, 38);
+                $this->MultiCell(0, 5, $value !== '' ? $value : 'N/A');
+            }
+        };
+
+        $pdf->reportTitle = $this->pdfText('SIEL SPACE - '.$title);
+        $pdf->scopeLabel = $this->pdfText($scopeLabel).' | Records: '.count($records);
+        $pdf->AliasNbPages();
+        $pdf->SetMargins(10, 10, 10);
+        $pdf->SetAutoPageBreak(true, 15);
+        $pdf->SetCompression(false);
+        $pdf->AddPage();
+
+        if ($records === []) {
+            $pdf->SetFont('Arial', '', 10);
+            $pdf->Cell(0, 12, 'No records found.', 1, 1, 'C');
+        }
+
+        foreach ($records as $record) {
+            $pdf->recordTitle($this->pdfText($record['title']));
+
+            foreach ($record['details'] as $label => $value) {
+                $pdf->detailRow($this->pdfText((string) $label), $this->pdfText((string) ($value === '' ? 'N/A' : $value)));
+            }
+
+            $pdf->Ln(4);
+        }
+
+        return $pdf->Output('S');
     }
 
     private function tablePdf(string $title, string $scopeLabel, array $headers, array $widths, array $rows): string
@@ -325,7 +624,31 @@ class AdminReportExporter
 
     private function pdfText(string $value): string
     {
+        $value = str_replace('₱', 'PHP ', $value);
+
         return iconv('UTF-8', 'windows-1252//TRANSLIT//IGNORE', $value) ?: $value;
+    }
+
+    private function dailyScheduleText(?array $schedules): string
+    {
+        return collect($schedules ?? [])->map(function ($schedule): string {
+            $date = $schedule['date'] ?? 'Unknown date';
+            $start = $schedule['start'] ?? '--:--';
+            $end = $schedule['end'] ?? '--:--';
+
+            return "{$date} {$start}-{$end}";
+        })->join('; ');
+    }
+
+    private function dateTimeText($value): string
+    {
+        if (! $value) {
+            return '';
+        }
+
+        return method_exists($value, 'format')
+            ? $value->format('Y-m-d H:i')
+            : (string) $value;
     }
 
     private function truncate(string $value, int $width): string

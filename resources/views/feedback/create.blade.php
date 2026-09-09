@@ -1,5 +1,5 @@
 <x-layouts.home.header>
-    <main class="min-h-[calc(100vh-5rem)] bg-gradient-to-b from-white to-emerald-50/50 px-4 py-12 dark:from-zinc-950 dark:to-emerald-950/20 sm:px-6">
+    <main class="min-h-[calc(100vh-5rem)] bg-white px-4 py-12 dark:bg-zinc-950 sm:px-6">
         <div class="mx-auto max-w-2xl">
             <a href="{{ route('dashboard') }}#requests" class="text-sm font-bold text-emerald-700 hover:text-emerald-900 dark:text-emerald-300">← Back to requests</a>
 

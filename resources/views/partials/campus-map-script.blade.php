@@ -19,10 +19,17 @@
 
                     const mainGateIcon = L.divIcon({
                         className: '',
-                        html: '<div style="display:grid;place-items:center;width:42px;height:42px;border:4px solid white;border-radius:9999px;background:#047857;color:white;font-size:22px;box-shadow:0 4px 14px rgba(0,0,0,.4)">&#9873;</div>',
+                        html: '<div style="display:grid;place-items:center;width:42px;height:42px;border:4px solid white;border-radius:9999px;background:#009639;color:white;font-size:22px;box-shadow:0 4px 14px rgba(0,0,0,.4)">&#9873;</div>',
                         iconSize: [42, 42],
                         iconAnchor: [21, 21],
                         popupAnchor: [0, -24],
+                    });
+                    const facilityIcon = L.divIcon({
+                        className: '',
+                        html: '<svg width="34" height="46" viewBox="0 0 34 46" aria-hidden="true" style="display:block;filter:drop-shadow(0 3px 3px rgba(0,0,0,.35))"><path d="M17 1C8.16 1 1 8.16 1 17c0 11.72 16 28 16 28s16-16.28 16-28C33 8.16 25.84 1 17 1Z" fill="#009639" stroke="#ffffff" stroke-width="2"/><circle cx="17" cy="17" r="6" fill="#ffffff"/></svg>',
+                        iconSize: [34, 46],
+                        iconAnchor: [17, 45],
+                        popupAnchor: [0, -42],
                     });
                     const mainGateMarker = L.marker(mainGateCoordinates, {
                         icon: mainGateIcon,
@@ -77,6 +84,7 @@
                     };
                     const addFacilityMarker = (facility, coordinates, approximate = false) => {
                         const marker = L.marker(coordinates, {
+                            icon: facilityIcon,
                             title: facility.Facility_Name,
                         }).addTo(map).bindPopup(
                             `<strong>${escapeHtml(facility.Facility_Name)}</strong><br>` +

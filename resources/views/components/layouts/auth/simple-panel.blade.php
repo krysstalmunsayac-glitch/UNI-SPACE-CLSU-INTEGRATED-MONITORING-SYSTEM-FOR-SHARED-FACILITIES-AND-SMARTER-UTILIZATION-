@@ -1,5 +1,5 @@
 <section class="relative hidden min-h-[640px] overflow-hidden bg-emerald-700 px-10 py-10 text-center text-white dark:bg-emerald-900 lg:flex">
-    <div class="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,215,0,0.22),transparent_28%),linear-gradient(135deg,#009639,#1e6031)]"></div>
+    <div class="absolute inset-0 bg-emerald-800"></div>
     <div class="relative z-10 flex min-h-full w-full flex-col items-center justify-center">
         <div class="max-w-sm">
             @if (request()->routeIs('login', 'register'))

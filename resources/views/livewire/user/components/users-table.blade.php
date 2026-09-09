@@ -57,7 +57,7 @@
                                     size="sm"
                                     :src="$user->avatar_url"
                                     :name="$user->name"
-                                    class="bg-gradient-to-br from-blue-500 to-purple-600"
+                                    class="bg-blue-600"
                                 />
 
                                 <div class="min-w-0">

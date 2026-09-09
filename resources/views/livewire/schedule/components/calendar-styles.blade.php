@@ -45,8 +45,8 @@
 
     .admin-calendar-control:hover,
     .admin-calendar-control.is-active {
-        border-color: rgb(5 150 105);
-        background: rgb(6 95 70);
+        border-color: #009639;
+        background: #006b2b;
         color: #fff;
     }
 
@@ -54,7 +54,7 @@
         --fc-border-color: rgb(229 231 235);
         --fc-page-bg-color: transparent;
         --fc-neutral-bg-color: rgb(249 250 251);
-        --fc-today-bg-color: rgba(16, 185, 129, 0.08);
+        --fc-today-bg-color: rgba(0, 150, 57, 0.08);
         color: rgb(17 24 39);
         font-size: 0.875rem;
     }
@@ -105,9 +105,9 @@
 
     #fc-calendar .fc-button:hover,
     #fc-calendar .fc-button:focus {
-        border-color: rgb(16 185 129);
+        border-color: #009639;
         background: rgb(236 253 245);
-        color: rgb(6 95 70);
+        color: #006b2b;
     }
 
     #fc-calendar .fc-button-primary:disabled {
@@ -146,7 +146,7 @@
     }
 
     #fc-calendar .fc-day-today .fc-daygrid-day-number {
-        color: rgb(4 120 87);
+        color: #006b2b;
         font-weight: 800;
     }
 
@@ -179,7 +179,7 @@
         --fc-page-bg-color: transparent;
         --fc-neutral-bg-color: rgb(31 41 55);
         --fc-list-event-hover-bg-color: rgb(55 65 81);
-        --fc-today-bg-color: rgba(16, 185, 129, 0.12);
+        --fc-today-bg-color: rgba(0, 150, 57, 0.12);
         color: rgb(229 231 235);
     }
 
@@ -216,8 +216,8 @@
 
     .dark #fc-calendar .fc-button:hover,
     .dark #fc-calendar .fc-button:focus {
-        background-color: rgba(6, 78, 59, 0.55);
-        border-color: rgb(16 185 129);
+        background-color: rgba(0, 107, 43, 0.65);
+        border-color: #009639;
         color: rgb(209 250 229);
     }
 
@@ -248,8 +248,8 @@
 
     .dark .admin-calendar-control:hover,
     .dark .admin-calendar-control.is-active {
-        border-color: rgb(52 211 153);
-        background: rgb(6 95 70);
+        border-color: #009639;
+        background: #006b2b;
         color: #fff;
     }
 

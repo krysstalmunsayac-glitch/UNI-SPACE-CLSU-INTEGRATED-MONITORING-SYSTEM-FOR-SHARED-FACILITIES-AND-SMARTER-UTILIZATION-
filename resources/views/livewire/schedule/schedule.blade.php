@@ -10,7 +10,6 @@ use App\Support\Ui;
 use App\Models\Facilities;
 use App\Models\Schedule;
 use App\Models\Requests;
-use App\Support\CalendarColor;
 use App\Services\FacilityAvailabilityService;
 use App\Services\BookingPolicy;
 use Carbon\Carbon;
@@ -496,7 +495,6 @@ new #[Layout('components.layouts.app')] class extends Component {
                     ?? 'Request #' . $schedule->Request_ID;
 
                 $eventName = $schedule->request?->event?->Event_Title ?? 'Reserved facility';
-                $colors = CalendarColor::forValue($facility);
                 $isEnded = $schedule->request?->Status === 'Ended';
                 $isBlocked = $schedule->Status === 'Blocked';
 
@@ -507,10 +505,10 @@ new #[Layout('components.layouts.app')] class extends Component {
                     'end' => "{$endDate}T{$end}",
                     'backgroundColor' => $isEnded
                         ? '#dc2626'
-                        : ($schedule->Status === 'Booked' ? $colors['backgroundColor'] : '#9ca3af'),
+                        : ($schedule->Status === 'Booked' ? '#006b2b' : '#9ca3af'),
                     'borderColor' => $isEnded
                         ? '#991b1b'
-                        : ($schedule->Status === 'Booked' ? $colors['borderColor'] : '#6b7280'),
+                        : ($schedule->Status === 'Booked' ? '#009639' : '#6b7280'),
                     'extendedProps' => [
                         'status' => $isEnded ? 'Ended' : $schedule->Status,
                         'scheduleId' => $schedule->SID,

@@ -23,19 +23,10 @@ class ReportExportController extends Controller
         return response()->streamDownload(function () use ($facilities) {
             $output = fopen('php://output', 'w');
             fwrite($output, "\xEF\xBB\xBF");
-            fputcsv($output, ['Facility ID', 'Facility Name', 'Type', 'Price (PHP)', 'Capacity', 'Location', 'Office', 'Status']);
+            fputcsv($output, $this->exporter->facilityHeaders());
 
             foreach ($facilities as $facility) {
-                fputcsv($output, [
-                    $facility->FID,
-                    $facility->Facility_Name,
-                    $facility->facility_type,
-                    $facility->Price,
-                    $facility->Capacity,
-                    $facility->Location,
-                    $facility->Office,
-                    $facility->Status,
-                ]);
+                fputcsv($output, $this->exporter->facilityRow($facility));
             }
 
             fclose($output);
@@ -71,26 +62,10 @@ class ReportExportController extends Controller
         return response()->streamDownload(function () use ($requests) {
             $output = fopen('php://output', 'w');
             fwrite($output, "\xEF\xBB\xBF");
-            fputcsv($output, ['Request ID', 'Requester', 'Email', 'Facility', 'First Day', 'Last Day', 'Start Time', 'End Time', 'Attendees', 'Status', 'Purpose']);
+            fputcsv($output, $this->exporter->requestHeaders());
 
             foreach ($requests as $facilityRequest) {
-                fputcsv($output, [
-                    $facilityRequest->RID,
-                    $facilityRequest->requesterName(),
-                    $facilityRequest->requesterEmail(),
-                    $facilityRequest->facility?->Facility_Name,
-                    $facilityRequest->Proposed_Date
-                        ? '="'.$facilityRequest->Proposed_Date->format('M d, Y').'"'
-                        : '',
-                    ($facilityRequest->Proposed_End_Date ?? $facilityRequest->Proposed_Date)
-                        ? '="'.($facilityRequest->Proposed_End_Date ?? $facilityRequest->Proposed_Date)->format('M d, Y').'"'
-                        : '',
-                    $facilityRequest->Proposed_Start_Time?->format('H:i'),
-                    $facilityRequest->Proposed_End_Time?->format('H:i'),
-                    $facilityRequest->Capacity,
-                    $facilityRequest->Review_Requested_At && $facilityRequest->Status === 'Pending' ? 'Needs Revision' : $facilityRequest->Status,
-                    $facilityRequest->Purpose,
-                ]);
+                fputcsv($output, $this->exporter->requestRow($facilityRequest));
             }
 
             fclose($output);
@@ -121,15 +96,15 @@ class ReportExportController extends Controller
 
     public function usersCsv(): StreamedResponse
     {
-        $users = User::query()->orderBy('name')->get();
+        $users = $this->userQuery()->get();
 
         return response()->streamDownload(function () use ($users) {
             $output = fopen('php://output', 'w');
             fwrite($output, "\xEF\xBB\xBF");
-            fputcsv($output, ['User ID', 'Name', 'Email', 'Role', 'Contact Number', 'Office', 'Status', 'Email Verified']);
+            fputcsv($output, $this->exporter->userHeaders());
 
             foreach ($users as $user) {
-                fputcsv($output, [$user->id, $user->name, $user->email, $user->roleLabel(), $user->contact_number, $user->office, $user->is_active ? 'Active' : 'Inactive', $user->email_verified_at ? 'Yes' : 'No']);
+                fputcsv($output, $this->exporter->userRow($user));
             }
 
             fclose($output);
@@ -138,14 +113,14 @@ class ReportExportController extends Controller
 
     public function usersPdf()
     {
-        $content = $this->exporter->usersPdf(User::query()->orderBy('name')->get());
+        $content = $this->exporter->usersPdf($this->userQuery()->get());
 
         return response($content, 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'attachment; filename="users-'.now()->format('Y-m-d').'.pdf"']);
     }
 
     public function usersXlsx()
     {
-        $content = $this->exporter->usersXlsx(User::query()->orderBy('name')->get());
+        $content = $this->exporter->usersXlsx($this->userQuery()->get());
 
         return response($content, 200, ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'Content-Disposition' => 'attachment; filename="users-'.now()->format('Y-m-d').'.xlsx"']);
     }
@@ -157,10 +132,10 @@ class ReportExportController extends Controller
         return response()->streamDownload(function () use ($amenities) {
             $output = fopen('php://output', 'w');
             fwrite($output, "\xEF\xBB\xBF");
-            fputcsv($output, ['Amenity ID', 'Name', 'Description', 'Status', 'Reservation Limit', 'Facilities', 'Created By']);
+            fputcsv($output, $this->exporter->amenityHeaders());
 
             foreach ($amenities as $amenity) {
-                fputcsv($output, [$amenity->AID, $amenity->name, $amenity->Description, $amenity->Status, $amenity->reservation_limit ?? 'Unlimited', $amenity->facilities->pluck('Facility_Name')->join(', '), $amenity->creator?->name]);
+                fputcsv($output, $this->exporter->amenityRow($amenity));
             }
 
             fclose($output);
@@ -183,22 +158,33 @@ class ReportExportController extends Controller
 
     private function amenityQuery(): Builder
     {
-        return Amenities::query()->with(['facilities:FID,Facility_Name', 'creator:id,name'])->orderBy('name');
+        return Amenities::query()
+            ->with(['facilities:FID,Facility_Name', 'creator:id,name'])
+            ->withCount('requests')
+            ->orderBy('name');
     }
 
     private function facilityQuery(Request $request): Builder
     {
         return Facilities::query()
+            ->with('amenities:AID,name')
             ->when($request->user()->isAdmin(), fn (Builder $query) => $query->assignedToAdmin($request->user()));
     }
 
     private function requestQuery(Request $request): Builder
     {
         return Requests::query()
-            ->with(['user', 'facility'])
+            ->with(['user', 'creator', 'facility', 'event', 'amenities:AID,name'])
             ->when($request->user()->isAdmin(), fn (Builder $query) => $query
                 ->whereHas('facility.assignedAdmins', fn (Builder $adminQuery) => $adminQuery
                     ->where('users.id', $request->user()->id)));
+    }
+
+    private function userQuery(): Builder
+    {
+        return User::query()
+            ->with('facilities:FID,Facility_Name')
+            ->orderBy('name');
     }
 
     private function scopeLabel(Request $request): string
