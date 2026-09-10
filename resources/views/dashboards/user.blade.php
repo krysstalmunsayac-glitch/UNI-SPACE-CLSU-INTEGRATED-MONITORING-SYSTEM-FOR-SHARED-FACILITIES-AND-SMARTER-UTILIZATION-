@@ -46,7 +46,7 @@
         @endforeach
         <div class="absolute inset-0 bg-black/55" aria-hidden="true"></div>
 
-        <div class="relative mx-auto grid min-h-[100svh] max-w-[1536px] items-center gap-12 px-4 pb-16 pt-24 sm:px-6 lg:grid-cols-[1.25fr_.75fr] lg:px-8">
+        <div class="relative mx-auto grid min-h-[100svh] max-w-7xl items-center gap-8 px-4 pb-16 pt-24 sm:px-6 lg:grid-cols-[1.05fr_.95fr] lg:px-8">
             <div class="max-w-3xl">
                 <p class="text-sm font-black uppercase tracking-[.28em] text-yellow-400">External user dashboard</p>
                 <h1 class="mt-4 text-5xl font-black leading-[.98] tracking-tight sm:text-6xl lg:text-7xl">Welcome back, {{ auth()->user()->name }}</h1>

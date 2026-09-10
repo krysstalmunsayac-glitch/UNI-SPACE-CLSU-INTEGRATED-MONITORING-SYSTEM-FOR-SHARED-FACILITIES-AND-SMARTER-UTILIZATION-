@@ -5,8 +5,17 @@
         #map { background: #f4f4f5; }
         #map .campus-map-layout > div { border-radius: 1rem; }
         #map .campus-map-layout > div:last-child { box-shadow: none; }
+        .home-reveal {
+            opacity: 0;
+            transform: translateY(1.25rem);
+            transition: opacity 700ms ease, transform 700ms cubic-bezier(.22, 1, .36, 1);
+            transition-delay: var(--home-reveal-delay, 0ms);
+            will-change: opacity, transform;
+        }
+        .home-reveal.is-visible { opacity: 1; transform: translateY(0); }
         @media (prefers-reduced-motion: reduce) {
             .home-hero-slide { transition: none; }
+            .home-reveal { opacity: 1; transform: none; transition: none; }
         }
     </style>
 
@@ -49,7 +58,7 @@
             >
         @endforeach
         <div class="absolute inset-0 bg-black/55" aria-hidden="true"></div>
-        <div class="relative mx-auto grid min-h-[100svh] max-w-[1536px] items-center gap-12 px-4 pb-16 pt-24 sm:px-6 lg:grid-cols-[1.25fr_.75fr] lg:px-8">
+        <div class="relative mx-auto grid min-h-[100svh] max-w-7xl items-center gap-8 px-4 pb-16 pt-24 sm:px-6 lg:grid-cols-[1.05fr_.95fr] lg:px-8">
             <div class="max-w-3xl">
                 <p class="text-sm font-black uppercase tracking-[.28em] text-yellow-400">SIEL SPACE</p>
                 <h1 class="mt-4 text-5xl font-black leading-[.98] tracking-tight sm:text-6xl lg:text-7xl">Find. Schedule. Reserve.</h1>
@@ -184,6 +193,32 @@
     @push('scripts')
         <script>
             document.addEventListener('DOMContentLoaded', () => {
+                const revealElements = [
+                    ...document.querySelectorAll('#home .max-w-3xl, #home aside'),
+                    ...document.querySelectorAll('[aria-label="SIEL Space statistics"] > div > div'),
+                    ...document.querySelectorAll('#about > div > div, #about article'),
+                    ...document.querySelectorAll('#facilities [data-category-filter], #facilities > div > div, #facility-grid .facility-card'),
+                    ...document.querySelectorAll('#calendar > div, #map .campus-map-layout > div, #map + section > div.relative, #help > div'),
+                ];
+                const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                const revealObserver = !reducedMotion && 'IntersectionObserver' in window
+                    ? new IntersectionObserver((entries) => {
+                        entries.forEach(entry => {
+                            entry.target.classList.toggle('is-visible', entry.isIntersecting);
+                        });
+                    }, { threshold: 0.05, rootMargin: '-15% 0px -15% 0px' })
+                    : null;
+
+                [...new Set(revealElements)].forEach((element, index) => {
+                    element.classList.add('home-reveal');
+                    element.style.setProperty('--home-reveal-delay', `${Math.min(index % 4, 3) * 80}ms`);
+                    if (revealObserver) {
+                        requestAnimationFrame(() => requestAnimationFrame(() => revealObserver.observe(element)));
+                    } else {
+                        element.classList.add('is-visible');
+                    }
+                });
+
                 const searchInput = document.getElementById('facility-search');
                 const capacityFilter = document.getElementById('capacity-filter');
                 const customCapacity = document.getElementById('capacity-custom');
