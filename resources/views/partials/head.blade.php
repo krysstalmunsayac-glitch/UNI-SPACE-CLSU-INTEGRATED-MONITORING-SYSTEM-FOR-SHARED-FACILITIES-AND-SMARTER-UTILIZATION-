@@ -3,7 +3,7 @@
 
 <title>{{ $title ?? 'SIEL SPACE' }}</title>
 
-<link rel="icon" type="image/png" href="{{ asset('images/silesyu-space-logo-v2.png') }}" />
+<link rel="icon" type="image/png" href="{{ asset('images/Logo_Green.png') }}?v=2" />
 
 @if (request()->routeIs('home', 'dashboard', 'Facility*'))
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
