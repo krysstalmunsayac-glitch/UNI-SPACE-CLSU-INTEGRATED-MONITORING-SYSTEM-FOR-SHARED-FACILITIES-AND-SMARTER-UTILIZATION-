@@ -72,6 +72,9 @@ Route::middleware([
             Route::get('/amenities.csv', 'amenitiesCsv')->name('amenities.csv');
             Route::get('/amenities.xlsx', 'amenitiesXlsx')->name('amenities.xlsx');
             Route::get('/amenities.pdf', 'amenitiesPdf')->name('amenities.pdf');
+            Route::get('/audits.csv', 'auditsCsv')->name('audits.csv');
+            Route::get('/audits.xlsx', 'auditsXlsx')->name('audits.xlsx');
+            Route::get('/audits.pdf', 'auditsPdf')->name('audits.pdf');
         });
 
     });

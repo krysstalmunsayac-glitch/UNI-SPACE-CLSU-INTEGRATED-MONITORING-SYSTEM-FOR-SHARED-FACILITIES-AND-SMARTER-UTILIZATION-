@@ -64,8 +64,8 @@ new #[Layout('components.layouts.app')] class extends Component
     #[Validate('required|in:Available,Unavailable')]
     public string $Status = 'Available';
 
-    #[Validate('nullable|integer|min:1|max:100000')]
-    public ?int $reservation_limit = null;
+    #[Validate('required|integer|min:1|max:100000')]
+    public int $inventory_quantity = 1;
 
     public function applySearch(): void
     {
@@ -81,7 +81,7 @@ new #[Layout('components.layouts.app')] class extends Component
 
     public function sort($column): void
     {
-        if (! in_array($column, ['name', 'Status', 'reservation_limit', 'current_usage_count'], true)) {
+        if (! in_array($column, ['name', 'Status', 'inventory_quantity', 'current_usage_quantity'], true)) {
             return;
         }
 
@@ -97,7 +97,8 @@ new #[Layout('components.layouts.app')] class extends Component
 
     public function resetForm(): void
     {
-        $this->reset(['name', 'Description', 'facilityIds', 'reservation_limit']);
+        $this->reset(['name', 'Description', 'facilityIds']);
+        $this->inventory_quantity = 1;
         $this->Status = 'Available';
         $this->editingId = null;
         $this->showCreateConfirmation = false;
@@ -120,7 +121,7 @@ new #[Layout('components.layouts.app')] class extends Component
             'facilityIds' => ['required', 'array', 'min:1'],
             'facilityIds.*' => ['integer', 'distinct', Rule::exists('facilities', 'FID')->whereNull('deleted_at')],
             'Status' => ['required', Rule::in(['Available', 'Unavailable'])],
-            'reservation_limit' => ['nullable', 'integer', 'min:1', 'max:100000'],
+            'inventory_quantity' => ['required', 'integer', 'min:1', 'max:100000'],
         ]);
 
         $this->authorizeFacilityIds($validated['facilityIds']);
@@ -139,7 +140,7 @@ new #[Layout('components.layouts.app')] class extends Component
                 'name' => $this->name,
                 'Description' => $this->Description,
                 'Status' => $this->Status,
-                'reservation_limit' => $validated['reservation_limit'] ?? null,
+                'inventory_quantity' => $validated['inventory_quantity'],
             ]);
             $amenity->facilities()->sync($validated['facilityIds']);
         } else {
@@ -148,7 +149,7 @@ new #[Layout('components.layouts.app')] class extends Component
                 'name' => $this->name,
                 'Description' => $this->Description,
                 'Status' => $this->Status,
-                'reservation_limit' => $validated['reservation_limit'] ?? null,
+                'inventory_quantity' => $validated['inventory_quantity'],
             ]);
             $amenity->facilities()->sync($validated['facilityIds']);
         }
@@ -181,7 +182,7 @@ new #[Layout('components.layouts.app')] class extends Component
         $this->name = $amenity->name;
         $this->Description = $amenity->Description;
         $this->Status = $amenity->Status;
-        $this->reservation_limit = $amenity->reservation_limit;
+        $this->inventory_quantity = $amenity->inventory_quantity;
         $this->facilityIds = $amenity->facilities->pluck('FID')->toArray();
         $this->showModal = true;
     }
@@ -290,10 +291,10 @@ new #[Layout('components.layouts.app')] class extends Component
                 'facilities:FID,Facility_Name',
                 'creator:id,name',
             ])
-            ->withCount([
-                'requests as current_usage_count' => fn ($requestQuery) => $requestQuery
+            ->withSum([
+                'requests as current_usage_quantity' => fn ($requestQuery) => $requestQuery
                     ->whereIn('Status', ['Pending', 'Approved']),
-            ])
+            ], 'request_facility_amenities.quantity')
             ->when($this->search, fn ($query) => $query->where(function ($searchQuery) {
                 $searchQuery
                     ->where('name', 'like', "%{$this->search}%")

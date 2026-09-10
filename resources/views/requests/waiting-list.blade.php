@@ -162,6 +162,15 @@
                                         @endforeach
                                     </select>
                                 </div>
+                                <div>
+                                    <label class="mb-2 block text-sm font-medium text-emerald-900 dark:text-zinc-300" for="Event_Scope_{{ $request->RID }}">Event classification</label>
+                                    <select id="Event_Scope_{{ $request->RID }}" name="Event_Scope" class="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-sm shadow-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900">
+                                        <option value="">Select internal or external</option>
+                                        @foreach (['Internal', 'External'] as $scope)
+                                            <option value="{{ $scope }}" {{ old('Event_Scope', $request->event?->Event_Scope) === $scope ? 'selected' : '' }}>{{ $scope }} event</option>
+                                        @endforeach
+                                    </select>
+                                </div>
                                 <div class="lg:col-span-2">
                                     <label class="mb-2 block text-sm font-medium text-emerald-900 dark:text-zinc-300" for="Description_{{ $request->RID }}">Description</label>
                                     <textarea id="Description_{{ $request->RID }}" name="Description" rows="4" class="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-sm shadow-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900">{{ old('Description', $request->event?->Description) }}</textarea>

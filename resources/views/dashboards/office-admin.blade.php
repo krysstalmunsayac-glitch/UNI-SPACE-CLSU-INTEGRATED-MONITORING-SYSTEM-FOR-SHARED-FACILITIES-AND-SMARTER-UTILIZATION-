@@ -7,6 +7,7 @@
             ['label' => 'Approved', 'value' => $dashboardStatusCounts['Approved'] ?? 0, 'note' => 'Approved in selected dates', 'tone' => 'emerald'],
             ['label' => 'Rejected', 'value' => $dashboardStatusCounts['Rejected'] ?? 0, 'note' => 'Rejected in selected dates', 'tone' => 'rose'],
             ['label' => 'Cancelled', 'value' => $dashboardStatusCounts['Cancelled'] ?? 0, 'note' => 'Cancelled in selected dates', 'tone' => 'amber'],
+            ['label' => 'Response Rate', 'value' => ($responseRateTotalCount ?? 0) > 0 ? number_format($responseRate ?? 0, 1).'%' : '0%', 'note' => ($respondedRequestCount ?? 0).' of '.($responseRateTotalCount ?? 0).' requests processed.', 'tone' => 'slate'],
         ];
     @endphp
 

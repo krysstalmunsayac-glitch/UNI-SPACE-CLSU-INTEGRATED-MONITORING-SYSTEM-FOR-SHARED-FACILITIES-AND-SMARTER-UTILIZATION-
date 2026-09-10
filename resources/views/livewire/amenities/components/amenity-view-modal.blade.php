@@ -21,8 +21,8 @@
                     <dd class="mt-1 whitespace-pre-line text-zinc-700 dark:text-zinc-300">{{ $amenity->Description ?? 'No description provided.' }}</dd>
                 </div>
                 <div>
-                    <dt class="text-xs font-bold text-zinc-500">Concurrent usage limit</dt>
-                    <dd class="mt-1 text-zinc-700 dark:text-zinc-300">{{ $amenity->reservation_limit ? number_format($amenity->reservation_limit) : 'Unlimited' }}</dd>
+                    <dt class="text-xs font-bold text-zinc-500">Available quantity</dt>
+                    <dd class="mt-1 text-zinc-700 dark:text-zinc-300">{{ number_format($amenity->inventory_quantity) }} units</dd>
                 </div>
                 <div>
                     <dt class="text-xs font-bold text-zinc-500">Created</dt>

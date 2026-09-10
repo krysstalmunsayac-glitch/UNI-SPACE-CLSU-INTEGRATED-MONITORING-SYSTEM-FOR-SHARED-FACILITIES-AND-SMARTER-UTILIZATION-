@@ -11,13 +11,14 @@
 
             <div>
                 <x-ui::input
-                    wire:model="reservation_limit"
+                    wire:model="inventory_quantity"
                     type="number"
                     min="1"
                     max="100000"
-                    label="Concurrent usage limit"
-                    description="Maximum overlapping reservations allowed. Leave blank for unlimited usage."
-                    placeholder="Unlimited"
+                    label="Available quantity"
+                    description="Total number of units that can be requested during the same time period."
+                    placeholder="Enter available units"
+                    required
                 />
             </div>
 

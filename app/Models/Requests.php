@@ -205,7 +205,7 @@ class Requests extends Model
             'request_facility_amenities',
             'Request_ID',
             'Amenity_ID'
-        )->withTimestamps();
+        )->withPivot('quantity')->withTimestamps();
     }
 
     public function schedule(): HasOne

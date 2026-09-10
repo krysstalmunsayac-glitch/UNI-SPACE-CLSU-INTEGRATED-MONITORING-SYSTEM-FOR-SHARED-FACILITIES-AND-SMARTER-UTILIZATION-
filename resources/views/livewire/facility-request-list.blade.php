@@ -220,6 +220,7 @@ new class extends Component {
                                     <p><span class="font-black">Location:</span> {{ $request->facility?->Location ?? 'N/A' }}</p>
                                     <p class="mt-2"><span class="font-black">Purpose:</span> {{ $request->Purpose ?? 'N/A' }}</p>
                                     <p class="mt-2"><span class="font-black">Event type:</span> {{ $request->event?->Type_Event ?? 'N/A' }}</p>
+                                    <p class="mt-2"><span class="font-black">Event classification:</span> {{ $request->event?->Event_Scope ? $request->event->Event_Scope.' event' : 'N/A' }}</p>
                                     @if ($isCancelled && $request->Cancellation_Reason)
                                         <p class="mt-2"><span class="font-black">Cancellation reason:</span> {{ $request->Cancellation_Reason }}</p>
                                     @endif
@@ -271,6 +272,7 @@ new class extends Component {
                                     @foreach ([
                                         'Event title' => $request->event?->Event_Title ?? 'N/A',
                                         'Event type' => $request->event?->Type_Event ?? 'N/A',
+                                        'Event classification' => $request->event?->Event_Scope ? $request->event->Event_Scope.' event' : 'N/A',
                                         'First event day' => $request->Proposed_Date?->format('M j, Y') ?? 'N/A',
                                         'Last event day' => $request->Proposed_End_Date?->format('M j, Y') ?? $request->Proposed_Date?->format('M j, Y') ?? 'N/A',
                                         'Start time' => $request->Proposed_Start_Time?->format('g:i A') ?? 'N/A',

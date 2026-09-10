@@ -46,13 +46,7 @@ class FacilitiesController extends Controller
 
         $availableAmenities = $facility->amenities()
             ->where('amenities.Status', 'Available')
-            ->withCount([
-                'requests as current_usage_count' => fn ($requestQuery) => $requestQuery
-                    ->whereIn('Status', ['Pending', 'Approved']),
-            ])
             ->get()
-            ->filter(fn (Amenities $amenity) => $amenity->reservation_limit === null
-                || $amenity->current_usage_count < $amenity->reservation_limit)
             ->values();
 
         $events = Events::orderBy('Event_Title')->get();
@@ -118,14 +112,17 @@ class FacilitiesController extends Controller
             'Guest_Contact' => ['nullable', 'string', 'max:100'],
             'Amenity_ID' => ['array', 'nullable'],
             'Amenity_ID.*' => [
-                'integer',
+                'integer', 'distinct',
                 Rule::exists('facility_amenity', 'Amenity_ID')->where('Facility_ID', $facility->FID),
                 Rule::exists('amenities', 'AID')->where('Status', 'Available'),
             ],
+            'Amenity_Quantity' => ['array', 'nullable'],
+            'Amenity_Quantity.*' => ['nullable', 'integer', 'min:1', 'max:100000'],
             'Event_ID' => ['nullable', 'integer', Rule::exists('events', 'EID')],
             'Event_Title' => ['required', 'string', 'min:3', 'max:255'],
             'Description' => ['required', 'string', 'min:5', 'max:2000'],
             'Type_Event' => ['required', 'string', 'max:100'],
+            'Event_Scope' => ['required', Rule::in(['Internal', 'External'])],
             'Other_Event_Type' => ['nullable', 'required_if:Type_Event,Other', 'string', 'max:100'],
             'Proposed_Date' => ['required', 'date', 'after_or_equal:'.$earliestReservationDate],
             'Proposed_End_Date' => ['required', 'date', 'after_or_equal:Proposed_Date'],
@@ -180,8 +177,13 @@ class FacilitiesController extends Controller
             $validated['Type_Event'] = trim($validated['Other_Event_Type']);
         }
 
+        $amenityQuantities = $this->validatedAmenityQuantities(
+            $validated['Amenity_ID'] ?? [],
+            $validated['Amenity_Quantity'] ?? [],
+        );
+
         try {
-            $requestModel = DB::transaction(function () use ($validated, $dailySchedules, $firstSchedule, $lastSchedule, $facility, $attachmentPath, $availability, $guestBooking): Requests {
+            $requestModel = DB::transaction(function () use ($validated, $amenityQuantities, $dailySchedules, $firstSchedule, $lastSchedule, $facility, $attachmentPath, $availability, $guestBooking): Requests {
                 User::query()->whereKey(auth()->id())->lockForUpdate()->firstOrFail();
                 Facilities::query()->whereKey($facility->FID)->lockForUpdate()->firstOrFail();
 
@@ -192,7 +194,7 @@ class FacilitiesController extends Controller
 
                 foreach ($dailySchedules as $schedule) {
                     $this->validateAmenityAvailability(
-                        $validated['Amenity_ID'] ?? [],
+                        $amenityQuantities,
                         $schedule['date'],
                         $schedule['date'],
                         $schedule['start'],
@@ -206,6 +208,7 @@ class FacilitiesController extends Controller
                     'Event_Title' => $validated['Event_Title'],
                     'Description' => $validated['Description'],
                     'Type_Event' => $validated['Type_Event'],
+                    'Event_Scope' => $validated['Event_Scope'],
                 ]);
 
                 $requestModel = Requests::create([
@@ -239,7 +242,11 @@ class FacilitiesController extends Controller
                     'attachment_path' => $attachmentPath,
                 ]);
 
-                $requestModel->amenities()->sync($validated['Amenity_ID'] ?? []);
+                $requestModel->amenities()->sync(
+                    collect($amenityQuantities)->mapWithKeys(
+                        fn (int $quantity, int $amenityId) => [$amenityId => ['quantity' => $quantity]]
+                    )->all()
+                );
 
                 return $requestModel;
             }, 3);
@@ -318,6 +325,7 @@ class FacilitiesController extends Controller
             'Event_Title' => ['nullable', 'string', 'min:3', 'max:255'],
             'Description' => ['nullable', 'string', 'min:5', 'max:2000'],
             'Type_Event' => ['nullable', 'string', 'max:100'],
+            'Event_Scope' => ['nullable', Rule::in(['Internal', 'External'])],
             'Proposed_Date' => ['required', 'date', 'after_or_equal:'.$earliestReservationDate],
             'Proposed_End_Date' => ['required', 'date', 'after_or_equal:Proposed_Date'],
             'Proposed_Start_Time' => ['required', 'date_format:H:i'],
@@ -363,7 +371,9 @@ class FacilitiesController extends Controller
         }
 
         $this->validateAmenityAvailability(
-            $requestModel->amenities()->pluck('amenities.AID')->all(),
+            $requestModel->amenities->mapWithKeys(
+                fn (Amenities $amenity) => [(int) $amenity->AID => (int) $amenity->pivot->quantity]
+            )->all(),
             $validated['Proposed_Date'],
             $validated['Proposed_End_Date'],
             $validated['Proposed_Start_Time'],
@@ -388,6 +398,7 @@ class FacilitiesController extends Controller
                 'Event_Title' => $validated['Event_Title'] ?? $requestModel->event->Event_Title,
                 'Description' => $validated['Description'] ?? $requestModel->event->Description,
                 'Type_Event' => $validated['Type_Event'] ?? $requestModel->event->Type_Event,
+                'Event_Scope' => $validated['Event_Scope'] ?? $requestModel->event->Event_Scope,
             ]);
         }
 
@@ -526,10 +537,10 @@ class FacilitiesController extends Controller
      * Prevent limited shared amenities from being reserved beyond their stock
      * during an overlapping date and time window.
      *
-     * @param  array<int, int|string>  $amenityIds
+     * @param  array<int, int>  $amenityQuantities Amenity IDs keyed to requested units.
      */
     private function validateAmenityAvailability(
-        array $amenityIds,
+        array $amenityQuantities,
         string $startDate,
         string $endDate,
         string $startTime,
@@ -537,21 +548,49 @@ class FacilitiesController extends Controller
         ?int $ignoreRequestId = null,
         bool $lockForUpdate = false,
     ): void {
-        $limitedAmenities = Amenities::query()
-            ->whereIn('AID', $amenityIds)
-            ->whereNotNull('reservation_limit')
+        $amenities = Amenities::query()
+            ->whereIn('AID', array_keys($amenityQuantities))
             ->when($lockForUpdate, fn ($query) => $query->lockForUpdate())
             ->get();
 
-        foreach ($limitedAmenities as $amenity) {
-            if (! $amenity->isFullyReserved($startDate, $endDate, $startTime, $endTime, $ignoreRequestId)) {
+        foreach ($amenities as $amenity) {
+            $requested = $amenityQuantities[(int) $amenity->AID];
+            $reserved = $amenity->overlappingReservedQuantity($startDate, $endDate, $startTime, $endTime, $ignoreRequestId);
+            $available = max(0, $amenity->inventory_quantity - $reserved);
+
+            if ($requested <= $available) {
                 continue;
             }
 
             throw ValidationException::withMessages([
-                'Amenity_ID' => "{$amenity->name} is fully reserved for the selected date and time. Please choose another time or remove this amenity.",
+                "Amenity_Quantity.{$amenity->AID}" => "Only {$available} of {$amenity->inventory_quantity} {$amenity->name} units are available for the selected date and time; {$requested} requested.",
             ]);
         }
+    }
+
+    /**
+     * @param  array<int, int|string>  $amenityIds
+     * @param  array<int|string, int|string|null>  $submittedQuantities
+     * @return array<int, int>
+     */
+    private function validatedAmenityQuantities(array $amenityIds, array $submittedQuantities): array
+    {
+        $ids = collect($amenityIds)->map(fn ($id) => (int) $id)->unique()->values();
+        $quantities = [];
+
+        foreach ($ids as $id) {
+            $quantity = $submittedQuantities[$id] ?? null;
+
+            if (! is_numeric($quantity) || (int) $quantity < 1) {
+                throw ValidationException::withMessages([
+                    "Amenity_Quantity.{$id}" => 'Enter the number of units needed for each selected amenity.',
+                ]);
+            }
+
+            $quantities[$id] = (int) $quantity;
+        }
+
+        return $quantities;
     }
 
     /**

@@ -18,7 +18,9 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public const CLSU_ID_REGEX = '/^\d{2}-\d{4}$/';
 
-    public const CLSU_EMAIL_DOMAINS = ['clsu.edu.ph', 'clsu2.edu.ph'];
+    public const CLSU_EMAIL_DOMAINS = ['clsu2.edu.ph'];
+
+    public const PRIVACY_NOTICE_VERSION = '2026-09-11';
 
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, SoftDeletes;
@@ -30,6 +32,10 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     protected $fillable = [
         'name',
+        'account_type',
+        'privacy_consent',
+        'privacy_consented_at',
+        'privacy_notice_version',
         'clsu_id',
         'email',
         'password',
@@ -67,6 +73,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'invitation_revoked_at' => 'datetime',
         'password' => 'hashed',
         'is_active' => 'boolean',
+        'privacy_consent' => 'boolean',
+        'privacy_consented_at' => 'datetime',
     ];
 
     public function invitationStatus(): string

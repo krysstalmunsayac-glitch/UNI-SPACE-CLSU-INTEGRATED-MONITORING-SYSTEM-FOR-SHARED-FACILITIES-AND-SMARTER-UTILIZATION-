@@ -154,11 +154,7 @@
         @endif
         @if (! $viewingArchived && $Status === 'Approved' && $viewingId)
             <x-ui::button
-                wire:click="cancel({{ $viewingId }})"
-                data-ui-confirm="Cancel this approved request? Its facility schedule will be removed and the requester will be notified."
-                data-ui-confirm-title="Confirm cancellation"
-                data-ui-confirm-label="Cancel request"
-                data-ui-confirm-variant="danger"
+                wire:click="openCancelModal({{ $viewingId }}); $set('showViewModal', false)"
                 variant="danger"
                 icon="x-mark"
                 class="flex-1"

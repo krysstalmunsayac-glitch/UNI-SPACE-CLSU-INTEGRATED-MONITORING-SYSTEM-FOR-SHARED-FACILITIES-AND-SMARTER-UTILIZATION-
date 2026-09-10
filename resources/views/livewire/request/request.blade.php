@@ -38,7 +38,7 @@ new #[Layout('components.layouts.app')] class extends Component
     public function mount(): void
     {
         Requests::markPastRequestsAsEnded();
-        $this->archiveOnly = request()->boolean('archive');
+        $this->archiveOnly = auth()->user()->isSuperAdmin() && request()->boolean('archive');
         $this->showArchivedModal = $this->archiveOnly;
 
         if (! $this->archiveOnly && request()->integer('request')) {
@@ -50,7 +50,15 @@ new #[Layout('components.layouts.app')] class extends Component
 
     public bool $showReviewModal = false;
 
+    public bool $showCancelModal = false;
+
     public ?int $rejectingId = null;
+
+    public ?int $cancellingId = null;
+
+    public string $adminCancellationReason = '';
+
+    public bool $emailCancellationNotice = true;
 
     public ?int $reviewingId = null;
 
@@ -221,6 +229,8 @@ new #[Layout('components.layouts.app')] class extends Component
 
     public function showArchivedRequest(int $requestId): void
     {
+        abort_unless(auth()->user()->isSuperAdmin(), 403);
+
         $query = Requests::query()->onlyTrashed();
 
         if (auth()->user()->isAdmin()) {
@@ -260,8 +270,7 @@ new #[Layout('components.layouts.app')] class extends Component
         $this->Created_By_Name = $request->creator?->name;
         $this->attachmentPath = $request->attachment_path;
         $this->Requested_Amenities = $request->amenities
-            ->pluck('name')
-            ->filter()
+            ->map(fn (Amenities $amenity) => $amenity->name.' — '.number_format((int) $amenity->pivot->quantity).' units')
             ->values()
             ->all() ?? [];
         $this->Purpose_Categories = $request->Purpose_Categories ?? [];
@@ -480,11 +489,36 @@ new #[Layout('components.layouts.app')] class extends Component
         $this->rejectingId = null;
     }
 
-    public function cancel(int $requestId): void
+    public function openCancelModal(int $requestId): void
     {
-        $request = $this->getScopedRequest($requestId)->load('user');
+        $request = $this->getScopedRequest($requestId);
 
         if ($request->Status !== 'Approved') {
+            Ui::toast(text: 'Only approved requests can be cancelled.', variant: 'warning');
+
+            return;
+        }
+
+        $this->cancellingId = $request->RID;
+        $this->adminCancellationReason = '';
+        $this->emailCancellationNotice = true;
+        $this->resetValidation(['adminCancellationReason']);
+        $this->showCancelModal = true;
+    }
+
+    public function confirmCancellation(): void
+    {
+        $this->validate([
+            'adminCancellationReason' => ['required', 'string', 'min:5', 'max:500'],
+            'emailCancellationNotice' => ['boolean'],
+        ], [
+            'adminCancellationReason.required' => 'Enter the reason for cancelling this approved request.',
+        ]);
+
+        $request = $this->getScopedRequest($this->cancellingId)->load('user');
+
+        if ($request->Status !== 'Approved') {
+            $this->showCancelModal = false;
             Ui::toast(text: 'Only approved requests can be cancelled.', variant: 'warning');
 
             return;
@@ -494,20 +528,27 @@ new #[Layout('components.layouts.app')] class extends Component
         $request->schedules()->delete();
         $request->update([
             'Status' => 'Cancelled',
-            'Cancellation_Reason' => 'Cancelled by an administrator.',
+            'Cancellation_Reason' => trim($this->adminCancellationReason),
         ]);
 
-        if ($request->user) {
+        if ($this->emailCancellationNotice && $request->user) {
             Notification::send($request->user, new RequestStatusUpdated($request, $previousStatus));
+        } elseif ($this->emailCancellationNotice && $request->Is_Guest_Booking && $request->Guest_Email) {
+            Notification::route('mail', $request->Guest_Email)
+                ->notify(new RequestStatusUpdated($request, $previousStatus));
         }
 
         Ui::toast(text: 'Approved request cancelled and its schedule removed.', variant: 'success');
         $this->dispatch('swal', [
             'title' => 'Request cancelled',
-            'text' => 'The approved request was cancelled and its reserved schedule was released.',
+            'text' => $this->emailCancellationNotice
+                ? 'The request was cancelled, its schedule was released, and the requester was emailed.'
+                : 'The request was cancelled and its schedule was released without sending an email.',
             'icon' => 'success',
         ]);
+        $this->showCancelModal = false;
         $this->showViewModal = false;
+        $this->cancellingId = null;
     }
 
     public function openReviewModal(int $requestId): void
@@ -711,6 +752,8 @@ new #[Layout('components.layouts.app')] class extends Component
 
     public function delete(int $requestId): void
     {
+        abort_unless(auth()->user()->isSuperAdmin(), 403);
+
         $this->getScopedRequest($requestId)->delete();
         Ui::toast(text: 'Request archived successfully!', variant: 'success');
         $this->dispatch(
@@ -725,11 +768,15 @@ new #[Layout('components.layouts.app')] class extends Component
 
     public function openArchivedRecords(): void
     {
+        abort_unless(auth()->user()->isSuperAdmin(), 403);
+
         $this->showArchivedModal = true;
     }
 
     public function restore(int $requestId): void
     {
+        abort_unless(auth()->user()->isSuperAdmin(), 403);
+
         Requests::onlyTrashed()->findOrFail($requestId)->restore();
         Ui::toast(text: 'Request restored successfully!', variant: 'success');
         $this->dispatch('swal', [
@@ -742,6 +789,8 @@ new #[Layout('components.layouts.app')] class extends Component
 
     public function forceDelete(int $requestId): void
     {
+        abort_unless(auth()->user()->isSuperAdmin(), 403);
+
         Requests::onlyTrashed()->findOrFail($requestId)->forceDelete();
         Ui::toast(text: 'Request permanently deleted.', variant: 'success');
         $this->dispatch('swal', [
@@ -767,6 +816,8 @@ new #[Layout('components.layouts.app')] class extends Component
     #[Computed]
     public function archivedRequests()
     {
+        abort_unless(auth()->user()->isSuperAdmin(), 403);
+
         $query = Requests::query()->onlyTrashed();
 
         if (auth()->user()->isAdmin()) {
@@ -906,6 +957,9 @@ new #[Layout('components.layouts.app')] class extends Component
     @endif
     @if ($showRejectModal)
         @include('request.components.request-reject-modal')
+    @endif
+    @if ($showCancelModal)
+        @include('request.components.request-cancel-modal')
     @endif
     @if ($showModal)
         @include('request.components.request-edit-modal')

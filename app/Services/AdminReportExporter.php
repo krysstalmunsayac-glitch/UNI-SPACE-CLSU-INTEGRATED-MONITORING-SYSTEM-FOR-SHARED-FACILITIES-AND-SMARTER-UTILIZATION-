@@ -31,7 +31,7 @@ class AdminReportExporter
             $facility->Longitude ?? '',
             $facility->Office ?? '',
             $facility->Description ?? '',
-            $facility->amenities->pluck('name')->join(', '),
+            $facility->amenities->map(fn ($amenity) => $amenity->name.' ('.$amenity->inventory_quantity.' units)')->join(', '),
             $facility->protocols_and_guidelines ?: ($facility->Protocols ?? ''),
             $facility->Contact_Details ?? '',
             $facility->Reference_URL ?? '',
@@ -74,7 +74,7 @@ class AdminReportExporter
             $request->Proposed_End_Time?->format('H:i') ?? '',
             $this->dailyScheduleText($request->Daily_Schedules),
             $request->Capacity ?? '',
-            $request->amenities->pluck('name')->join(', '),
+            $request->amenities->map(fn ($amenity) => $amenity->name.' ('.(int) $amenity->pivot->quantity.' units)')->join(', '),
             $request->Review_Requested_At && $request->Status === 'Pending' ? 'Needs Revision' : ($request->Status ?? ''),
             $request->Purpose ?? '',
             collect($request->Purpose_Categories ?? [])->join(', '),
@@ -129,7 +129,7 @@ class AdminReportExporter
     public function amenityHeaders(): array
     {
         return [
-            'Amenity ID', 'Name', 'Description', 'Status', 'Reservation Limit',
+            'Amenity ID', 'Name', 'Description', 'Status', 'Available Quantity',
             'Facilities', 'Facility Count', 'Request Usage', 'Created By', 'Created At', 'Updated At',
         ];
     }
@@ -141,13 +141,40 @@ class AdminReportExporter
             $amenity->name,
             $amenity->Description ?? '',
             $amenity->Status ?? '',
-            $amenity->reservation_limit ?? 'Unlimited',
+            $amenity->inventory_quantity,
             $amenity->facilities->pluck('Facility_Name')->join(', '),
             $amenity->facilities->count(),
             $amenity->requests_count ?? $amenity->requests()->count(),
             $amenity->creator?->name ?? '',
             $this->dateTimeText($amenity->Created_at),
             $this->dateTimeText($amenity->Updated_at),
+        ];
+    }
+
+    public function auditHeaders(): array
+    {
+        return [
+            'Audit ID', 'Date and Time', 'Performed By', 'Role', 'Action',
+            'Record Type', 'Record ID', 'Description', 'Original Values',
+            'Updated Values', 'IP Address', 'User Agent',
+        ];
+    }
+
+    public function auditRow($log): array
+    {
+        return [
+            $log->id,
+            $this->dateTimeText($log->created_at),
+            $log->actor?->name ?? 'System',
+            $log->actor?->roleLabel() ?? 'Automated action',
+            str($log->action)->replace('_', ' ')->title()->toString(),
+            class_basename($log->auditable_type),
+            $log->auditable_id,
+            $log->description,
+            $this->auditValuesText($log->old_values),
+            $this->auditValuesText($log->new_values),
+            $log->ip_address ?? '',
+            $log->user_agent ?? '',
         ];
     }
 
@@ -314,6 +341,16 @@ class AdminReportExporter
         );
     }
 
+    public function auditsXlsx(Collection $logs): string
+    {
+        return $this->xlsx(
+            'Audit History',
+            $this->auditHeaders(),
+            $logs->map(fn ($log) => $this->auditRow($log))->all(),
+            [12, 22, 28, 20, 22, 22, 14, 55, 60, 60, 18, 60],
+        );
+    }
+
     public function facilitiesPdf(Collection $facilities, string $scopeLabel): string
     {
         $pdf = new class('P', 'mm', 'A4') extends \FPDF
@@ -400,7 +437,7 @@ class AdminReportExporter
                     ? $facility->Latitude.', '.$facility->Longitude
                     : 'N/A',
                 'Description' => $facility->Description ?? 'N/A',
-                'Amenities' => $facility->amenities->pluck('name')->join(', ') ?: 'None listed',
+                'Amenities' => $facility->amenities->map(fn ($amenity) => $amenity->name.' ('.$amenity->inventory_quantity.' units)')->join(', ') ?: 'None listed',
                 'Protocols and guidelines' => $facility->protocols_and_guidelines ?: ($facility->Protocols ?? 'N/A'),
                 'Contact details' => $facility->Contact_Details ?? 'N/A',
                 'Reference URL' => $facility->Reference_URL ?? 'N/A',
@@ -460,6 +497,36 @@ class AdminReportExporter
         })->all();
 
         return $this->detailPdf('AMENITY REPORT', 'All active amenities', $records);
+    }
+
+    public function auditsPdf(Collection $logs): string
+    {
+        $headers = $this->auditHeaders();
+        $records = $logs->map(function ($log) use ($headers): array {
+            $row = $this->auditRow($log);
+
+            return [
+                'title' => sprintf('AUD-%05d - %s', $log->id, str($log->action)->replace('_', ' ')->title()),
+                'details' => array_combine(array_slice($headers, 1), array_slice($row, 1)),
+            ];
+        })->all();
+
+        return $this->detailPdf('AUDIT HISTORY REPORT', 'All recorded system changes', $records);
+    }
+
+    private function auditValuesText(?array $values): string
+    {
+        if (! $values) {
+            return '';
+        }
+
+        return collect($values)->map(function ($value, string $key): string {
+            $formatted = is_scalar($value) || $value === null
+                ? (string) ($value ?? 'None')
+                : json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+            return str($key)->replace('_', ' ')->headline().': '.$formatted;
+        })->implode('; ');
     }
 
     private function detailPdf(string $title, string $scopeLabel, array $records): string

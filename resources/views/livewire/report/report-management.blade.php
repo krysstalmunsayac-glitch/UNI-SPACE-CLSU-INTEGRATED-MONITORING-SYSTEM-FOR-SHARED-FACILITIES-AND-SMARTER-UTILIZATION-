@@ -149,6 +149,18 @@ new #[Layout('components.layouts.app')] class extends Component {
                     <x-ui::menu.item icon="document" href="{{ route('exports.amenities.pdf') }}">PDF</x-ui::menu.item>
                 </x-ui::menu>
             </x-ui::dropdown>
+
+            <x-ui::dropdown position="bottom" align="end">
+                <x-ui::button variant="outline" class="w-32 justify-start gap-2">
+                    <x-ui::icon.clipboard-document-list class="size-4 shrink-0" />
+                    Audit History
+                </x-ui::button>
+                <x-ui::menu>
+                    <x-ui::menu.item icon="document-text" href="{{ route('exports.audits.csv') }}">CSV</x-ui::menu.item>
+                    <x-ui::menu.item icon="table-cells" href="{{ route('exports.audits.xlsx') }}">Excel (.xlsx)</x-ui::menu.item>
+                    <x-ui::menu.item icon="document" href="{{ route('exports.audits.pdf') }}">PDF</x-ui::menu.item>
+                </x-ui::menu>
+            </x-ui::dropdown>
         </div>
     </div>
 

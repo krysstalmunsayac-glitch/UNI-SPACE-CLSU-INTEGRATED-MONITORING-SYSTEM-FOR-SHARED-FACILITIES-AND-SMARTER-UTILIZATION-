@@ -27,10 +27,12 @@ class Amenities extends Model
         'Description',
         'Status',
         'reservation_limit',
+        'inventory_quantity',
     ];
 
     protected $casts = [
         'reservation_limit' => 'integer',
+        'inventory_quantity' => 'integer',
     ];
 
     public function facilities(): BelongsToMany
@@ -57,7 +59,7 @@ class Amenities extends Model
             'Request_ID',
             'AID',
             'RID',
-        )->withTimestamps();
+        )->withPivot('quantity')->withTimestamps();
     }
 
     public function overlappingReservationCount(
@@ -87,6 +89,26 @@ class Amenities extends Model
     ): bool {
         return $this->reservation_limit !== null
             && $this->overlappingReservationCount($startDate, $endDate, $startTime, $endTime, $ignoreRequestId) >= $this->reservation_limit;
+    }
+
+    public function overlappingReservedQuantity(
+        string $startDate,
+        string $endDate,
+        string $startTime,
+        string $endTime,
+        ?int $ignoreRequestId = null,
+    ): int {
+        return (int) DB::table('request_facility_amenities')
+            ->join('requests', 'requests.RID', '=', 'request_facility_amenities.Request_ID')
+            ->where('request_facility_amenities.Amenity_ID', $this->AID)
+            ->whereNull('requests.deleted_at')
+            ->whereDate('requests.Proposed_Date', '<=', $endDate)
+            ->whereDate(DB::raw('COALESCE(requests.Proposed_End_Date, requests.Proposed_Date)'), '>=', $startDate)
+            ->whereIn('requests.Status', ['Pending', 'Approved'])
+            ->when($ignoreRequestId, fn ($query) => $query->where('requests.RID', '!=', $ignoreRequestId))
+            ->where('requests.Proposed_Start_Time', '<', $endTime)
+            ->where('requests.Proposed_End_Time', '>', $startTime)
+            ->sum('request_facility_amenities.quantity');
     }
 
     protected static function booted(): void

@@ -15,6 +15,10 @@ Hello {{ $userName }},
 
 **Reason for rejection:** {{ $rejectionReason }}
 @endif
+@if ($status === 'Cancelled' && $cancellationReason)
+
+**Reason for cancellation:** {{ $cancellationReason }}
+@endif
 </x-mail::panel>
 
 <x-mail::button :url="$actionUrl">

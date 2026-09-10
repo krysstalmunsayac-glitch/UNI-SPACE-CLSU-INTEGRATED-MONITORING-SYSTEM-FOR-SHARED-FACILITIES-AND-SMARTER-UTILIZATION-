@@ -16,6 +16,7 @@
             ['label' => 'Total Facilities', 'value' => $facilityCount ?? 0, 'note' => 'Managed shared spaces', 'tone' => 'plain'],
             ['label' => 'Facility Utilization', 'value' => ($overallFacilityUtilizationRate ?? 0).'%', 'note' => $availabilityBaseline ?? '', 'tone' => 'teal'],
             ['label' => 'Approval Rate', 'value' => isset($approvalRate) ? $approvalRate.'%' : '—', 'note' => 'Approved vs rejected', 'tone' => 'green'],
+            ['label' => 'Response Rate', 'value' => ($responseRateTotalCount ?? 0) > 0 ? number_format($responseRate ?? 0, 1).'%' : '0%', 'note' => ($respondedRequestCount ?? 0).' of '.($responseRateTotalCount ?? 0).' requests processed.', 'tone' => 'green'],
             ['label' => 'Most Used Facility', 'value' => $mostUsedFacility['name'] ?? 'N/A', 'note' => ($mostUsedFacility['count'] ?? 0).' requests in selected dates', 'tone' => 'indigo', 'valueClass' => 'text-xl leading-tight'],
         ];
     @endphp

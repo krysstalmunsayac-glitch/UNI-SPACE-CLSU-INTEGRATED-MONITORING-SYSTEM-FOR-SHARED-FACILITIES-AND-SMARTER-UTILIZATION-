@@ -9,6 +9,10 @@
     $facilityDecisionRates ??= [];
     $facilityRatings ??= [];
     $amenityUsage ??= [];
+    $respondedRequestCount ??= 0;
+    $responseRateTotalCount ??= 0;
+    $responseRate ??= 0;
+    $unprocessedRequestCount = max(0, $responseRateTotalCount - $respondedRequestCount);
     $amenityDemand = collect($amenityUsage)->map(fn ($count, $name) => [
         'amenity' => $name,
         'count' => (int) $count,
@@ -25,6 +29,12 @@
         'decisions' => $facilityDecisionRates,
         'ratings' => $facilityRatings,
         'amenities' => $amenityDemand,
+        'responseRate' => [
+            'responded' => (int) $respondedRequestCount,
+            'unprocessed' => (int) $unprocessedRequestCount,
+            'total' => (int) $responseRateTotalCount,
+            'rate' => (float) $responseRate,
+        ],
     ];
 @endphp
 
@@ -63,11 +73,28 @@
         </section>
     </div>
 
-    <div>
+    <div class="grid gap-5 xl:grid-cols-2">
         <section class="{{ $card }}">
             <h3 class="text-lg font-bold">Request Outcomes Over Time</h3>
             <p class="mt-1 text-sm text-slate-500 dark:text-zinc-400">Monthly request outcomes in the selected period.</p>
             <div class="mt-5 h-72"><canvas id="{{ $dashboardChartPrefix }}OutcomesChart"></canvas></div>
+        </section>
+
+        <section class="{{ $card }}">
+            <h3 class="text-lg font-bold">Response Rate</h3>
+            <p class="mt-1 text-sm text-slate-500 dark:text-zinc-400">Processed requests compared with all requests in the selected period.</p>
+            @if ($responseRateTotalCount > 0)
+                <div class="mx-auto mt-5 h-64 max-w-sm">
+                    <canvas id="{{ $dashboardChartPrefix }}ResponseRateChart"></canvas>
+                </div>
+                <p class="mt-3 text-center text-sm font-semibold text-slate-600 dark:text-zinc-300">
+                    {{ $respondedRequestCount }} of {{ $responseRateTotalCount }} requests processed
+                </p>
+            @else
+                <div class="mt-5 flex h-64 items-center justify-center rounded-xl border border-dashed border-slate-200 text-sm text-slate-500 dark:border-zinc-700 dark:text-zinc-400">
+                    No requests in this period. Response rate is 0%.
+                </div>
+            @endif
         </section>
     </div>
 
@@ -161,6 +188,41 @@
         replace(canvas('OutcomesChart'), {
             type: 'bar', data: { labels: data.outcomes.labels, datasets: Object.entries(data.outcomes.series).map(([status, values]) => ({ label: status, data: values, backgroundColor: colors[status], borderRadius: 4 })) },
             options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true, grid: { display: false }, ticks: { color: text } }, y: { stacked: true, beginAtZero: true, grid: { color: grid }, ticks: { color: text, precision: 0 } } }, plugins: { legend: { labels: { color: text, usePointStyle: true } } } },
+        });
+        replace(canvas('ResponseRateChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Processed', 'Unprocessed'],
+                datasets: [{
+                    data: [data.responseRate.responded, data.responseRate.unprocessed],
+                    backgroundColor: ['#10b981', '#cbd5e1'],
+                    borderWidth: 0,
+                    hoverOffset: 4,
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '68%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { color: text, usePointStyle: true, padding: 18 },
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: context => `${context.label}: ${context.raw} request${context.raw === 1 ? '' : 's'}`,
+                        },
+                    },
+                    title: {
+                        display: true,
+                        text: data.responseRate.rate.toFixed(1) + '%',
+                        color: text,
+                        font: { size: 22, weight: 'bold' },
+                        padding: { bottom: 12 },
+                    },
+                },
+            },
         });
         const typePalette = ['#2563eb', '#10b981', '#f59e0b', '#f43f5e', '#7c3aed', '#0f766e', '#64748b', '#db2777'];
         replace(canvas('FacilityTypeTrendChart'), {

@@ -107,6 +107,7 @@ class DatabaseSeeder extends Seeder
             $dummyRequest->amenities()->syncWithoutDetaching(
                 collect($amenityIds)
                     ->take(($index % count($amenityIds)) + 1)
+                    ->mapWithKeys(fn (int $amenityId) => [$amenityId => ['quantity' => 1]])
                     ->all()
             );
 

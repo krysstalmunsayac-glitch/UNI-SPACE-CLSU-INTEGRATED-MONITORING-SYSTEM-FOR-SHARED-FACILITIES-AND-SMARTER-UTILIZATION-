@@ -34,7 +34,7 @@
                                     {{ $amenity->facilities->pluck('Facility_Name')->join(', ') ?: 'Unassigned' }}
                                 </x-ui::table.cell>
                                 <x-ui::table.cell>
-                                    {{ $amenity->reservation_limit ? number_format($amenity->reservation_limit).' concurrent' : 'Unlimited' }}
+                                    {{ number_format($amenity->inventory_quantity) }} units
                                 </x-ui::table.cell>
                                 <x-ui::table.cell>
                                     {{ $amenity->deleted_at?->format('M d, Y') ?? '—' }}

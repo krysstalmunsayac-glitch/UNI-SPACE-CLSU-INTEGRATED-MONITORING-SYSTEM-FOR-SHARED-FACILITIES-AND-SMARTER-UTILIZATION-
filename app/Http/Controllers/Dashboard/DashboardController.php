@@ -77,12 +77,12 @@ class DashboardController extends Controller
         );
 
         $facilities = Facilities::query()
-                ->with(['images', 'amenities' => fn ($query) => $query
-                    ->where('amenities.Status', 'Available')
-                    ->orderBy('amenities.name')])
-                ->where('Status', 'Available')
-                ->orderBy('Facility_Name')
-                ->get();
+            ->with(['images', 'amenities' => fn ($query) => $query
+                ->where('amenities.Status', 'Available')
+                ->orderBy('amenities.name')])
+            ->where('Status', 'Available')
+            ->orderBy('Facility_Name')
+            ->get();
 
         $categoryLabels = [
             'auditorium' => 'Auditoriums',
@@ -144,6 +144,7 @@ class DashboardController extends Controller
         }
 
         $requestMetrics = $this->requestDashboardMetrics($analyticsQuery, $dateFrom, $dateTo);
+        $responseRateMetrics = $this->responseRateMetrics($analyticsQuery);
         $facilities = Facilities::query()->orderBy('Facility_Name')->get();
         $operationalAnalytics = $this->operationalAnalytics($analyticsScope, $facilities, $dateFrom, $dateTo);
 
@@ -162,6 +163,7 @@ class DashboardController extends Controller
             'requestStatusCounts' => $requestMetrics['dashboardStatusCounts'],
             'recentRequests' => (clone $analyticsQuery)->with(['user', 'facility'])->latest('Created_at')->take(5)->get(),
             ...$requestMetrics,
+            ...$responseRateMetrics,
             ...$operationalAnalytics,
         ]);
     }
@@ -178,6 +180,7 @@ class DashboardController extends Controller
         $facilities = (clone $facilityQuery)->orderBy('Facility_Name')->get();
 
         $requestMetrics = $this->requestDashboardMetrics($requestMetricsQuery, $dateFrom, $dateTo);
+        $responseRateMetrics = $this->responseRateMetrics($requestMetricsQuery);
         $operationalAnalytics = $this->operationalAnalytics($requestScope, $facilities, $dateFrom, $dateTo);
 
         return view('dashboards.office-admin', [
@@ -187,8 +190,28 @@ class DashboardController extends Controller
             'analyticsDateTo' => $dateTo->toDateString(),
             'analyticsDateLabel' => $dateFrom->format('M d, Y').' – '.$dateTo->format('M d, Y'),
             ...$requestMetrics,
+            ...$responseRateMetrics,
             ...$operationalAnalytics,
         ]);
+    }
+
+    private function responseRateMetrics(Builder $baseQuery): array
+    {
+        $counts = (clone $baseQuery)
+            ->selectRaw('COUNT(*) as total_requests')
+            ->selectRaw(
+                "SUM(CASE WHEN Status IN ('Approved', 'Rejected', 'Cancelled', 'Ended') THEN 1 ELSE 0 END) as responded_requests"
+            )
+            ->first();
+
+        $total = (int) ($counts?->total_requests ?? 0);
+        $responded = (int) ($counts?->responded_requests ?? 0);
+
+        return [
+            'responseRate' => $total > 0 ? round(($responded / $total) * 100, 1) : 0,
+            'respondedRequestCount' => $responded,
+            'responseRateTotalCount' => $total,
+        ];
     }
 
     private function requestDashboardMetrics(Builder $baseQuery, ?Carbon $dateFrom = null, ?Carbon $dateTo = null): array

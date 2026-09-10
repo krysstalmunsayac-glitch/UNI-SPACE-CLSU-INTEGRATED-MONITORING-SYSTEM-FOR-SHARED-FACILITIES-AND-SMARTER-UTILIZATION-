@@ -21,12 +21,14 @@ class EventsController extends Controller
             'Event_Title' => ['required', 'string', 'max:255'],
             'Description' => ['nullable', 'string'],
             'Type_Event' => ['nullable', 'string', 'max:100'],
+            'Event_Scope' => ['required', 'in:Internal,External'],
         ]);
 
         $event = Events::create([
             'Event_Title' => $validated['Event_Title'],
             'Description' => $validated['Description'] ?? null,
             'Type_Event' => $validated['Type_Event'] ?? null,
+            'Event_Scope' => $validated['Event_Scope'],
             'User_ID' => auth()->id(),
         ]);
 

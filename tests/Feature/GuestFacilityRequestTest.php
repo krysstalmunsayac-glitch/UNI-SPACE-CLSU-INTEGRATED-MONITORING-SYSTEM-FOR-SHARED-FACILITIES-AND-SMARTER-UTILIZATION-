@@ -18,6 +18,7 @@ function guestRequestPayload(string $date): array
         'Event_Title' => 'Partner Delegation Meeting',
         'Description' => 'A coordination meeting for the visiting partner delegation.',
         'Type_Event' => 'Meeting',
+        'Event_Scope' => 'External',
         'Proposed_Date' => $date,
         'Proposed_End_Date' => $date,
         'Daily_Schedules' => [['date' => $date, 'start' => '09:00', 'end' => '10:00']],

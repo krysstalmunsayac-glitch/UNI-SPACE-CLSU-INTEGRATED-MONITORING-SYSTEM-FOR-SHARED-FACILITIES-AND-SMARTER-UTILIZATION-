@@ -3,6 +3,9 @@
 use App\Models\Facilities;
 use App\Models\Requests;
 use App\Models\User;
+use App\Notifications\RequestStatusUpdated;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\Notification;
 use Livewire\Volt\Volt;
 
 function administrativeRequest(string $status = 'Pending'): array
@@ -82,7 +85,7 @@ it('does not permanently delete an active request', function () {
     $this->actingAs($administrator);
 
     expect(fn () => Volt::test('request.request')->call('forceDelete', $booking->RID))
-        ->toThrow(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
+        ->toThrow(ModelNotFoundException::class);
 
     expect(Requests::query()->whereKey($booking->RID)->exists())->toBeTrue();
 });
@@ -98,3 +101,48 @@ it('keeps cancelled requests read only for administrators', function () {
 
     expect($booking->fresh()->Purpose)->toBe('Status transition test');
 });
+
+it('removes request archiving from office administrators', function () {
+    [, $booking] = administrativeRequest();
+    $officeAdmin = User::factory()->create([
+        'user_type' => 'admin',
+        'is_active' => true,
+    ]);
+
+    $this->actingAs($officeAdmin);
+
+    $this->get(route('dashboard.officeadmin'))
+        ->assertOk()
+        ->assertDontSee('Archives');
+
+    Volt::test('request.request')
+        ->assertDontSee('Archive request')
+        ->call('delete', $booking->RID)
+        ->assertForbidden();
+});
+
+it('lets an administrator choose whether to email when cancelling an approved request', function (bool $sendEmail) {
+    Notification::fake();
+    [$administrator, $booking] = administrativeRequest('Approved');
+    $requester = $booking->user;
+    $this->actingAs($administrator);
+
+    Volt::test('request.request')
+        ->call('openCancelModal', $booking->RID)
+        ->assertSet('showCancelModal', true)
+        ->set('adminCancellationReason', 'Facility maintenance is required.')
+        ->set('emailCancellationNotice', $sendEmail)
+        ->call('confirmCancellation')
+        ->assertHasNoErrors()
+        ->assertSet('showCancelModal', false);
+
+    expect($booking->fresh())
+        ->Status->toBe('Cancelled')
+        ->Cancellation_Reason->toBe('Facility maintenance is required.');
+
+    if ($sendEmail) {
+        Notification::assertSentTo($requester, RequestStatusUpdated::class);
+    } else {
+        Notification::assertNotSentTo($requester, RequestStatusUpdated::class);
+    }
+})->with([true, false]);

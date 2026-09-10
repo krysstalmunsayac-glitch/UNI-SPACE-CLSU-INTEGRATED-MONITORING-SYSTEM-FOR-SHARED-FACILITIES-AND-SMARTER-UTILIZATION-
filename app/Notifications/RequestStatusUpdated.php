@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Models\Requests;
 use Illuminate\Bus\Queueable;
+use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
@@ -18,7 +19,7 @@ class RequestStatusUpdated extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['mail', 'database'];
+        return $notifiable instanceof AnonymousNotifiable ? ['mail'] : ['mail', 'database'];
     }
 
     public function toMail(object $notifiable): MailMessage
@@ -37,6 +38,9 @@ class RequestStatusUpdated extends Notification
                 'status' => $this->request->Status,
                 'rejectionReason' => $this->request->Status === 'Rejected'
                     ? $this->request->Rejection_Reason
+                    : null,
+                'cancellationReason' => $this->request->Status === 'Cancelled'
+                    ? $this->request->Cancellation_Reason
                     : null,
                 'actionUrl' => route('waiting.list'),
             ]);

@@ -149,11 +149,7 @@
                                         <x-ui::menu.item
                                             icon="x-mark"
                                             class="text-red-600 dark:text-red-400"
-                                            wire:click="cancel({{ $request->RID }})"
-                                            data-ui-confirm="Cancel approved request REQ-{{ str_pad((string) $request->RID, 5, '0', STR_PAD_LEFT) }}? Its facility schedule will be removed and the requester will be notified."
-                                            data-ui-confirm-title="Confirm cancellation"
-                                            data-ui-confirm-label="Cancel request"
-                                            data-ui-confirm-variant="danger"
+                                            wire:click="openCancelModal({{ $request->RID }})"
                                         >
                                             Cancel request
                                         </x-ui::menu.item>
@@ -175,18 +171,20 @@
                                             Download attachment
                                         </x-ui::menu.item>
                                     @endif
-                                    <x-ui::menu.separator />
-                                    <x-ui::menu.item
-                                        icon="archive-box"
-                                        variant="danger"
-                                        wire:click="delete({{ $request->RID }})"
-                                        data-ui-confirm="Archive request REQ-{{ str_pad((string) $request->RID, 5, '0', STR_PAD_LEFT) }}? It will be removed from this list and can be restored from Archives."
-                                        data-ui-confirm-title="Confirm archive"
-                                        data-ui-confirm-label="Archive request"
-                                        data-ui-confirm-variant="danger"
-                                    >
-                                        Archive request
-                                    </x-ui::menu.item>
+                                    @if (auth()->user()->isSuperAdmin())
+                                        <x-ui::menu.separator />
+                                        <x-ui::menu.item
+                                            icon="archive-box"
+                                            variant="danger"
+                                            wire:click="delete({{ $request->RID }})"
+                                            data-ui-confirm="Archive request REQ-{{ str_pad((string) $request->RID, 5, '0', STR_PAD_LEFT) }}? It will be removed from this list and can be restored from Archives."
+                                            data-ui-confirm-title="Confirm archive"
+                                            data-ui-confirm-label="Archive request"
+                                            data-ui-confirm-variant="danger"
+                                        >
+                                            Archive request
+                                        </x-ui::menu.item>
+                                    @endif
                                 </x-ui::menu>
                                 </x-ui::dropdown>
                             </div>

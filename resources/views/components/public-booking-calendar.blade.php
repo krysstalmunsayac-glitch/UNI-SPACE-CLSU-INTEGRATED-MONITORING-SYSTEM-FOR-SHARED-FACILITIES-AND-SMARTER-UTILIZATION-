@@ -166,7 +166,6 @@
                     event.facility ? `Facility: ${event.facility}` : null,
                     formatEventDate(event) ? `Date: ${formatEventDate(event)}` : null,
                     formatEventTime(event) ? `Time: ${formatEventTime(event)}` : null,
-                    event.requester ? `Requested by: ${event.requester}` : null,
                     event.status ? `Status: ${event.status}` : null,
                 ].filter(Boolean);
 

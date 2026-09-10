@@ -48,16 +48,15 @@
                 $archiveItems = [];
                 if ($isSuperAdmin) {
                     $archiveItems[] = ['label' => 'Archived Facilities', 'href' => route('Facility.SuperAdmin', ['archive' => 1]), 'icon' => 'facility', 'active' => request()->routeIs('Facility.SuperAdmin') && request()->boolean('archive')];
-                }
-                $archiveItems[] = ['label' => 'Archived Requests', 'href' => route('Request', ['archive' => 1]), 'icon' => 'archive', 'active' => request()->routeIs('Request') && request()->boolean('archive')];
-
-                if ($isSuperAdmin) {
+                    $archiveItems[] = ['label' => 'Archived Requests', 'href' => route('Request', ['archive' => 1]), 'icon' => 'archive', 'active' => request()->routeIs('Request') && request()->boolean('archive')];
                     $archiveItems[] = ['label' => 'Archived Users', 'href' => route('UserManagement', ['archive' => 1]), 'icon' => 'users', 'active' => request()->routeIs('UserManagement') && request()->boolean('archive')];
+                    $archiveItems[] = ['label' => 'Archived Amenities', 'href' => route('Amenities', ['archive' => 1]), 'icon' => 'amenities', 'active' => request()->routeIs('Amenities') && request()->boolean('archive')];
                 }
-                $archiveItems[] = ['label' => 'Archived Amenities', 'href' => route('Amenities', ['archive' => 1]), 'icon' => 'amenities', 'active' => request()->routeIs('Amenities') && request()->boolean('archive')];
 
                 $navigation[] = ['label' => 'Service', 'items' => $serviceItems];
-                $navigation[] = ['label' => 'Archives', 'items' => $archiveItems];
+                if ($archiveItems !== []) {
+                    $navigation[] = ['label' => 'Archives', 'items' => $archiveItems];
+                }
             }
 
             $notificationDestination = match ($currentUser->user_type) {

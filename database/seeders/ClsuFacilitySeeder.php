@@ -53,7 +53,7 @@ class ClsuFacilitySeeder extends Seeder
         $amenities = $amenityNames->mapWithKeys(function (string $name): array {
             $amenity = Amenities::withTrashed()->updateOrCreate(
                 ['name' => $name],
-                ['Description' => 'Facility-provided amenity listed in the official CLSU events and facilities directory.', 'Status' => 'Available', 'reservation_limit' => null]
+                ['Description' => 'Facility-provided amenity listed in the official CLSU events and facilities directory.', 'Status' => 'Available', 'inventory_quantity' => 1]
             );
             if ($amenity->trashed()) {
                 $amenity->restore();

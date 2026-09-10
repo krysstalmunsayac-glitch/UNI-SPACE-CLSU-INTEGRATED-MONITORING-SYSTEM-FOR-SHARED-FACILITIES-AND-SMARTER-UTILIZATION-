@@ -95,6 +95,10 @@ new #[Layout('components.layouts.auth')] class extends Component
 
             $user = User::query()->create([
                 'name' => $registration['name'],
+                'account_type' => $registration['account_type'],
+                'privacy_consent' => $registration['privacy_consent'] ?? false,
+                'privacy_consented_at' => $registration['privacy_consented_at'] ?? null,
+                'privacy_notice_version' => $registration['privacy_notice_version'] ?? null,
                 'clsu_id' => $clsuId,
                 'email' => $registration['email'],
                 'password' => $registration['password'],

@@ -434,6 +434,15 @@
                                         @error('Type_Event') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                                     </div>
 
+                                    <div>
+                                        <x-ui::select label="Event classification" name="Event_Scope" required>
+                                            <x-ui::select.option value="">Select internal or external</x-ui::select.option>
+                                            <x-ui::select.option value="Internal" :selected="old('Event_Scope') === 'Internal'">Internal event</x-ui::select.option>
+                                            <x-ui::select.option value="External" :selected="old('Event_Scope') === 'External'">External event</x-ui::select.option>
+                                        </x-ui::select>
+                                        @error('Event_Scope') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
+                                    </div>
+
                                     <div x-cloak x-show="eventType === 'Other'" x-transition>
                                         <x-ui::input
                                             label="Specify event type"
@@ -485,15 +494,28 @@
                                 <div>
                                     <x-ui::checkbox.group label="Amenities">
                                         @forelse ($availableAmenities as $amenity)
-                                            <x-ui::checkbox
-                                                name="Amenity_ID[]"
-                                                value="{{ $amenity->AID }}"
-                                                label="{{ $amenity->name }}{{ $amenity->reservation_limit ? ' (limit: '.$amenity->reservation_limit.' concurrent reservations)' : ' (unlimited)' }}"
-                                                :checked="in_array(
-                                                    (string) $amenity->AID,
-                                                    old('Amenity_ID', [])
-                                                )"
-                                            />
+                                            <div class="grid gap-3 rounded-xl border border-zinc-200 p-3 dark:border-zinc-700 sm:grid-cols-[1fr_9rem] sm:items-end">
+                                                <x-ui::checkbox
+                                                    name="Amenity_ID[]"
+                                                    value="{{ $amenity->AID }}"
+                                                    label="{{ $amenity->name }} — {{ number_format($amenity->inventory_quantity) }} units available"
+                                                    :checked="in_array(
+                                                        (string) $amenity->AID,
+                                                        array_map('strval', old('Amenity_ID', []))
+                                                    )"
+                                                />
+                                                <x-ui::input
+                                                    name="Amenity_Quantity[{{ $amenity->AID }}]"
+                                                    type="number"
+                                                    min="1"
+                                                    max="{{ $amenity->inventory_quantity }}"
+                                                    label="Units needed"
+                                                    value="{{ old('Amenity_Quantity.'.$amenity->AID, 1) }}"
+                                                />
+                                                @error('Amenity_Quantity.'.$amenity->AID)
+                                                    <span class="text-sm text-red-600 sm:col-span-2">{{ $message }}</span>
+                                                @enderror
+                                            </div>
                                         @empty
                                             <p class="text-sm text-emerald-900/70 dark:text-zinc-300">
                                                 No amenities are currently available for this facility.

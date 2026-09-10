@@ -20,7 +20,7 @@ class HomeController extends Controller
 
         if (Schema::hasTable('schedules')) {
             $schedules = Schedule::query()
-                ->with(['request.facility', 'request.event', 'request.user'])
+                ->with(['request.facility', 'request.event'])
                 ->where('Status', 'Booked')
                 ->get()
                 ->map(function (Schedule $schedule): array {
@@ -45,7 +45,6 @@ class HomeController extends Controller
                         'id' => $schedule->SID,
                         'title' => $eventTitle,
                         'facility' => $facilityName,
-                        'requester' => $request?->requesterName(),
                         'status' => $status,
                         'start' => $start->format('Y-m-d\TH:i:s'),
                         'end' => $end->format('Y-m-d\TH:i:s'),

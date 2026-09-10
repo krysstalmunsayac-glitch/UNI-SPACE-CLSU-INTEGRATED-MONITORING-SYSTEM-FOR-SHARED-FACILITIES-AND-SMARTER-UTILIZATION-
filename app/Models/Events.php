@@ -22,6 +22,7 @@ class Events extends Model
         'Event_Title',
         'Description',
         'Type_Event',
+        'Event_Scope',
     ];
 
     public function requests(): HasMany

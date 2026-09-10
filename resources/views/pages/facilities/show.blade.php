@@ -79,7 +79,7 @@
                         <h2 class="text-sm font-black uppercase tracking-wide text-emerald-700">Amenities</h2>
                         <div class="mt-3 flex flex-wrap gap-2">
                             @forelse ($facility->amenities as $amenity)
-                                <span class="rounded-full border border-emerald-200 px-3 py-1.5 text-sm font-bold text-emerald-800">{{ $amenity->name }}</span>
+                                <span class="rounded-full border border-emerald-200 px-3 py-1.5 text-sm font-bold text-emerald-800">{{ $amenity->name }} — {{ number_format($amenity->inventory_quantity) }} units</span>
                             @empty
                                 <p class="text-sm text-zinc-500">No amenities listed.</p>
                             @endforelse

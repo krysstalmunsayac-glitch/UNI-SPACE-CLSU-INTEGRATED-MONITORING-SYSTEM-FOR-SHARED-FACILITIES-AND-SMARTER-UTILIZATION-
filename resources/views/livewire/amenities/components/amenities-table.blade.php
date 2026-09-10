@@ -25,20 +25,20 @@
 
                 <x-ui::table.column
                     sortable
-                    :sorted="$sortBy === 'reservation_limit'"
+                    :sorted="$sortBy === 'inventory_quantity'"
                     :direction="$sortDirection"
-                    wire:click="sort('reservation_limit')"
+                    wire:click="sort('inventory_quantity')"
                 >
-                    Usage limit
+                    Available quantity
                 </x-ui::table.column>
 
                 <x-ui::table.column
                     sortable
-                    :sorted="$sortBy === 'current_usage_count'"
+                    :sorted="$sortBy === 'current_usage_quantity'"
                     :direction="$sortDirection"
-                    wire:click="sort('current_usage_count')"
+                    wire:click="sort('current_usage_quantity')"
                 >
-                    Current usage
+                    Reserved units
                 </x-ui::table.column>
 
                 <x-ui::table.column
@@ -74,33 +74,32 @@
 
                         <x-ui::table.cell class="min-w-32 whitespace-nowrap">
                             <span class="group/tooltip relative inline-flex" tabindex="0">
-                                <x-ui::badge :color="$amenity->reservation_limit ? 'blue' : 'zinc'">
-                                    {{ $amenity->reservation_limit ? number_format($amenity->reservation_limit).' concurrent' : 'Unlimited' }}
+                                <x-ui::badge color="blue">
+                                    {{ number_format($amenity->inventory_quantity) }} units
                                 </x-ui::badge>
                                 <span
                                     role="tooltip"
                                     class="pointer-events-none absolute bottom-full left-1/2 z-40 mb-2 hidden w-64 -translate-x-1/2 rounded-lg bg-zinc-950 px-3 py-2 text-xs font-normal leading-5 text-white shadow-xl group-hover/tooltip:block group-focus/tooltip:block dark:bg-white dark:text-zinc-900"
                                 >
-                                    Maximum number of overlapping approved or pending reservations that may use this amenity. Unlimited means no concurrency cap.
+                                    Total inventory available during any overlapping reservation period.
                                 </span>
                             </span>
                         </x-ui::table.cell>
 
                         <x-ui::table.cell>
                             @php
-                                $currentUsage = (int) $amenity->current_usage_count;
-                                $atLimit = $amenity->reservation_limit !== null
-                                    && $currentUsage >= $amenity->reservation_limit;
+                                $currentUsage = (int) $amenity->current_usage_quantity;
+                                $atLimit = $currentUsage >= $amenity->inventory_quantity;
                             @endphp
                             <span class="group/tooltip relative inline-flex" tabindex="0">
                                 <x-ui::badge :color="$atLimit ? 'red' : ($currentUsage > 0 ? 'amber' : 'green')">
-                                    {{ number_format($currentUsage) }} / {{ $amenity->reservation_limit ? number_format($amenity->reservation_limit) : '∞' }}
+                                    {{ number_format($currentUsage) }} / {{ number_format($amenity->inventory_quantity) }}
                                 </x-ui::badge>
                                 <span
                                     role="tooltip"
                                     class="pointer-events-none absolute bottom-full left-1/2 z-40 mb-2 hidden w-64 -translate-x-1/2 rounded-lg bg-zinc-950 px-3 py-2 text-xs font-normal leading-5 text-white shadow-xl group-hover/tooltip:block group-focus/tooltip:block dark:bg-white dark:text-zinc-900"
                                 >
-                                    Total pending or approved reservations currently assigned to this amenity.
+                                    Total units across pending or approved requests (all dates).
                                 </span>
                             </span>
                         </x-ui::table.cell>

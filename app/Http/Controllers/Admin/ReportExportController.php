@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Amenities;
+use App\Models\AuditLog;
 use App\Models\Facilities;
 use App\Models\Requests;
 use App\Models\User;
@@ -156,6 +157,42 @@ class ReportExportController extends Controller
         return response($content, 200, ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'Content-Disposition' => 'attachment; filename="amenities-'.now()->format('Y-m-d').'.xlsx"']);
     }
 
+    public function auditsCsv(): StreamedResponse
+    {
+        $logs = $this->auditQuery()->get();
+
+        return response()->streamDownload(function () use ($logs) {
+            $output = fopen('php://output', 'w');
+            fwrite($output, "\xEF\xBB\xBF");
+            fputcsv($output, $this->exporter->auditHeaders());
+
+            foreach ($logs as $log) {
+                fputcsv($output, $this->exporter->auditRow($log));
+            }
+
+            fclose($output);
+        }, 'audit-history-'.now()->format('Y-m-d').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    public function auditsPdf()
+    {
+        $content = $this->exporter->auditsPdf($this->auditQuery()->get());
+
+        return response($content, 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'attachment; filename="audit-history-'.now()->format('Y-m-d').'.pdf"']);
+    }
+
+    public function auditsXlsx()
+    {
+        $content = $this->exporter->auditsXlsx($this->auditQuery()->get());
+
+        return response($content, 200, ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'Content-Disposition' => 'attachment; filename="audit-history-'.now()->format('Y-m-d').'.xlsx"']);
+    }
+
+    private function auditQuery(): Builder
+    {
+        return AuditLog::query()->with('actor:id,name,user_type')->latest();
+    }
+
     private function amenityQuery(): Builder
     {
         return Amenities::query()
@@ -167,7 +204,7 @@ class ReportExportController extends Controller
     private function facilityQuery(Request $request): Builder
     {
         return Facilities::query()
-            ->with('amenities:AID,name')
+            ->with('amenities:AID,name,inventory_quantity')
             ->when($request->user()->isAdmin(), fn (Builder $query) => $query->assignedToAdmin($request->user()));
     }
 
