@@ -77,8 +77,8 @@
 
                 <x-ui::button
                     wire:click="$set('showModal', false)"
-                    variant="ghost"
-                    class="flex-1"
+                    variant="primary"
+                    class="flex-1 bg-emerald-800! text-white! hover:bg-emerald-900!"
                 >
                     Cancel
                 </x-ui::button>

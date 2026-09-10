@@ -84,7 +84,7 @@ new #[Layout('components.layouts.home')] class extends Component {
         </div>
 
         <form wire:submit="updateProfileInformation" class="grid overflow-hidden rounded-3xl border border-emerald-900/10 bg-white shadow-xl shadow-emerald-950/5 dark:border-white/10 dark:bg-zinc-900 lg:grid-cols-[280px_1fr]">
-            <aside class="bg-emerald-950 p-8 text-center text-white">
+            <aside class="bg-emerald-800 p-8 text-center text-white">
                 <div class="mx-auto size-36 overflow-hidden rounded-full border-4 border-white/20 bg-emerald-800 shadow-lg">
                     @if ($profile_photo)
                         <img src="{{ $profile_photo->temporaryUrl() }}" alt="Profile photo preview" class="h-full w-full object-cover">
