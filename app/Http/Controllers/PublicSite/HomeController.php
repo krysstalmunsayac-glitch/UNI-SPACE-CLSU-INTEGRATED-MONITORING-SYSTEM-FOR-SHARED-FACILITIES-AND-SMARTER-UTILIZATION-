@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Facilities;
 use App\Models\Requests;
 use App\Models\Schedule;
-use App\Support\CalendarColor;
 use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Schema;
@@ -30,19 +29,28 @@ class HomeController extends Controller
                         ?? "Request #{$schedule->Request_ID}";
                     $eventTitle = $request?->event?->Event_Title
                         ?? 'Reserved facility';
-                    $colors = CalendarColor::forValue($facilityName);
-                    $isEnded = $request?->Status === 'Ended';
+                    $date = Carbon::parse($schedule->Date)->toDateString();
+                    $start = Carbon::parse($date.' '.Carbon::parse($schedule->Start_Time)->format('H:i:s'));
+                    $end = Carbon::parse($date.' '.Carbon::parse($schedule->End_Time)->format('H:i:s'));
+                    $status = $request?->Status === 'Ended' || $end->isPast()
+                        ? 'Ended'
+                        : ($start->isPast() ? 'Ongoing' : 'Approved');
+                    $colors = match ($status) {
+                        'Ongoing' => ['background' => '#007a2f', 'border' => '#006b2b'],
+                        'Ended' => ['background' => '#737373', 'border' => '#525252'],
+                        default => ['background' => '#007a2f', 'border' => '#006b2b'],
+                    };
 
                     return [
                         'id' => $schedule->SID,
                         'title' => $eventTitle,
                         'facility' => $facilityName,
                         'requester' => $request?->requesterName(),
-                        'status' => $isEnded ? 'Ended' : $schedule->Status,
-                        'start' => Carbon::parse($schedule->Date)->toDateString().'T'.Carbon::parse($schedule->Start_Time)->format('H:i:s'),
-                        'end' => Carbon::parse($schedule->Date)->toDateString().'T'.Carbon::parse($schedule->End_Time)->format('H:i:s'),
-                        'backgroundColor' => $isEnded ? '#dc2626' : $colors['backgroundColor'],
-                        'borderColor' => $isEnded ? '#991b1b' : $colors['borderColor'],
+                        'status' => $status,
+                        'start' => $start->format('Y-m-d\TH:i:s'),
+                        'end' => $end->format('Y-m-d\TH:i:s'),
+                        'backgroundColor' => $colors['background'],
+                        'borderColor' => $colors['border'],
                     ];
                 });
         }

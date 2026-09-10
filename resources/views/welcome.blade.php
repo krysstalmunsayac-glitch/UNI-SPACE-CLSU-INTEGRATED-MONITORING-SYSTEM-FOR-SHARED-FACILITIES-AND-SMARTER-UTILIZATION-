@@ -58,26 +58,17 @@
             >
         @endforeach
         <div class="absolute inset-0 bg-black/55" aria-hidden="true"></div>
-        <div class="relative mx-auto grid min-h-[100svh] max-w-7xl items-center gap-8 px-4 pb-16 pt-24 sm:px-6 lg:grid-cols-[1.05fr_.95fr] lg:px-8">
-            <div class="max-w-3xl">
-                <p class="text-sm font-black uppercase tracking-[.28em] text-yellow-400">SIEL SPACE</p>
-                <h1 class="mt-4 text-5xl font-black leading-[.98] tracking-tight sm:text-6xl lg:text-7xl">Find. Schedule. Reserve.</h1>
-                <p class="mt-7 max-w-2xl text-lg leading-8 text-white/85 sm:text-xl">The centralized facility reservation platform of Central Luzon State University. Compare spaces, check schedules, and submit a request in one place.</p>
-                <div class="mt-9 flex flex-col gap-3 sm:flex-row">
+        <div class="relative mx-auto flex min-h-[100svh] max-w-7xl items-center justify-center px-4 pb-16 pt-24 text-center sm:px-6 lg:px-8">
+            <div class="max-w-5xl">
+                <p class="text-sm font-black uppercase tracking-[.3em] text-yellow-400 sm:text-base">Central Luzon State University</p>
+                <h1 class="mt-4 text-6xl font-black leading-none tracking-[-.04em] text-white sm:text-8xl lg:text-9xl">SIEL SPACE</h1>
+                <p class="mt-5 text-2xl font-black tracking-tight text-white sm:text-3xl">Find. Schedule. Reserve.</p>
+                <p class="mx-auto mt-5 max-w-3xl text-lg leading-8 text-white/85 sm:text-xl">The centralized facility reservation platform of Central Luzon State University. Compare spaces, check schedules, and submit a request in one place.</p>
+                <div class="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
                     <a href="#facilities" class="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#009639] px-7 py-3 font-bold text-white transition hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-yellow-400">Browse Facilities</a>
                     <a href="{{ route('login') }}" class="inline-flex min-h-12 items-center justify-center rounded-xl border border-white bg-white px-7 py-3 font-bold text-zinc-950 transition hover:bg-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400">Request a Facility</a>
                 </div>
             </div>
-            <aside class="overflow-hidden rounded-2xl border-t-4 border-yellow-400 bg-white p-7 text-zinc-950 sm:p-8" aria-label="Facility information available on SIEL Space">
-                <p class="text-xs font-black uppercase tracking-[.2em] text-[#009639]">Plan with confidence</p>
-                <h2 class="mt-3 text-3xl font-black tracking-tight">Find the right space.</h2>
-                <p class="mt-3 leading-7 text-zinc-600">Each listing gives you the details needed to compare facilities before booking.</p>
-                <dl class="mt-7 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-zinc-200 pt-6">
-                    @foreach ([['Availability', 'Current status'], ['Capacity', 'Number of people'], ['Location', 'Campus directions'], ['Amenities', 'Included equipment']] as [$term, $description])
-                        <div><dt class="font-black text-[#009639]">{{ $term }}</dt><dd class="mt-1 text-sm text-zinc-500">{{ $description }}</dd></div>
-                    @endforeach
-                </dl>
-            </aside>
         </div>
         <div class="absolute bottom-5 left-1/2 z-10 flex -translate-x-1/2 gap-2" role="group" aria-label="Choose hero image">
             @foreach ($heroSlides as $slide)
@@ -194,7 +185,7 @@
         <script>
             document.addEventListener('DOMContentLoaded', () => {
                 const revealElements = [
-                    ...document.querySelectorAll('#home .max-w-3xl, #home aside'),
+                    ...document.querySelectorAll('#home .max-w-5xl'),
                     ...document.querySelectorAll('[aria-label="SIEL Space statistics"] > div > div'),
                     ...document.querySelectorAll('#about > div > div, #about article'),
                     ...document.querySelectorAll('#facilities [data-category-filter], #facilities > div > div, #facility-grid .facility-card'),

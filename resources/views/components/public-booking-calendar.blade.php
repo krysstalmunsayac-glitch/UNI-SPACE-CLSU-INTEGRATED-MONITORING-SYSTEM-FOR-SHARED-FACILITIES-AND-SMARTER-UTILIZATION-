@@ -47,6 +47,12 @@
             </label>
         </div>
 
+        <div class="booking-calendar-legend" aria-label="Reservation status colors">
+            <span><i class="is-approved"></i>Approved</span>
+            <span><i class="is-ongoing"></i>Ongoing</span>
+            <span><i class="is-ended"></i>Ended</span>
+        </div>
+
         <div class="booking-calendar-top">
             <div class="booking-calendar-title" data-calendar-label>July 2026</div>
             <div class="booking-calendar-nav">
@@ -581,6 +587,33 @@
                 text-transform: none;
             }
 
+            .booking-calendar-legend {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: flex-end;
+                gap: 14px;
+                margin: -2px 0 14px;
+                color: #64748b;
+                font-size: 12px;
+                font-weight: 700;
+            }
+
+            .booking-calendar-legend span {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+            }
+
+            .booking-calendar-legend i {
+                width: 10px;
+                height: 10px;
+                border-radius: 999px;
+                background: #007a2f;
+            }
+
+            .booking-calendar-legend i.is-ongoing { background: #007a2f; }
+            .booking-calendar-legend i.is-ended { background: #737373; }
+
             .booking-calendar-title {
                 color: #007a2f;
                 font-size: 18px;
@@ -641,12 +674,12 @@
             }
 
             .booking-date-num.is-selected {
-                border: 2px solid #0b66c2;
+                border: 2px solid #007a2f;
                 background: transparent;
             }
 
             .booking-date-num.is-today {
-                background: #0b66c2;
+                background: #007a2f;
                 color: #ffffff;
             }
 
@@ -775,11 +808,11 @@
 
             .booking-calendar-week-header.is-selected {
                 background: #ecfdf5;
-                box-shadow: inset 0 -3px #0b66c2;
+                box-shadow: inset 0 -3px #007a2f;
             }
 
             .booking-calendar-week-header.is-today strong {
-                color: #0b66c2;
+                color: #007a2f;
             }
 
             .booking-calendar-time-label {
