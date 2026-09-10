@@ -40,7 +40,7 @@
         }"
     >
         @if ($facilityPhotos->isNotEmpty())
-            <a href="{{ route('requests.create', $facility) }}#facility-overview" class="block h-full w-full">
+            <a href="{{ route('facilities.show', $facility) }}" class="block h-full w-full">
                 <img
                     src="{{ $facilityPhotos->first() }}"
                     x-bind:src="photos[activePhoto]"
@@ -144,7 +144,10 @@
             <p class="mt-1 line-clamp-2 text-sm font-semibold leading-5 text-emerald-950 dark:text-white">{{ $rateSummary }}</p>
         </div>
 
-        <div class="mt-auto grid gap-3 pt-5">
+        <div class="mt-auto grid gap-3 pt-5 sm:grid-cols-2">
+            <a href="{{ route('facilities.show', $facility) }}" class="inline-flex items-center justify-center rounded-xl border-2 border-emerald-700 bg-white px-4 py-3 text-sm font-bold text-emerald-700 transition hover:bg-emerald-50">
+                Review Details
+            </a>
             <a href="{{ route('requests.create', $facility) }}" class="inline-flex items-center justify-center rounded-xl bg-emerald-700 px-4 py-3 text-sm font-bold text-white transition hover:bg-emerald-800">
                 Book
             </a>

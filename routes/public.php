@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\PublicSite\HomeController;
+use App\Http\Controllers\PublicSite\FacilityController;
 use App\Http\Middleware\RedirectIfAuthenticated;
 use App\Support\SiteVersion;
 use Illuminate\Support\Facades\Route;
@@ -8,6 +9,9 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', HomeController::class)
     ->middleware([RedirectIfAuthenticated::class, 'user.pages'])
     ->name('home');
+
+Route::get('/facilities/{facility}', [FacilityController::class, 'show'])
+    ->name('facilities.show');
 
 Route::redirect('/about', '/#about')
     ->name('about');

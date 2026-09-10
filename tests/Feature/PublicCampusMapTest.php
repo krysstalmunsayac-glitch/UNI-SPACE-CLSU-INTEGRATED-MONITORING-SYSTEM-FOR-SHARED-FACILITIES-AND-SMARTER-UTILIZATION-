@@ -39,6 +39,7 @@ it('lets guests use the campus map controls on the homepage', function () {
         ->assertSee('₱2,500 for four hours')
         ->assertSee('No image available')
         ->assertDontSee('images/CLSU_logo.png', false)
+        ->assertSee('Review Details')
         ->assertSee('Book')
         ->assertSee('id="map-facility-type"', false)
         ->assertSee('id="map-facility-filter"', false)
@@ -48,6 +49,42 @@ it('lets guests use the campus map controls on the homepage', function () {
 
     $this->assertGuest();
     $this->get(route('dashboard'))->assertRedirect(route('login'));
+});
+
+it('lets guests review complete facility details and images without signing in', function () {
+    $facility = Facilities::create([
+        'Facility_Name' => 'Public Detail Hall',
+        'facility_type' => 'auditorium',
+        'Location' => 'Academic Oval',
+        'Office' => 'Office of Student Affairs',
+        'Capacity' => 350,
+        'Description' => 'Complete public facility description.',
+        'rates' => '₱5,000 per event',
+        'protocols_and_guidelines' => 'Keep the venue clean.',
+        'Status' => 'Available',
+    ]);
+    $facility->images()->createMany([
+        ['image_path' => 'facilities/public-detail-one.jpg'],
+        ['image_path' => 'facilities/public-detail-two.jpg'],
+    ]);
+    $amenity = Amenities::create(['name' => 'Projector', 'Status' => 'Available']);
+    $facility->amenities()->attach($amenity->AID);
+
+    $this->get(route('facilities.show', $facility))
+        ->assertOk()
+        ->assertSee('Public Detail Hall')
+        ->assertSee('Complete public facility description.')
+        ->assertSee('public-detail-one.jpg', false)
+        ->assertSee('public-detail-two.jpg', false)
+        ->assertSee('350 people')
+        ->assertSee('Academic Oval')
+        ->assertSee('Office of Student Affairs')
+        ->assertSee('Projector')
+        ->assertSee('₱5,000 per event')
+        ->assertSee('Keep the venue clean.')
+        ->assertSee('Book This Facility');
+
+    $this->assertGuest();
 });
 
 it('lets users browse multiple facility photos from the card', function () {
