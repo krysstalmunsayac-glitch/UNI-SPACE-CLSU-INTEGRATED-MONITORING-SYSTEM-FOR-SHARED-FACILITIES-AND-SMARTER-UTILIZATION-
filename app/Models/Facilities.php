@@ -63,7 +63,7 @@ class Facilities extends Model
                 : asset(ltrim($this->Image_URL, '/'));
         }
 
-        return asset('images/CLSU_logo.png');
+        return asset('images/silesyu-space-logo-v2.png');
     }
 
     public function amenities(): BelongsToMany

@@ -92,7 +92,7 @@
     >
         <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:h-20 sm:px-6 lg:px-8">
             <a href="{{ $homeRoute }}#home" class="flex h-16 shrink-0 items-center justify-center sm:h-20" aria-label="SIEL SPACE home">
-                <img src="{{ asset('images/silesyu-space-logo.svg') }}" alt="SIEL SPACE" class="header-brand h-10 w-auto object-contain sm:h-14">
+                <img src="{{ asset('images/silesyu-space-logo-v2.png') }}" alt="SIEL SPACE" class="header-brand h-10 w-auto object-contain sm:h-14">
             </a>
 
             <nav class="navigation-typeface hidden items-center gap-6 text-sm font-semibold text-emerald-950 dark:text-zinc-100 lg:flex">

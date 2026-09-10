@@ -162,7 +162,7 @@
                 <section class="auth-form-panel flex min-h-[640px] items-center justify-center px-8 pb-12 pt-20 sm:px-14">
                     <div class="w-full max-w-md">
                         <a href="{{ route('home') }}" wire:navigate class="auth-form-logo mx-auto mb-8 flex w-fit max-w-full items-center justify-center rounded-xl bg-white px-4 py-3" aria-label="SIEL SPACE home">
-                            <img src="{{ asset('images/silesyu-space-logo.svg') }}" alt="SIEL SPACE" class="h-auto w-64 max-w-full object-contain" width="2172" height="724">
+                            <img src="{{ asset('images/silesyu-space-logo-v2.png') }}" alt="SIEL SPACE" class="h-auto w-64 max-w-full object-contain" width="2048" height="682">
                         </a>
                         {{ $slot }}
                     </div>

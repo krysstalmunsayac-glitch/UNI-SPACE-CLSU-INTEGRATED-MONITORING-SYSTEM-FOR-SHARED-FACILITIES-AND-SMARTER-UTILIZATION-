@@ -7,7 +7,7 @@
 <body class="min-h-screen bg-white dark:bg-zinc-800 antialiased">
     <x-ui::header container class="navigation-typeface sticky top-0 z-50 bg-zinc-50 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-700">
         <x-ui::sidebar.toggle class="lg:hidden" icon="bars-2" inset="left" />
-        <x-ui::brand href="{{ route('home') }}" logo="{{ asset('images/silesyu-space-logo.svg') }}" name="SIEL SPACE" class="me-3" />
+        <x-ui::brand href="{{ route('home') }}" logo="{{ asset('images/silesyu-space-logo-v2.png') }}" name="SIEL SPACE" class="me-3" />
         <x-ui::navbar class="-mb-px max-lg:hidden">
             <x-ui::navbar.item icon="home" href="{{ route('home') }}">Home</x-ui::navbar.item>
             <x-ui::navbar.item icon="document-text" href="#">Facility</x-ui::navbar.item>
@@ -73,7 +73,7 @@
 
     <x-ui::sidebar sticky collapsible="mobile" class="navigation-typeface lg:hidden bg-zinc-50 dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-700">
         <x-ui::sidebar.header>
-            <x-ui::brand href="{{ route('home') }}" logo="{{ asset('images/silesyu-space-logo.svg') }}" name="SIEL SPACE" class="me-3" />
+            <x-ui::brand href="{{ route('home') }}" logo="{{ asset('images/silesyu-space-logo-v2.png') }}" name="SIEL SPACE" class="me-3" />
             <x-ui::sidebar.collapse class="in-data-ui-sidebar-on-desktop:not-in-data-ui-sidebar-collapsed-desktop:-mr-2" />
         </x-ui::sidebar.header>
         <x-ui::sidebar.nav>
