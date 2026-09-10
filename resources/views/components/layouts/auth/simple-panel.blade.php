@@ -15,7 +15,7 @@
                 <a
                     href="{{ $panelRoute }}"
                     data-auth-switch="{{ $panelButton === 'Sign Up' ? 'register' : 'login' }}"
-                    class="inline-flex min-w-36 items-center justify-center rounded-full! border-2 border-white/85 px-8 py-3 text-xs font-black uppercase tracking-widest text-white transition duration-300 hover:scale-105 hover:bg-white hover:text-emerald-800 focus:outline-none focus:ring-4 focus:ring-white/30"
+                    class="inline-flex min-w-36 items-center justify-center rounded-xl! border-2 border-white/85 px-8 py-3 text-xs font-black uppercase tracking-widest text-white transition duration-300 hover:scale-105 hover:bg-white hover:text-emerald-800 focus:outline-none focus:ring-4 focus:ring-white/30"
                 >
                     {{ $panelButton }}
                 </a>

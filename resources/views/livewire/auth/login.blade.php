@@ -147,7 +147,7 @@ new #[Layout('components.layouts.auth')] class extends Component
         <x-ui::checkbox wire:model="remember" label="{{ __('Remember me') }}" />
 
         <div class="flex items-center justify-center">
-            <x-ui::button variant="primary" type="submit" class="w-36 rounded-full! bg-emerald-700 py-3 text-xs font-black uppercase tracking-wide text-white hover:bg-emerald-800">{{ __('Sign in') }}</x-ui::button>
+            <x-ui::button variant="primary" type="submit" class="w-36 rounded-xl! bg-emerald-700 py-3 text-xs font-black uppercase tracking-wide text-white hover:bg-emerald-800">{{ __('Sign in') }}</x-ui::button>
         </div>
     </form>
 
