@@ -327,6 +327,7 @@
                         const visibleCards = facilitiesExpanded ? matchingCards : matchingCards.slice(0, 6);
                         visibleCards.forEach((card) => {
                             card.classList.remove('hidden');
+                            card.classList.add('is-visible');
                         });
 
                         count.textContent = visibleCards.length;
@@ -350,8 +351,19 @@
                     customCapacity?.addEventListener('input', resetAndFilter);
                     typeFilter.addEventListener('change', resetAndFilter);
                     seeMoreButton?.addEventListener('click', () => {
-                        facilitiesExpanded = !facilitiesExpanded;
+                        const isExpanding = !facilitiesExpanded;
+                        facilitiesExpanded = isExpanding;
                         filterFacilities();
+
+                        if (isExpanding && window.matchMedia('(max-width: 767px)').matches) {
+                            const firstNewCard = cards.filter(card => !card.classList.contains('hidden'))[6];
+                            if (firstNewCard) {
+                                requestAnimationFrame(() => window.scrollTo({
+                                    top: firstNewCard.getBoundingClientRect().top + window.scrollY - 88,
+                                    behavior: 'smooth',
+                                }));
+                            }
+                        }
                     });
                     document.querySelectorAll('[data-category-filter]').forEach((button) => button.addEventListener('click', () => {
                         typeFilter.value = button.dataset.categoryFilter;

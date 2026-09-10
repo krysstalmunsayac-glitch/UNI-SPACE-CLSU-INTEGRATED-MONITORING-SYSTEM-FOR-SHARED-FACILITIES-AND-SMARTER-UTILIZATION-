@@ -13,6 +13,13 @@
             will-change: opacity, transform;
         }
         .home-reveal.is-visible { opacity: 1; transform: translateY(0); }
+        @media (max-width: 767px) {
+            .home-reveal {
+                opacity: 1;
+                transform: none;
+                transition: none;
+            }
+        }
         @media (prefers-reduced-motion: reduce) {
             .home-hero-slide { transition: none; }
             .home-reveal { opacity: 1; transform: none; transition: none; }
@@ -191,7 +198,8 @@
                     ...document.querySelectorAll('#facilities [data-category-filter], #facilities > div > div, #facility-grid .facility-card'),
                     ...document.querySelectorAll('#calendar > div, #map .campus-map-layout > div, #map + section > div.relative, #help > div'),
                 ];
-                const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+                    || window.matchMedia('(max-width: 767px)').matches;
                 const revealObserver = !reducedMotion && 'IntersectionObserver' in window
                     ? new IntersectionObserver((entries) => {
                         entries.forEach(entry => {
@@ -230,7 +238,10 @@
                     });
                     cards.forEach(card => card.classList.add('hidden'));
                     const visibleCards = facilitiesExpanded ? matchingCards : matchingCards.slice(0, 6);
-                    visibleCards.forEach(card => card.classList.remove('hidden'));
+                    visibleCards.forEach(card => {
+                        card.classList.remove('hidden');
+                        card.classList.add('is-visible');
+                    });
                     if (count) count.textContent = visibleCards.length;
                     if (seeMoreButton) {
                         seeMoreButton.classList.toggle('hidden', matchingCards.length <= 6);
@@ -246,7 +257,21 @@
                 capacityFilter?.addEventListener('change', resetAndFilter);
                 customCapacity?.addEventListener('input', resetAndFilter);
                 typeFilter?.addEventListener('change', resetAndFilter);
-                seeMoreButton?.addEventListener('click', () => { facilitiesExpanded = !facilitiesExpanded; filterFacilities(); });
+                seeMoreButton?.addEventListener('click', () => {
+                    const isExpanding = !facilitiesExpanded;
+                    facilitiesExpanded = isExpanding;
+                    filterFacilities();
+
+                    if (isExpanding && window.matchMedia('(max-width: 767px)').matches) {
+                        const firstNewCard = cards.filter(card => !card.classList.contains('hidden'))[6];
+                        if (firstNewCard) {
+                            requestAnimationFrame(() => window.scrollTo({
+                                top: firstNewCard.getBoundingClientRect().top + window.scrollY - 88,
+                                behavior: 'smooth',
+                            }));
+                        }
+                    }
+                });
                 document.querySelectorAll('[data-category-filter]').forEach(button => button.addEventListener('click', () => {
                     typeFilter.value = button.dataset.categoryFilter;
                     resetAndFilter();
