@@ -220,6 +220,16 @@
             transform: translateX(0);
         }
 
+        @media (max-width: 767px) {
+            .dashboard-reveal,
+            .dashboard-reveal.about-from-left,
+            .dashboard-reveal.about-from-right {
+                opacity: 1;
+                transform: none;
+                transition: none;
+            }
+        }
+
         @media (prefers-reduced-motion: reduce) {
             .external-hero-slide {
                 transition: none;
@@ -264,7 +274,10 @@
                     ...document.querySelectorAll('#about > section:first-child > div > div, #about article, .facility-card, #requests details, #help details'),
                 ];
 
-                if (!window.userDashboardRevealObserver && 'IntersectionObserver' in window && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                const animationsEnabled = !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+                    && !window.matchMedia('(max-width: 767px)').matches;
+
+                if (!window.userDashboardRevealObserver && 'IntersectionObserver' in window && animationsEnabled) {
                     window.userDashboardRevealObserver = new IntersectionObserver(entries => {
                         entries.forEach(entry => {
                             if (!entry.isIntersecting) return;
@@ -288,7 +301,7 @@
                     }
                     element.style.transitionDelay = `${Math.min(index % 4, 3) * 70}ms`;
 
-                    if (window.userDashboardRevealObserver) {
+                    if (window.userDashboardRevealObserver && animationsEnabled) {
                         window.userDashboardRevealObserver.observe(element);
                     } else {
                         element.classList.add('is-visible');
