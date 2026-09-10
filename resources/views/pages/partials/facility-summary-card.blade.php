@@ -59,7 +59,7 @@
             </div>
         @endif
 
-        <span class="absolute left-4 top-4 z-10 rounded-full bg-yellow-400 px-3 py-1 text-xs font-black uppercase tracking-wide text-emerald-950 shadow-sm">
+        <span class="absolute left-4 top-4 z-10 rounded-full bg-zinc-200 px-3 py-1 text-xs font-black uppercase tracking-wide text-zinc-700 shadow-sm ring-1 ring-black/10">
             {{ $facility->facility_type ? ucfirst($facility->facility_type) : 'Facility' }}
         </span>
 

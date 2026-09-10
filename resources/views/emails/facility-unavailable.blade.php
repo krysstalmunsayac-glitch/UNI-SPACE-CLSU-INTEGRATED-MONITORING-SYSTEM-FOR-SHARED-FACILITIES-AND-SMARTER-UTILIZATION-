@@ -1,12 +1,12 @@
 <x-mail::message>
-# Facility Unavailable
+# Important Facility Update
 
 Hello {{ $userName }},
 
-We’re sorry, but **{{ $facilityName }}** has been marked unavailable by the facility administrator. Your request and any linked schedule have therefore been cancelled automatically.
+We’re sorry, but **{{ $facilityName }}** is no longer available for the requested schedule. Your request and any linked reservation have been cancelled automatically.
 
 <x-mail::panel>
-**Request #:** {{ $requestId }}  
+**Request ID:** #{{ $requestId }}<br>
 **Facility:** {{ $facilityName }}  
 **Date:** {{ $proposedDate }}  
 **Time:** {{ $startTime }} - {{ $endTime }}  
@@ -14,10 +14,10 @@ We’re sorry, but **{{ $facilityName }}** has been marked unavailable by the fa
 </x-mail::panel>
 
 <x-mail::button :url="$actionUrl">
-View your requests
+Find Another Facility
 </x-mail::button>
 
-Please choose another available facility or contact the facility office if you need assistance.
+Please choose another available facility in SIEL SPACE. The facility office can assist you if you need help finding an alternative.
 
 Thank you,  
 SIEL SPACE  

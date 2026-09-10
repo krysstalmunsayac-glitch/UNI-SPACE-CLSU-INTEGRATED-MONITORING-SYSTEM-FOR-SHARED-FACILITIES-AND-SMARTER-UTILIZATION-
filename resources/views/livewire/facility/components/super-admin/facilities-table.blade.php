@@ -9,20 +9,40 @@
                         Request Facility
                     </x-ui::button>
 
-                    <x-ui::menu class="max-h-80 min-w-72 overflow-y-auto">
-                        @foreach ($this->requestableFacilities as $requestableFacility)
-                            <x-ui::menu.item
-                                icon="calendar-days"
-                                href="{{ route('admin.requests.create', $requestableFacility) }}"
-                            >
-                                <span class="block">
-                                    <span class="block font-semibold">{{ $requestableFacility->Facility_Name }}</span>
-                                    @if ($requestableFacility->Office)
-                                        <span class="block text-xs text-zinc-500 dark:text-zinc-400">{{ $requestableFacility->Office }}</span>
-                                    @endif
-                                </span>
-                            </x-ui::menu.item>
-                        @endforeach
+                    <x-ui::menu
+                        class="overflow-hidden! rounded-2xl! p-0! shadow-xl!"
+                        style="width: 24rem; max-width: calc(100vw - 2rem); max-height: min(22rem, calc(100vh - 2rem));"
+                    >
+                        <div x-data="{ facilitySearch: '' }" class="flex max-h-[22rem] flex-col overflow-hidden">
+                            <div class="border-b border-zinc-200 bg-white p-3 dark:border-zinc-700 dark:bg-zinc-800">
+                                <label class="sr-only" for="request-facility-search">Search facilities</label>
+                                <input
+                                    id="request-facility-search"
+                                    x-model="facilitySearch"
+                                    x-on:click.stop
+                                    type="search"
+                                    placeholder="Search facilities..."
+                                    class="h-11 w-full rounded-xl border border-zinc-300 bg-white px-3 text-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/15 dark:border-zinc-600 dark:bg-zinc-900"
+                                >
+                            </div>
+                            <div class="min-h-0 flex-1 overflow-y-auto p-2">
+                                @foreach ($this->requestableFacilities as $requestableFacility)
+                                    <x-ui::menu.item
+                                        icon="calendar-days"
+                                        href="{{ route('admin.requests.create', $requestableFacility) }}"
+                                        class="min-w-0! rounded-xl! py-2.5!"
+                                        x-show="facilitySearch === '' || @js(strtolower($requestableFacility->Facility_Name.' '.$requestableFacility->Office)).includes(facilitySearch.toLowerCase())"
+                                    >
+                                        <span class="block min-w-0 whitespace-normal">
+                                            <span class="block break-words font-semibold leading-5">{{ $requestableFacility->Facility_Name }}</span>
+                                            @if ($requestableFacility->Office)
+                                                <span class="mt-0.5 block break-words text-xs leading-4 text-zinc-500 dark:text-zinc-400">{{ $requestableFacility->Office }}</span>
+                                            @endif
+                                        </span>
+                                    </x-ui::menu.item>
+                                @endforeach
+                            </div>
+                        </div>
                     </x-ui::menu>
                 </x-ui::dropdown>
             @else

@@ -1,12 +1,12 @@
 <x-mail::message>
-# Facility Request Update
+# Your Request Status Changed
 
 Hello {{ $userName }},
 
-{{ $message }}
+{{ $message }} Here are the latest reservation details:
 
 <x-mail::panel>
-**Request #:** {{ $requestId }}  
+**Request ID:** #{{ $requestId }}<br>
 **Facility:** {{ $facilityName }}  
 **Date:** {{ $proposedDate }}  
 **Time:** {{ $startTime }} - {{ $endTime }}  
@@ -18,10 +18,10 @@ Hello {{ $userName }},
 </x-mail::panel>
 
 <x-mail::button :url="$actionUrl">
-View request
+View My Request
 </x-mail::button>
 
-If you did not submit this request, please contact the facility office.
+You can open SIEL SPACE anytime to review the request and its latest status. If you do not recognize this activity, please contact the facility office.
 
 Thank you,  
 SIEL SPACE  

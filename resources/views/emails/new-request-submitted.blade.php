@@ -1,12 +1,12 @@
 <x-mail::message>
-# New Facility Request
+# New Request Ready for Review
 
 Hello {{ $adminName }},
 
-A new facility request has been submitted and is ready for review.
+A new facility request has been submitted. Please review the reservation details below and take the appropriate action.
 
 <x-mail::panel>
-**Request #:** {{ $requestId }}  
+**Request ID:** #{{ $requestId }}<br>
 **Requester:** {{ $requesterName }}{{ $requesterEmail ? ' <'.$requesterEmail.'>' : '' }}  
 @if ($createdBy)
 **Created by:** {{ $createdBy }}<br>
@@ -23,8 +23,10 @@ A new facility request has been submitted and is ready for review.
 {{ $purpose }}
 
 <x-mail::button :url="$actionUrl">
-Open Request Management
+Review Facility Request
 </x-mail::button>
+
+This notification was sent to help your office respond promptly and keep the requester informed.
 
 Thank you,  
 SIEL SPACE  

@@ -1,1 +1,2 @@
-This email was sent by SIEL SPACE, Central Luzon State University.
+SIEL SPACE | Central Luzon State University
+Science City of Muñoz, Nueva Ecija

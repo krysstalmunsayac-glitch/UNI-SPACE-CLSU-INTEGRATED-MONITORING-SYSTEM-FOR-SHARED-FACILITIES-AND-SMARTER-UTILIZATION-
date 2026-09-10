@@ -88,11 +88,6 @@
                     </div>
 
                     <div class="grid gap-2">
-                        @if ($facility->Status === 'Available')
-                            <x-ui::button size="sm" variant="primary" href="{{ route('admin.requests.create', $facility) }}" class="w-full">
-                                Request Facility
-                            </x-ui::button>
-                        @endif
                         <x-ui::button
                             size="sm"
                             variant="primary"

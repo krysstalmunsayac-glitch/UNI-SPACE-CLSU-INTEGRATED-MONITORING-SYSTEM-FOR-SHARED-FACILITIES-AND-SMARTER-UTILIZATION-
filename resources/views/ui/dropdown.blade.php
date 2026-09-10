@@ -45,7 +45,7 @@
             open = !open;
             if (open) {
                 window.dispatchEvent(new CustomEvent('ui-dropdown-opened', { detail: dropdownId }));
-                $nextTick(() => positionMenu());
+                $nextTick(() => requestAnimationFrame(() => positionMenu()));
             }
         }
     ">{{ $slot }}</div>

@@ -1,12 +1,12 @@
 <x-mail::message>
-# Facility Request Cancelled
+# Request Cancelled by Requester
 
 Hello {{ $adminName }},
 
-A requester cancelled a facility request and provided a cancellation reason.
+A requester has cancelled a facility request. The reservation details and submitted reason are shown below.
 
 <x-mail::panel>
-**Request #:** {{ $requestId }}  
+**Request ID:** #{{ $requestId }}<br>
 **Requester:** {{ $requesterName }}{{ $requesterEmail ? ' <'.$requesterEmail.'>' : '' }}  
 **Facility:** {{ $facilityName }}  
 **Date:** {{ $proposedDate }}  
@@ -18,8 +18,10 @@ A requester cancelled a facility request and provided a cancellation reason.
 {{ $reason }}
 
 <x-mail::button :url="$actionUrl">
-Open Request Management
+Review Cancellation
 </x-mail::button>
+
+No approval action is required. Open Request Management if you need to review or archive the record.
 
 Thank you,  
 SIEL SPACE  

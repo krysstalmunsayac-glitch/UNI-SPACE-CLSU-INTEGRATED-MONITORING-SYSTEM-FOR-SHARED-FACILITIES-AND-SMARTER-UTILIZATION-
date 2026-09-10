@@ -1,12 +1,12 @@
 <x-mail::message>
-# Your Request Needs an Update
+# Action Needed on Your Request
 
 Hello {{ $userName }},
 
-Your facility request has **not been rejected**. The reviewing office needs additional information before it can continue processing the same request.
+Your facility request is still active. The reviewing office needs additional information before it can continue processing it.
 
 <x-mail::panel>
-**Request #:** {{ $requestId }}  
+**Request ID:** #{{ $requestId }}<br>
 **Facility:** {{ $facilityName }}
 
 **Information needed:**  
@@ -14,10 +14,10 @@ Your facility request has **not been rejected**. The reviewing office needs addi
 </x-mail::panel>
 
 <x-mail::button :url="$actionUrl">
-Update the same request
+Update My Request
 </x-mail::button>
 
-You do not need to submit a new request. Open your existing request, provide the requested information, and save your changes.
+You do not need to submit a new request. Update the existing request with the information above, then save your changes for another review.
 
 Thank you,  
 SIEL SPACE  

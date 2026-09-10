@@ -76,6 +76,10 @@
                     const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, character => ({
                         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;',
                     })[character]);
+                    const formatFacilityType = value => {
+                        const type = String(value || 'Facility').trim();
+                        return type.charAt(0).toUpperCase() + type.slice(1).toLowerCase();
+                    };
                     const fallbackCoordinates = facility => {
                         const hash = [...String(facility.FID ?? facility.Facility_Name)].reduce((total, character) => ((total * 31) + character.charCodeAt(0)) >>> 0, 0);
                         const angle = (hash % 360) * (Math.PI / 180);
@@ -89,7 +93,7 @@
                         }).addTo(map).bindPopup(
                             `<strong>${escapeHtml(facility.Facility_Name)}</strong><br>` +
                             `${escapeHtml(facility.Location || 'CLSU Main Campus')}<br>` +
-                            `<small>${escapeHtml(facility.facility_type || 'Facility')} · Capacity: ${escapeHtml(facility.Capacity || 'N/A')}</small><br>` +
+                            `<small>${escapeHtml(formatFacilityType(facility.facility_type))} · Capacity: ${escapeHtml(facility.Capacity || 'N/A')}</small><br>` +
                             `<small>${escapeHtml(facility.Status || '')}${approximate ? ' · Approximate campus pin' : ''}</small>`
                         );
                         bounds.extend(coordinates);
@@ -310,7 +314,7 @@
                             weight: 5,
                         }).addTo(map);
                         if (selectedFacilityName) selectedFacilityName.textContent = selected.facility.Facility_Name;
-                        if (selectedFacilityLocation) selectedFacilityLocation.textContent = `${selected.facility.Location || 'CLSU Main Campus'} · ${selected.facility.facility_type || 'Facility'} · Capacity: ${selected.facility.Capacity || 'N/A'}`;
+                        if (selectedFacilityLocation) selectedFacilityLocation.textContent = `${selected.facility.Location || 'CLSU Main Campus'} · ${formatFacilityType(selected.facility.facility_type)} · Capacity: ${selected.facility.Capacity || 'N/A'}`;
                         map.setView(selected.coordinates, 19);
                         selected.marker.openPopup();
                         if (!selected.approximate) {
@@ -327,7 +331,7 @@
                     const populateFacilityFilters = () => {
                         const availableFacilities = facilities.filter(facility => facility.Status === 'Available' || Number(facility.FID) === Number(focusedFacilityId));
                         const facilityTypes = [...new Set(availableFacilities.map(facility => facility.facility_type || 'Other'))].sort();
-                        facilityTypes.forEach(type => facilityTypeSelect?.add(new Option(type, type)));
+                        facilityTypes.forEach(type => facilityTypeSelect?.add(new Option(formatFacilityType(type), type)));
 
                         const updateFacilityOptions = () => {
                             if (!facilitySelect) return;
