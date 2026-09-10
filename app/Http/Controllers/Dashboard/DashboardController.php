@@ -77,14 +77,43 @@ class DashboardController extends Controller
             Requests::withTrashed()->where('User_ID', Auth::id())
         );
 
-        return view('dashboards.user', [
-            'facilities' => Facilities::query()
+        $facilities = Facilities::query()
                 ->with(['images', 'amenities' => fn ($query) => $query
                     ->where('amenities.Status', 'Available')
                     ->orderBy('amenities.name')])
                 ->where('Status', 'Available')
                 ->orderBy('Facility_Name')
-                ->get(),
+                ->get();
+
+        $categoryLabels = [
+            'auditorium' => 'Auditoriums',
+            'classroom' => 'Classrooms',
+            'conference' => 'Conference spaces',
+            'laboratory' => 'Laboratories',
+            'sports' => 'Sports facilities',
+            'other' => 'Other spaces',
+        ];
+
+        $facilityCategories = $facilities
+            ->filter(fn (Facilities $facility) => filled($facility->facility_type))
+            ->groupBy(fn (Facilities $facility) => strtolower($facility->facility_type))
+            ->map(function ($group, string $type) use ($categoryLabels): array {
+                $featured = $group->first(fn (Facilities $facility) => $facility->images->isNotEmpty() || filled($facility->Image_URL));
+
+                return [
+                    'type' => $type,
+                    'name' => $categoryLabels[$type] ?? ucfirst($type).' spaces',
+                    'count' => $group->count(),
+                    'image' => $featured?->primaryImageUrl() ?? asset('images/siel-space-slide-02.jpg'),
+                ];
+            })
+            ->sortByDesc('count')
+            ->take(5)
+            ->values();
+
+        return view('dashboards.user', [
+            'facilities' => $facilities,
+            'facilityCategories' => $facilityCategories,
             'mapFacilities' => Facilities::query()
                 ->orderBy('Facility_Name')
                 ->get([

@@ -1,4 +1,11 @@
 <x-layouts.home.header>
+    <style>
+        #facility-grid .facility-card { border-radius: 1rem; box-shadow: none; }
+        #facility-grid .facility-card:hover { border-color: #009639; box-shadow: 0 10px 24px rgba(24, 24, 27, .08); }
+        #map { background: #f4f4f5; }
+        #map .campus-map-layout > div { border-radius: 1rem; }
+        #map .campus-map-layout > div:last-child { box-shadow: none; }
+    </style>
     @php
         $heroSlides = [
             ['image' => 'images/siel-space-slide-01.jpg', 'alt' => 'CLSU athletic field and grandstand'],
@@ -45,12 +52,12 @@
                 <h1 class="mt-4 text-5xl font-black leading-[.98] tracking-tight sm:text-6xl lg:text-7xl">Welcome back, {{ auth()->user()->name }}</h1>
                 <p class="mt-7 max-w-2xl text-lg leading-8 text-white/85 sm:text-xl">Browse available campus spaces, check the booking calendar, and manage your reservation requests from one SIEL SPACE dashboard.</p>
                 <div class="mt-9 flex flex-col gap-3 sm:flex-row">
-                    <a href="#facilities" class="inline-flex min-h-12 items-center justify-center bg-[#009639] px-7 py-3 font-bold text-white transition hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-yellow-400">Browse Facilities</a>
-                    <a href="#requests" class="inline-flex min-h-12 items-center justify-center border border-white bg-white px-7 py-3 font-bold text-zinc-950 transition hover:bg-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400">My Requests</a>
+                    <a href="#facilities" class="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#009639] px-7 py-3 font-bold text-white transition hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-yellow-400">Browse Facilities</a>
+                    <a href="#requests" class="inline-flex min-h-12 items-center justify-center rounded-xl border border-white bg-white px-7 py-3 font-bold text-zinc-950 transition hover:bg-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400">My Requests</a>
                 </div>
             </div>
 
-            <aside class="border-t-4 border-yellow-400 bg-white p-7 text-zinc-950 sm:p-8" aria-label="External user reservation tools">
+            <aside class="overflow-hidden rounded-2xl border-t-4 border-yellow-400 bg-white p-7 text-zinc-950 sm:p-8" aria-label="External user reservation tools">
                 <p class="text-xs font-black uppercase tracking-[.2em] text-[#009639]">Your reservation hub</p>
                 <h2 class="mt-3 text-3xl font-black tracking-tight">Plan with confidence.</h2>
                 <p class="mt-3 leading-7 text-zinc-600">Everything you need to choose a venue and follow the progress of your request.</p>
@@ -64,35 +71,61 @@
 
         <div class="absolute bottom-5 left-1/2 z-10 flex -translate-x-1/2 gap-2" role="group" aria-label="Choose hero image">
             @foreach ($heroSlides as $slide)
-                <button type="button" class="h-2.5 w-8 border border-white transition-colors" x-bind:class="active === {{ $loop->index }} ? 'bg-yellow-400' : 'bg-white/40 hover:bg-white'" x-on:click="goTo({{ $loop->index }})" aria-label="Show image {{ $loop->iteration }} of {{ count($heroSlides) }}" x-bind:aria-current="active === {{ $loop->index }} ? 'true' : null"></button>
+                <button type="button" class="h-2.5 w-8 rounded-full border border-white transition-colors" x-bind:class="active === {{ $loop->index }} ? 'bg-yellow-400' : 'bg-white/40 hover:bg-white'" x-on:click="goTo({{ $loop->index }})" aria-label="Show image {{ $loop->iteration }} of {{ count($heroSlides) }}" x-bind:aria-current="active === {{ $loop->index }} ? 'true' : null"></button>
             @endforeach
         </div>
     </section>
 
-    @include('pages.partials.about-content')
-
-    <section id="facilities" class="border-t border-emerald-900/10 bg-white py-20 dark:border-white/10 dark:bg-zinc-950">
+    <section id="about" class="scroll-mt-20 bg-white py-20 sm:py-24">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div class="mx-auto max-w-3xl text-center">
-                <h2 class="text-5xl font-black tracking-tight text-emerald-950 dark:text-white">Find your perfect space</h2>
-                <p class="mt-5 text-xl text-emerald-900/70 dark:text-zinc-300">
-                    Search study rooms, event halls, laboratories, and collaborative workspaces before creating your request.
-                </p>
+            <div class="grid gap-12 lg:grid-cols-[.75fr_1.25fr] lg:items-end">
+                <div><p class="text-sm font-black uppercase tracking-[.2em] text-[#009639]">Simple reservations</p><h2 class="mt-3 text-4xl font-black tracking-tight text-zinc-950 sm:text-5xl">How SIEL Space works</h2></div>
+                <p class="max-w-2xl text-lg leading-8 text-zinc-600">Spend less time searching for venues and more time preparing your activity. SIEL Space brings facility information and booking schedules together.</p>
             </div>
+            <div class="mt-12 grid border-y border-zinc-200 md:grid-cols-3">
+                @foreach ([['01', 'Find', 'Browse campus venues and compare their capacity, location, amenities, and rate.'], ['02', 'Check Availability', 'Use the calendar to confirm that your preferred date and time are open.'], ['03', 'Send Request', 'Choose a facility, complete the required details, and track the request status.']] as [$number, $title, $description])
+                    <article class="border-b border-zinc-200 py-8 md:border-b-0 md:border-l md:px-8 md:first:border-l-0 md:first:pl-0">
+                        <p class="text-sm font-black text-[#009639]">{{ $number }}</p><h3 class="mt-4 text-2xl font-black text-zinc-950">{{ $title }}</h3><p class="mt-3 leading-7 text-zinc-600">{{ $description }}</p>
+                    </article>
+                @endforeach
+            </div>
+        </div>
+    </section>
 
-            <div class="mt-14 grid gap-4 rounded-2xl border border-emerald-900/10 bg-white/80 p-3 shadow-sm dark:border-white/10 dark:bg-zinc-900/70 lg:grid-cols-[1fr_190px_220px]">
+    <section id="facilities" class="scroll-mt-20 bg-zinc-100 py-20 sm:py-24">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            @if ($facilityCategories->isNotEmpty())
+                <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+                    <div><p class="text-sm font-black uppercase tracking-[.2em] text-[#009639]">Explore the campus</p><h2 class="mt-3 text-4xl font-black tracking-tight text-zinc-950 sm:text-5xl">Browse by facility type</h2></div>
+                    <p class="max-w-md text-zinc-600">Choose a category to narrow the available spaces shown below.</p>
+                </div>
+                <div class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                    @foreach ($facilityCategories as $category)
+                        <button type="button" data-category-filter="{{ $category['type'] }}" class="group relative min-h-52 overflow-hidden rounded-2xl border border-zinc-300 bg-zinc-900 text-left focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                            <img src="{{ $category['image'] }}" alt="" class="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-105">
+                            <span class="absolute inset-0 bg-black/50 transition group-hover:bg-black/65" aria-hidden="true"></span>
+                            <span class="absolute inset-x-0 bottom-0 block p-5 text-white"><span class="block text-xl font-black leading-tight">{{ $category['name'] }}</span><span class="mt-2 block text-sm font-semibold text-yellow-300">{{ $category['count'] }} {{ Str::plural('space', $category['count']) }}</span></span>
+                        </button>
+                    @endforeach
+                </div>
+            @endif
+
+            <div class="mt-20 border-t border-zinc-300 pt-14">
+                <p class="text-sm font-black uppercase tracking-[.2em] text-[#009639]">Facility directory</p><h2 class="mt-3 text-4xl font-black tracking-tight text-zinc-950 sm:text-5xl">Available facilities</h2><p class="mt-4 max-w-2xl text-lg text-zinc-600">Compare spaces using their essential details, then book the one that fits your activity.</p>
+            </div>
+            <div class="mt-10 grid gap-4 rounded-2xl border border-zinc-200 bg-white p-5 lg:grid-cols-[1fr_190px_220px]">
                 <label class="block">
-                    <span class="mb-2 block text-xs font-black uppercase tracking-wide text-emerald-800 dark:text-emerald-300">Search</span>
+                    <span class="mb-2 block text-xs font-black uppercase tracking-wide text-zinc-700">Search</span>
                     <span class="relative block">
                         <span class="absolute left-5 top-1/2 -translate-y-1/2 text-emerald-700 dark:text-emerald-300">⌕</span>
-                        <input id="facility-search" type="search" placeholder="Search facilities..." class="h-14 w-full rounded-xl border border-emerald-900/10 bg-white pl-12 pr-4 text-base text-emerald-950 shadow-sm outline-none transition focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-950 dark:text-white">
+                        <input id="facility-search" type="search" placeholder="Search facilities..." class="h-14 w-full rounded-xl border border-zinc-300 bg-white pl-12 pr-4 text-zinc-950 outline-none focus:border-[#009639] focus:ring-2 focus:ring-[#009639]/15">
                     </span>
                 </label>
 
                 <label class="block">
-                    <span class="mb-2 block text-xs font-black uppercase tracking-wide text-emerald-800 dark:text-emerald-300">Capacity</span>
+                    <span class="mb-2 block text-xs font-black uppercase tracking-wide text-zinc-700">Capacity</span>
                     <span class="relative block">
-                        <select id="capacity-filter" class="h-14 w-full appearance-none rounded-xl border border-emerald-900/10 bg-white px-4 pr-11 text-base font-semibold text-emerald-950 shadow-sm outline-none transition focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-950 dark:text-white">
+                        <select id="capacity-filter" class="h-14 w-full appearance-none rounded-xl border border-zinc-300 bg-white px-4 pr-11 font-semibold text-zinc-950 outline-none focus:border-[#009639] focus:ring-2 focus:ring-[#009639]/15">
                             <option value="all">All capacities</option>
                             <option value="small">70-150</option>
                             <option value="medium">151-300</option>
@@ -101,13 +134,13 @@
                         </select>
 
                     </span>
-                    <input id="capacity-custom" type="number" min="70" max="2000" placeholder="Enter 70-2,000" class="mt-2 hidden h-12 w-full rounded-xl border border-emerald-900/10 bg-white px-4 text-base font-semibold text-emerald-950 shadow-sm outline-none transition focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-950 dark:text-white">
+                    <input id="capacity-custom" type="number" min="1" max="2000" placeholder="Required capacity" class="mt-2 hidden h-12 w-full rounded-xl border border-zinc-300 bg-white px-4 text-zinc-950 outline-none focus:border-[#009639]">
                 </label>
 
                 <label class="block">
-                    <span class="mb-2 block text-xs font-black uppercase tracking-wide text-emerald-800 dark:text-emerald-300">Facility type</span>
+                    <span class="mb-2 block text-xs font-black uppercase tracking-wide text-zinc-700">Facility type</span>
                     <span class="relative block">
-                        <select id="type-filter" class="h-14 w-full appearance-none rounded-xl border border-emerald-900/10 bg-white px-4 pr-11 text-base font-semibold text-emerald-950 shadow-sm outline-none transition focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-950 dark:text-white">
+                        <select id="type-filter" class="h-14 w-full appearance-none rounded-xl border border-zinc-300 bg-white px-4 pr-11 font-semibold text-zinc-950 outline-none focus:border-[#009639] focus:ring-2 focus:ring-[#009639]/15">
                             <option value="all">All facility types</option>
                             @foreach ($facilities->pluck('facility_type')->filter()->unique()->sort()->values() as $type)
                                 <option value="{{ strtolower($type) }}">{{ ucfirst($type) }}</option>
@@ -118,20 +151,16 @@
                 </label>
             </div>
 
-            <p class="mt-5 inline-flex items-center gap-1 rounded-full bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-800 dark:bg-emerald-400/10 dark:text-emerald-300">
-                <span>Showing</span>
-                <span id="facility-count">{{ $facilities->count() }}</span>
-                <span>of {{ $facilities->count() }} facilities</span>
-            </p>
+            <p class="mt-5 text-sm font-bold text-zinc-600"><span id="facility-count">{{ min(6, $facilities->count()) }}</span> of {{ $facilities->count() }} facilities shown</p>
 
-            <div id="facility-grid" class="mt-14 grid gap-8 md:grid-cols-2 xl:grid-cols-3">
+            <div id="facility-grid" class="mt-8 grid gap-7 md:grid-cols-2 xl:grid-cols-3">
                 @forelse ($facilities as $facility)
                     @include('pages.partials.facility-summary-card', [
                         'facility' => $facility,
                         'hidden' => $loop->index >= 6,
                     ])
                 @empty
-                    <div class="col-span-full rounded-2xl border border-dashed border-emerald-900/20 bg-emerald-50 p-10 text-center text-emerald-900 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-300">
+                    <div class="col-span-full rounded-2xl border border-dashed border-zinc-300 bg-white p-10 text-center text-zinc-600">
                         No facilities are currently available for reservation.
                     </div>
                 @endforelse
@@ -142,7 +171,7 @@
                     <button
                         id="facility-see-more"
                         type="button"
-                        class="rounded-xl border-2 border-emerald-600 bg-white px-7 py-3 text-sm font-black text-emerald-700 transition hover:bg-emerald-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2 dark:bg-zinc-900 dark:text-emerald-300"
+                        class="rounded-xl border-2 border-[#009639] bg-white px-7 py-3 text-sm font-black text-[#007a2f] transition hover:bg-[#009639] hover:text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
                     >
                         See more
                     </button>
@@ -153,16 +182,11 @@
 
     <livewire:facility-request-list />
 
-    <section id="calendar" class="bg-white dark:bg-zinc-950">
-        <div class="bg-emerald-800 py-20 text-white">
-            <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                <h2 class="text-5xl font-black tracking-tight">Booking calendar</h2>
-                <p class="mt-5 text-xl text-emerald-50">View all upcoming facility reservations before choosing a date.</p>
-            </div>
-        </div>
-
-        <div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-            <x-public-booking-calendar calendar-id="user-dashboard-calendar" :events="$schedules" />
+    <section id="calendar" class="scroll-mt-20 bg-white py-20 sm:py-24">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <p class="text-sm font-black uppercase tracking-[.2em] text-[#009639]">Plan your visit</p>
+            <div class="mt-3 flex flex-col justify-between gap-4 lg:flex-row lg:items-end"><h2 class="text-4xl font-black tracking-tight text-zinc-950 sm:text-5xl">Booking calendar</h2><p class="max-w-xl text-zinc-600">Check upcoming events and facility reservations before choosing your date.</p></div>
+            <div class="mt-10 border-t border-zinc-200 pt-8"><x-public-booking-calendar calendar-id="user-dashboard-calendar" :events="$schedules" /></div>
         </div>
     </section>
 
@@ -212,27 +236,21 @@
 
     @include('partials.campus-map')
 
-    <section id="help" class="bg-white py-20 dark:bg-zinc-950">
-        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div class="mx-auto max-w-3xl text-center">
-                <h2 class="text-5xl font-black tracking-tight text-emerald-950 dark:text-white">How can we help?</h2>
-                <p class="mt-5 text-xl text-emerald-900/70 dark:text-zinc-300">Find answers to common questions and learn how to make the most of SIEL SPACE.</p>
-            </div>
+    <section class="relative overflow-hidden bg-zinc-950 text-white">
+        <img src="{{ asset('images/siel-space-slide-02.jpg') }}" alt="Interior of a CLSU auditorium" class="absolute inset-0 h-full w-full object-cover object-center">
+        <div class="absolute inset-0 bg-black/65" aria-hidden="true"></div>
+        <div class="relative mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8 lg:py-32">
+            <p class="text-sm font-black uppercase tracking-[.2em] text-yellow-400">Your reservations</p><h2 class="mt-4 max-w-3xl text-4xl font-black tracking-tight sm:text-6xl">Ready to manage your requests?</h2><p class="mt-5 max-w-2xl text-lg leading-8 text-white/80">Review submitted requests, follow their status, or find another campus space for your next activity.</p>
+            <div class="mt-8 flex flex-col gap-3 sm:flex-row"><a href="#requests" class="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#009639] px-7 py-3 font-bold text-white transition hover:bg-emerald-800">My Requests</a><a href="#facilities" class="inline-flex min-h-12 items-center justify-center rounded-xl border border-white bg-white px-7 py-3 font-bold text-zinc-950 transition hover:bg-yellow-400">Browse Facilities</a></div>
+        </div>
+    </section>
 
-            <div class="mt-14 space-y-5">
-                @foreach ([
-                    'How do I reserve a facility?' => 'Choose an available facility, click Book, then complete the request form.',
-                    'Can I check existing reservations first?' => 'Yes. Use the booking calendar on this dashboard to review scheduled reservations.',
-                    'How will I know if my request is approved?' => 'SIEL SPACE will notify you when your request status changes.',
-                    'How far in advance should I book?' => 'Submit your request as early as possible. Requests are handled first-come, first-served.',
-                ] as $question => $answer)
-                    <details class="group rounded-xl border border-emerald-900/10 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-zinc-900">
-                        <summary class="flex cursor-pointer list-none items-center justify-between gap-4 text-lg font-black text-emerald-950 dark:text-white">
-                            {{ $question }}
-                            <span class="text-emerald-700 transition group-open:rotate-180">v</span>
-                        </summary>
-                        <p class="mt-4 text-emerald-900/70 dark:text-zinc-300">{{ $answer }}</p>
-                    </details>
+    <section id="help" class="scroll-mt-20 bg-white py-20 sm:py-24">
+        <div class="mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 lg:grid-cols-[.7fr_1.3fr] lg:px-8">
+            <div><p class="text-sm font-black uppercase tracking-[.2em] text-[#009639]">Support</p><h2 class="mt-3 text-4xl font-black tracking-tight text-zinc-950">How can we help?</h2><p class="mt-5 leading-7 text-zinc-600">Central Luzon State University<br>Science City of Muñoz, Nueva Ecija 3120</p></div>
+            <div class="border-t border-zinc-200">
+                @foreach (['How do I reserve a facility?' => 'Choose an available facility, click Book, then complete the request form.', 'Can I check existing reservations first?' => 'Yes. Use the booking calendar on this dashboard to review scheduled reservations.', 'How will I know if my request is approved?' => 'SIEL SPACE will notify you when your request status changes.', 'How far in advance should I book?' => 'Submit your request as early as possible. Requests are handled first-come, first-served.'] as $question => $answer)
+                    <details class="group border-b border-zinc-200 py-5"><summary class="flex cursor-pointer list-none items-center justify-between text-lg font-black text-zinc-950">{{ $question }}<span class="ml-4 text-[#009639] transition group-open:rotate-180">⌄</span></summary><p class="mt-3 max-w-2xl leading-7 text-zinc-600">{{ $answer }}</p></details>
                 @endforeach
             </div>
         </div>
@@ -292,7 +310,7 @@
                     const filterFacilities = () => {
                         const search = searchInput.value.trim().toLowerCase();
                         const capacity = capacityFilter.value;
-                        const requestedCapacity = Math.min(2000, Math.max(70, Number(customCapacity?.value) || 70));
+                        const requestedCapacity = Math.min(2000, Math.max(1, Number(customCapacity?.value) || 1));
                         const type = typeFilter.value;
                         const matchingCards = cards.filter((card) => {
                             const matchesSearch = !search || card.dataset.name.includes(search);
@@ -335,6 +353,11 @@
                         facilitiesExpanded = !facilitiesExpanded;
                         filterFacilities();
                     });
+                    document.querySelectorAll('[data-category-filter]').forEach((button) => button.addEventListener('click', () => {
+                        typeFilter.value = button.dataset.categoryFilter;
+                        resetAndFilter();
+                        document.querySelector('#facility-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }));
                     filterFacilities();
                 }
 

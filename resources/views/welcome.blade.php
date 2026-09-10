@@ -1,9 +1,9 @@
 <x-layouts.home.header>
     <style>
-        #facility-grid .facility-card { border-radius: .5rem; box-shadow: none; }
+        #facility-grid .facility-card { border-radius: 1rem; box-shadow: none; }
         #facility-grid .facility-card:hover { border-color: #009639; box-shadow: 0 10px 24px rgba(24, 24, 27, .08); }
         #map { background: #f4f4f5; }
-        #map .campus-map-layout > div { border-radius: .5rem; }
+        #map .campus-map-layout > div { border-radius: 1rem; }
         #map .campus-map-layout > div:last-child { box-shadow: none; }
         @media (prefers-reduced-motion: reduce) {
             .home-hero-slide { transition: none; }
@@ -55,11 +55,11 @@
                 <h1 class="mt-4 text-5xl font-black leading-[.98] tracking-tight sm:text-6xl lg:text-7xl">Find. Schedule. Reserve.</h1>
                 <p class="mt-7 max-w-2xl text-lg leading-8 text-white/85 sm:text-xl">The centralized facility reservation platform of Central Luzon State University. Compare spaces, check schedules, and submit a request in one place.</p>
                 <div class="mt-9 flex flex-col gap-3 sm:flex-row">
-                    <a href="#facilities" class="inline-flex min-h-12 items-center justify-center bg-[#009639] px-7 py-3 font-bold text-white transition hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-yellow-400">Browse Facilities</a>
-                    <a href="{{ route('login') }}" class="inline-flex min-h-12 items-center justify-center border border-white bg-white px-7 py-3 font-bold text-zinc-950 transition hover:bg-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400">Request a Facility</a>
+                    <a href="#facilities" class="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#009639] px-7 py-3 font-bold text-white transition hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-yellow-400">Browse Facilities</a>
+                    <a href="{{ route('login') }}" class="inline-flex min-h-12 items-center justify-center rounded-xl border border-white bg-white px-7 py-3 font-bold text-zinc-950 transition hover:bg-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400">Request a Facility</a>
                 </div>
             </div>
-            <aside class="border-t-4 border-yellow-400 bg-white p-7 text-zinc-950 sm:p-8" aria-label="Facility information available on SIEL Space">
+            <aside class="overflow-hidden rounded-2xl border-t-4 border-yellow-400 bg-white p-7 text-zinc-950 sm:p-8" aria-label="Facility information available on SIEL Space">
                 <p class="text-xs font-black uppercase tracking-[.2em] text-[#009639]">Plan with confidence</p>
                 <h2 class="mt-3 text-3xl font-black tracking-tight">Find the right space.</h2>
                 <p class="mt-3 leading-7 text-zinc-600">Each listing gives you the details needed to compare facilities before booking.</p>
@@ -74,7 +74,7 @@
             @foreach ($heroSlides as $slide)
                 <button
                     type="button"
-                    class="h-2.5 w-8 border border-white transition-colors"
+                    class="h-2.5 w-8 rounded-full border border-white transition-colors"
                     x-bind:class="active === {{ $loop->index }} ? 'bg-yellow-400' : 'bg-white/40 hover:bg-white'"
                     x-on:click="goTo({{ $loop->index }})"
                     aria-label="Show image {{ $loop->iteration }} of {{ count($heroSlides) }}"
@@ -120,7 +120,7 @@
                 </div>
                 <div class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
                     @foreach ($facilityCategories as $category)
-                        <button type="button" data-category-filter="{{ $category['type'] }}" class="group relative min-h-52 overflow-hidden border border-zinc-300 bg-zinc-900 text-left focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                        <button type="button" data-category-filter="{{ $category['type'] }}" class="group relative min-h-52 overflow-hidden rounded-2xl border border-zinc-300 bg-zinc-900 text-left focus:outline-none focus:ring-2 focus:ring-yellow-400">
                             <img src="{{ $category['image'] }}" alt="" class="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-105">
                             <span class="absolute inset-0 bg-black/50 transition group-hover:bg-black/65" aria-hidden="true"></span>
                             <span class="absolute inset-x-0 bottom-0 block p-5 text-white"><span class="block text-xl font-black leading-tight">{{ $category['name'] }}</span><span class="mt-2 block text-sm font-semibold text-yellow-300">{{ $category['count'] }} {{ Str::plural('space', $category['count']) }}</span></span>
@@ -132,21 +132,21 @@
             <div class="mt-20 border-t border-zinc-300 pt-14">
                 <p class="text-sm font-black uppercase tracking-[.2em] text-[#009639]">Facility directory</p><h2 class="mt-3 text-4xl font-black tracking-tight text-zinc-950 sm:text-5xl">Available facilities</h2><p class="mt-4 max-w-2xl text-lg text-zinc-600">Compare spaces using their essential details, then book the one that fits your activity.</p>
             </div>
-            <div class="mt-10 grid gap-4 border border-zinc-200 bg-white p-5 lg:grid-cols-[1fr_190px_220px]">
-                <label class="block"><span class="mb-2 block text-xs font-black uppercase tracking-wide text-zinc-700">Search</span><input id="facility-search" type="search" placeholder="Search facilities..." class="h-14 w-full border border-zinc-300 bg-white px-4 text-zinc-950 outline-none focus:border-[#009639] focus:ring-2 focus:ring-[#009639]/15"></label>
-                <label class="block"><span class="mb-2 block text-xs font-black uppercase tracking-wide text-zinc-700">Capacity</span><select id="capacity-filter" class="h-14 w-full border border-zinc-300 bg-white px-4 font-semibold text-zinc-950 outline-none focus:border-[#009639] focus:ring-2 focus:ring-[#009639]/15"><option value="all">All capacities</option><option value="small">70-150</option><option value="medium">151-300</option><option value="large">301+</option><option value="custom">Other / Specific</option></select><input id="capacity-custom" type="number" min="1" max="2000" placeholder="Required capacity" class="mt-2 hidden h-12 w-full border border-zinc-300 bg-white px-4 text-zinc-950 outline-none focus:border-[#009639]"></label>
-                <label class="block"><span class="mb-2 block text-xs font-black uppercase tracking-wide text-zinc-700">Facility type</span><select id="type-filter" class="h-14 w-full border border-zinc-300 bg-white px-4 font-semibold text-zinc-950 outline-none focus:border-[#009639] focus:ring-2 focus:ring-[#009639]/15"><option value="all">All facility types</option>@foreach ($facilities->pluck('facility_type')->filter()->unique()->sort()->values() as $type)<option value="{{ strtolower($type) }}">{{ ucfirst($type) }}</option>@endforeach</select></label>
+            <div class="mt-10 grid gap-4 rounded-2xl border border-zinc-200 bg-white p-5 lg:grid-cols-[1fr_190px_220px]">
+                <label class="block"><span class="mb-2 block text-xs font-black uppercase tracking-wide text-zinc-700">Search</span><input id="facility-search" type="search" placeholder="Search facilities..." class="h-14 w-full rounded-xl border border-zinc-300 bg-white px-4 text-zinc-950 outline-none focus:border-[#009639] focus:ring-2 focus:ring-[#009639]/15"></label>
+                <label class="block"><span class="mb-2 block text-xs font-black uppercase tracking-wide text-zinc-700">Capacity</span><select id="capacity-filter" class="h-14 w-full rounded-xl border border-zinc-300 bg-white px-4 font-semibold text-zinc-950 outline-none focus:border-[#009639] focus:ring-2 focus:ring-[#009639]/15"><option value="all">All capacities</option><option value="small">70-150</option><option value="medium">151-300</option><option value="large">301+</option><option value="custom">Other / Specific</option></select><input id="capacity-custom" type="number" min="1" max="2000" placeholder="Required capacity" class="mt-2 hidden h-12 w-full rounded-xl border border-zinc-300 bg-white px-4 text-zinc-950 outline-none focus:border-[#009639]"></label>
+                <label class="block"><span class="mb-2 block text-xs font-black uppercase tracking-wide text-zinc-700">Facility type</span><select id="type-filter" class="h-14 w-full rounded-xl border border-zinc-300 bg-white px-4 font-semibold text-zinc-950 outline-none focus:border-[#009639] focus:ring-2 focus:ring-[#009639]/15"><option value="all">All facility types</option>@foreach ($facilities->pluck('facility_type')->filter()->unique()->sort()->values() as $type)<option value="{{ strtolower($type) }}">{{ ucfirst($type) }}</option>@endforeach</select></label>
             </div>
             <p class="mt-5 text-sm font-bold text-zinc-600"><span id="facility-count">{{ min(6, $facilities->count()) }}</span> of {{ $facilities->count() }} facilities shown</p>
             <div id="facility-grid" class="mt-8 grid gap-7 md:grid-cols-2 xl:grid-cols-3">
                 @forelse ($facilities as $facility)
                     @include('pages.partials.facility-summary-card', ['facility' => $facility, 'hidden' => $loop->index >= 6])
                 @empty
-                    <div class="col-span-full border border-dashed border-zinc-300 bg-white p-10 text-center text-zinc-600">No facilities are currently available for reservation.</div>
+                    <div class="col-span-full rounded-2xl border border-dashed border-zinc-300 bg-white p-10 text-center text-zinc-600">No facilities are currently available for reservation.</div>
                 @endforelse
             </div>
             @if ($facilities->count() > 6)
-                <div class="mt-10 flex justify-center"><button id="facility-see-more" type="button" class="border-2 border-[#009639] bg-white px-7 py-3 text-sm font-black text-[#007a2f] transition hover:bg-[#009639] hover:text-white focus:outline-none focus:ring-2 focus:ring-yellow-400">See more</button></div>
+                <div class="mt-10 flex justify-center"><button id="facility-see-more" type="button" class="rounded-xl border-2 border-[#009639] bg-white px-7 py-3 text-sm font-black text-[#007a2f] transition hover:bg-[#009639] hover:text-white focus:outline-none focus:ring-2 focus:ring-yellow-400">See more</button></div>
             @endif
         </div>
     </section>
@@ -166,7 +166,7 @@
         <div class="absolute inset-0 bg-black/65" aria-hidden="true"></div>
         <div class="relative mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8 lg:py-32">
             <p class="text-sm font-black uppercase tracking-[.2em] text-yellow-400">Ready when you are</p><h2 class="mt-4 max-w-3xl text-4xl font-black tracking-tight sm:text-6xl">Need a space for your next activity?</h2><p class="mt-5 max-w-2xl text-lg leading-8 text-white/80">Explore CLSU facilities, review what each venue offers, and send your reservation request.</p>
-            <div class="mt-8 flex flex-col gap-3 sm:flex-row"><a href="#facilities" class="inline-flex min-h-12 items-center justify-center bg-[#009639] px-7 py-3 font-bold text-white transition hover:bg-emerald-800">Browse Facilities</a><a href="#calendar" class="inline-flex min-h-12 items-center justify-center border border-white bg-white px-7 py-3 font-bold text-zinc-950 transition hover:bg-yellow-400">Check Calendar</a></div>
+            <div class="mt-8 flex flex-col gap-3 sm:flex-row"><a href="#facilities" class="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#009639] px-7 py-3 font-bold text-white transition hover:bg-emerald-800">Browse Facilities</a><a href="#calendar" class="inline-flex min-h-12 items-center justify-center rounded-xl border border-white bg-white px-7 py-3 font-bold text-zinc-950 transition hover:bg-yellow-400">Check Calendar</a></div>
         </div>
     </section>
 

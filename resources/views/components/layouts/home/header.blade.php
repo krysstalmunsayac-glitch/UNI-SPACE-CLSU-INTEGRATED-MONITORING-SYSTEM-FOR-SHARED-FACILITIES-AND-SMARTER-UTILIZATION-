@@ -36,6 +36,25 @@
         .site-header[data-transparent="true"] .header-brand {
             filter: drop-shadow(0 1px 3px rgba(0, 0, 0, .55));
         }
+
+        .header-profile-control {
+            border: 1px solid rgba(6, 95, 70, .14) !important;
+            border-radius: .75rem !important;
+            background: rgba(255, 255, 255, .94) !important;
+            padding: .45rem .7rem !important;
+            color: #065f46 !important;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, .1) !important;
+        }
+
+        .header-profile-control * {
+            color: inherit !important;
+        }
+
+        .site-header[data-transparent="true"] .header-profile-control {
+            border-color: rgba(255, 255, 255, .7) !important;
+            background: rgba(255, 255, 255, .96) !important;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, .22) !important;
+        }
     </style>
 
     <header
@@ -119,6 +138,7 @@
                             :name="auth()->user()->name"
                             :initials="auth()->user()->initials()"
                             icon-trailing="chevron-down"
+                            class="header-profile-control"
                         />
 
                         <x-ui::menu class="w-[310px] rounded-2xl! border-[#dce4df]! p-2.5! shadow-[0_18px_50px_rgba(15,52,35,0.16)]!">
