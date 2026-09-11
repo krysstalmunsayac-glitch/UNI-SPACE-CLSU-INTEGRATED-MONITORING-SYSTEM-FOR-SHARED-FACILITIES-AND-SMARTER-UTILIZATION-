@@ -3,6 +3,7 @@
 use App\Models\Facilities;
 use App\Models\Requests;
 use App\Models\User;
+use App\Notifications\RequestAwaitingPayment;
 use App\Notifications\RequestStatusUpdated;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Notification;
@@ -146,3 +147,25 @@ it('lets an administrator choose whether to email when cancelling an approved re
         Notification::assertNotSentTo($requester, RequestStatusUpdated::class);
     }
 })->with([true, false]);
+
+it('sends payment instructions for a paid facility request', function () {
+    Notification::fake();
+    [$administrator, $booking] = administrativeRequest();
+    $booking->facility->update(['Price' => 2500]);
+    $requester = $booking->user;
+    $this->actingAs($administrator);
+
+    Volt::test('request.request')
+        ->call('openPaymentModal', $booking->RID)
+        ->assertSet('showPaymentModal', true)
+        ->set('paymentAmount', '2750.00')
+        ->set('paymentDeadline', now()->addDays(2)->format('Y-m-d\TH:i'))
+        ->call('requestPayment')
+        ->assertHasNoErrors();
+
+    expect($booking->fresh())
+        ->Status->toBe('Awaiting Payment')
+        ->Payment_Amount->toBe('2750.00');
+
+    Notification::assertSentTo($requester, RequestAwaitingPayment::class);
+});

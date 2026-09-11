@@ -62,6 +62,7 @@
                         size="sm"
                         :color="match($Status) {
                             'Approved'  => 'green',
+                            'Awaiting Payment' => 'amber',
                             'Rejected'  => 'red',
                             'Cancelled' => 'amber',
                             'Ended'     => 'zinc',
@@ -144,6 +145,13 @@
                 </div>
             </section>
         </article>
+        @if ($Status === 'Awaiting Payment')
+            <section class="mx-4 mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100 sm:mx-6">
+                <p class="font-black">Awaiting payment</p>
+                <p class="mt-1">Amount due: <strong>₱{{ number_format((float) $paymentAmount, 2) }}</strong></p>
+                <p>Deadline: {{ $paymentDeadline ? \Carbon\Carbon::parse($paymentDeadline)->format('M j, Y g:i A') : '—' }}</p>
+            </section>
+        @endif
     </div>
 
     <footer class="flex shrink-0 flex-wrap gap-2 border-t border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-950 sm:px-6">

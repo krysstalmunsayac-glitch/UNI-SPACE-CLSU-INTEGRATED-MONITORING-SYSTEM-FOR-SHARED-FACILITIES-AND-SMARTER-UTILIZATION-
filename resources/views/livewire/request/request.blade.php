@@ -1,10 +1,12 @@
 <?php
 
+use App\Models\Amenities;
 use App\Models\Facilities;
 use App\Models\Requests;
 use App\Models\Schedule;
 use App\Models\User;
 use App\Notifications\RequestNeedsRevision;
+use App\Notifications\RequestAwaitingPayment;
 use App\Notifications\RequestStatusUpdated;
 use App\Services\FacilityAvailabilityService;
 use App\Support\Ui;
@@ -51,6 +53,14 @@ new #[Layout('components.layouts.app')] class extends Component
     public bool $showReviewModal = false;
 
     public bool $showCancelModal = false;
+
+    public bool $showPaymentModal = false;
+
+    public ?int $paymentRequestId = null;
+
+    public string $paymentAmount = '';
+
+    public string $paymentDeadline = '';
 
     public ?int $rejectingId = null;
 
@@ -256,6 +266,8 @@ new #[Layout('components.layouts.app')] class extends Component
         $this->Proposed_Start_Time = $request->Proposed_Start_Time->format('H:i');
         $this->Proposed_End_Time = $request->Proposed_End_Time->format('H:i');
         $this->Status = $request->Status;
+        $this->paymentAmount = $request->Payment_Amount !== null ? (string) $request->Payment_Amount : '';
+        $this->paymentDeadline = $request->Payment_Deadline?->format('Y-m-d\TH:i') ?? '';
         $this->Purpose = $request->Purpose;
         $this->Capacity = $request->Capacity;
         $this->Event_Title = $request->event?->Event_Title;
@@ -431,6 +443,54 @@ new #[Layout('components.layouts.app')] class extends Component
         $this->showRejectModal = true;
     }
 
+    public function openPaymentModal(int $requestId): void
+    {
+        $request = $this->getScopedRequest($requestId)->load('facility');
+
+        if (! $request->canTransitionTo('Awaiting Payment') || (float) ($request->facility?->Price ?? 0) <= 0) {
+            Ui::toast(text: 'Awaiting Payment is only available for pending requests with a rental fee.', variant: 'warning');
+
+            return;
+        }
+
+        $this->paymentRequestId = $request->RID;
+        $this->paymentAmount = number_format((float) $request->facility->Price, 2, '.', '');
+        $this->paymentDeadline = now()->addDays(3)->format('Y-m-d\TH:i');
+        $this->resetValidation(['paymentAmount', 'paymentDeadline']);
+        $this->showPaymentModal = true;
+    }
+
+    public function requestPayment(): void
+    {
+        $validated = $this->validate([
+            'paymentAmount' => ['required', 'numeric', 'min:0.01', 'max:9999999999.99'],
+            'paymentDeadline' => ['required', 'date', 'after:now'],
+        ]);
+
+        $request = $this->getScopedRequest($this->paymentRequestId)->load(['facility', 'user']);
+        abort_unless($request->canTransitionTo('Awaiting Payment'), 409);
+
+        $request->update([
+            'Status' => 'Awaiting Payment',
+            'Payment_Amount' => $validated['paymentAmount'],
+            'Payment_Deadline' => $validated['paymentDeadline'],
+            'Payment_Proof_Path' => null,
+            'Payment_Proof_Uploaded_At' => null,
+        ]);
+
+        if ($request->user) {
+            Notification::send($request->user, new RequestAwaitingPayment($request));
+        } elseif ($request->Is_Guest_Booking && $request->Guest_Email) {
+            Notification::route('mail', $request->Guest_Email)
+                ->notify(new RequestAwaitingPayment($request));
+        }
+
+        Ui::toast(text: 'Payment instructions sent to the requester.', variant: 'success');
+        $this->showPaymentModal = false;
+        $this->showViewModal = false;
+        $this->paymentRequestId = null;
+    }
+
     public function reject(): void
     {
         $allowedReasons = [
@@ -513,6 +573,8 @@ new #[Layout('components.layouts.app')] class extends Component
             'emailCancellationNotice' => ['boolean'],
         ], [
             'adminCancellationReason.required' => 'Enter the reason for cancelling this approved request.',
+            'adminCancellationReason.min' => 'Please provide a little more detail (at least 5 characters).',
+            'adminCancellationReason.max' => 'Keep the cancellation reason within 500 characters.',
         ]);
 
         $request = $this->getScopedRequest($this->cancellingId)->load('user');
@@ -845,7 +907,7 @@ new #[Layout('components.layouts.app')] class extends Component
         return $query->with([
             'user:id,name,email',
             'creator:id,name',
-            'facility:FID,Facility_Name',
+            'facility:FID,Facility_Name,Price',
         ])
             ->orderByDesc('deleted_at')
             ->paginate(8, pageName: 'archivedRequestsPage');
@@ -858,7 +920,7 @@ new #[Layout('components.layouts.app')] class extends Component
             ->with([
                 'user:id,name,email',
                 'creator:id,name',
-                'facility:FID,Facility_Name',
+                'facility:FID,Facility_Name,Price',
             ])
             ->when(auth()->user()->isAdmin(), fn ($query) => $query->whereHas('facility.assignedAdmins', fn ($facilityQuery) => $facilityQuery->where('users.id', auth()->id())
             ))
@@ -960,6 +1022,9 @@ new #[Layout('components.layouts.app')] class extends Component
     @endif
     @if ($showCancelModal)
         @include('request.components.request-cancel-modal')
+    @endif
+    @if ($showPaymentModal)
+        @include('request.components.request-payment-modal')
     @endif
     @if ($showModal)
         @include('request.components.request-edit-modal')

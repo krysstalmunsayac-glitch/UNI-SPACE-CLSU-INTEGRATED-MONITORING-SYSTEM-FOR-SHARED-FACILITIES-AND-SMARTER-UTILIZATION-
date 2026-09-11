@@ -40,7 +40,7 @@ new class extends Component {
             $this->requestSort = 'latest';
         }
 
-        if (! in_array($this->requestStatus, ['', 'Pending', 'Needs Revision', 'Approved', 'Rejected', 'Cancelled', 'Ended'], true)) {
+        if (! in_array($this->requestStatus, ['', 'Pending', 'Needs Revision', 'Awaiting Payment', 'Approved', 'Rejected', 'Cancelled', 'Ended'], true)) {
             $this->requestStatus = '';
         }
     }
@@ -129,6 +129,7 @@ new class extends Component {
                             <option value="Pending" @selected($requestStatus === 'Pending')>Pending</option>
                             <option value="Needs Revision" @selected($requestStatus === 'Needs Revision')>Needs Revision</option>
                             <option value="Approved" @selected($requestStatus === 'Approved')>Approved</option>
+                            <option value="Awaiting Payment" @selected($requestStatus === 'Awaiting Payment')>Awaiting Payment</option>
                             <option value="Rejected" @selected($requestStatus === 'Rejected')>Rejected</option>
                             <option value="Cancelled" @selected($requestStatus === 'Cancelled')>Cancelled</option>
                             <option value="Ended" @selected($requestStatus === 'Ended')>Event Ended</option>
@@ -150,6 +151,7 @@ new class extends Component {
                     @php
                         $status = $request->Status;
                         $isApproved = $status === 'Approved';
+                        $isAwaitingPayment = $status === 'Awaiting Payment';
                         $isRejected = $status === 'Rejected';
                         $isCancelled = $status === 'Cancelled';
                         $isEnded = $status === 'Ended';
@@ -157,6 +159,7 @@ new class extends Component {
                         $canCancel = in_array($status, ['Pending', 'Approved'], true);
                         $statusClass = match ($status) {
                             'Approved' => 'bg-emerald-600 text-white',
+                            'Awaiting Payment' => 'bg-amber-500 text-amber-950',
                             'Rejected' => 'bg-rose-600 text-white',
                             'Cancelled' => 'bg-zinc-600 text-white',
                             'Ended' => 'bg-slate-700 text-white',
@@ -236,7 +239,8 @@ new class extends Component {
                                     @endif
                                     @if ($request->facility)
                                         <a
-                                            href="{{ route('dashboard', ['map_facility' => $request->Facility_ID]) }}#map"
+                                            href="#map"
+                                            data-map-facility-link="{{ $request->Facility_ID }}"
                                             class="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-4 py-2.5 text-xs font-black text-white transition hover:bg-emerald-800 focus:outline-none focus:ring-4 focus:ring-emerald-600/20"
                                         >
                                             <x-ui::icon.map-pin class="size-4" />
@@ -246,10 +250,10 @@ new class extends Component {
                                 </div>
                             </div>
 
-                            @if ($isEnded || $isRejected || $isApproved || $isCancelled)
+                            @if ($isEnded || $isRejected || $isApproved || $isCancelled || $isAwaitingPayment)
                                 <div class="mt-6 flex flex-col gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 sm:flex-row sm:items-center sm:justify-between">
                                     <div>
-                                        <p>{{ $isApproved ? 'This request was approved.' : ($isRejected ? 'This request was rejected.' : ($isCancelled ? 'This request was cancelled.' : 'This event has ended.')) }} Its submitted information is read-only and can no longer be changed.</p>
+                                        <p>{{ $isAwaitingPayment ? 'Payment is required before this request can be approved.' : ($isApproved ? 'This request was approved.' : ($isRejected ? 'This request was rejected.' : ($isCancelled ? 'This request was cancelled.' : 'This event has ended.'))) }} Its submitted information is read-only and can no longer be changed.</p>
                                         @if ($isEnded)
                                             <p class="mt-1 text-xs font-normal">Sharing feedback is optional.</p>
                                         @endif
@@ -267,6 +271,63 @@ new class extends Component {
                                         </a>
                                     @endif
                                 </div>
+
+                                @if ($isAwaitingPayment)
+                                    <div class="mt-6 rounded-2xl border border-amber-300 bg-amber-50 p-5 text-amber-950 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
+                                        <h4 class="text-lg font-black">Payment instructions</h4>
+                                        <div class="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+                                            <p><strong class="block">Amount due</strong><span class="text-lg font-black">₱{{ number_format((float) $request->Payment_Amount, 2) }}</span></p>
+                                            <p><strong class="block">Deadline</strong>{{ $request->Payment_Deadline?->format('M j, Y g:i A') }}</p>
+                                            <p class="sm:col-span-2"><strong>Payment method:</strong> Pay in cash at the Admin Cashier, then upload the official receipt below.</p>
+                                        </div>
+                                        <form
+                                            action="{{ route('requests.payment-proof.upload', $request) }}"
+                                            method="POST"
+                                            enctype="multipart/form-data"
+                                            class="mt-5 rounded-xl bg-white p-4 dark:bg-zinc-950"
+                                            x-data="{ fileName: '' }"
+                                        >
+                                            @csrf
+                                            @if ($request->Payment_Proof_Path)
+                                                <div class="mb-4 flex flex-col gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-900 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100 sm:flex-row sm:items-center sm:justify-between">
+                                                    <div class="flex items-start gap-3">
+                                                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-700 text-lg font-black text-white" aria-hidden="true">✓</span>
+                                                        <div>
+                                                            <p class="font-black">Payment proof uploaded</p>
+                                                            <p class="mt-0.5 text-xs">Received {{ $request->Payment_Proof_Uploaded_At?->diffForHumans() }} and ready for admin review.</p>
+                                                        </div>
+                                                    </div>
+                                                    <a href="{{ route('requests.payment-proof.download', $request) }}" class="inline-flex shrink-0 items-center justify-center rounded-lg border border-emerald-700 px-3 py-2 text-xs font-black text-emerald-800 transition hover:bg-emerald-100 dark:border-emerald-300 dark:text-emerald-100 dark:hover:bg-emerald-500/20">
+                                                        View uploaded proof
+                                                    </a>
+                                                </div>
+                                            @endif
+
+                                            <label for="payment-proof-{{ $request->RID }}" class="block text-xs font-black uppercase tracking-wide text-slate-600 dark:text-slate-300">
+                                                {{ $request->Payment_Proof_Path ? 'Replace with a new file' : 'Receipt or proof of payment' }}
+                                            </label>
+                                            <input
+                                                id="payment-proof-{{ $request->RID }}"
+                                                name="payment_proof"
+                                                type="file"
+                                                required
+                                                accept=".pdf,.jpg,.jpeg,.png"
+                                                x-on:change="fileName = $event.target.files[0]?.name || ''"
+                                                class="mt-2 block w-full rounded-xl border border-slate-200 p-2 text-sm text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-emerald-700 file:px-4 file:py-2 file:font-bold file:text-white hover:file:bg-emerald-800 dark:border-slate-700 dark:bg-zinc-900 dark:text-slate-300"
+                                            >
+                                            <p class="mt-2 text-xs text-slate-500" x-text="fileName ? `Selected: ${fileName}` : 'PDF, JPG, or PNG up to 5 MB.'"></p>
+                                            <button
+                                                type="submit"
+                                                x-bind:disabled="!fileName"
+                                                class="mt-4 w-full rounded-xl bg-emerald-700 px-5 py-3 text-sm font-black text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 dark:disabled:bg-slate-700 dark:disabled:text-slate-300"
+                                            >
+                                                <span x-show="!fileName">Choose a file to continue</span>
+                                                <span x-show="fileName">{{ $request->Payment_Proof_Path ? 'Replace uploaded proof' : 'Upload proof of payment' }}</span>
+                                            </button>
+                                            @error('payment_proof') <p class="mt-2 text-xs font-semibold text-red-600">{{ $message }}</p> @enderror
+                                        </form>
+                                    </div>
+                                @endif
 
                                 <dl class="mt-6 grid gap-4 rounded-xl border border-emerald-900/10 bg-white p-5 text-sm dark:border-white/10 dark:bg-zinc-900 sm:grid-cols-2">
                                     @foreach ([
@@ -302,36 +363,121 @@ new class extends Component {
                                 </dl>
 
                                 @if ($isApproved)
-                                    <form action="{{ route('waiting.list.cancel', $request) }}" method="POST" class="mt-6 rounded-xl border border-rose-200 bg-rose-50/60 p-4 dark:border-rose-500/30 dark:bg-rose-500/10">
-                                        @csrf
-                                        <label class="mb-2 block text-xs font-black uppercase tracking-wide text-rose-700 dark:text-rose-300" for="approved-cancellation-reason-{{ $request->RID }}">
-                                            Reason for cancellation
-                                        </label>
-                                        <div class="flex flex-col gap-3 sm:flex-row">
+                                    @php
+                                        $eventStart = \Carbon\Carbon::parse(
+                                            $request->Proposed_Date->toDateString().' '.$request->Proposed_Start_Time->format('H:i:s')
+                                        );
+                                        $canEndEvent = $eventStart->isPast();
+                                    @endphp
+                                    <section class="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50/70 dark:border-slate-700 dark:bg-slate-900/70">
+                                        <div class="border-b border-slate-200 px-5 py-4 dark:border-slate-700">
+                                            <p class="text-xs font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Manage booking</p>
+                                            <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">Choose the action that best matches your event.</p>
+                                        </div>
+
+                                        <div class="grid gap-4 p-4 lg:grid-cols-2">
+                                            <div class="flex flex-col rounded-xl border border-emerald-200 bg-white p-5 shadow-sm dark:border-emerald-500/30 dark:bg-zinc-950">
+                                                <div class="flex items-start gap-3">
+                                                    <span class="flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
+                                                        <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m5 12 4 4L19 6" /></svg>
+                                                    </span>
+                                                    <div>
+                                                        <h4 class="font-black text-emerald-950 dark:text-white">Event finished successfully</h4>
+                                                        <p class="mt-1 text-sm leading-5 text-slate-600 dark:text-slate-300">Close the booking and continue to optional facility feedback.</p>
+                                                    </div>
+                                                </div>
+
+                                                <div class="mt-auto pt-5">
+                                                    @unless ($canEndEvent)
+                                                        <p class="mb-3 flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                                                            <svg class="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2m5-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+                                                            Available {{ $eventStart->format('M j, Y \a\t g:i A') }}
+                                                        </p>
+                                                    @endunless
+                                                    <form action="{{ route('waiting.list.end', $request) }}" method="POST">
+                                                        @csrf
+                                                        <button
+                                                            type="submit"
+                                                            @disabled(! $canEndEvent)
+                                                            class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-emerald-800 focus:outline-none focus:ring-4 focus:ring-emerald-600/20 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none dark:disabled:bg-slate-800 dark:disabled:text-slate-400"
+                                                            data-ui-confirm="Are you sure you want to end this event? The booking will become read-only and this action cannot be undone."
+                                                            data-ui-confirm-title="End this event?"
+                                                            data-ui-confirm-label="Yes, end event"
+                                                            data-ui-confirm-variant="danger"
+                                                            onclick="this.form?.addEventListener('submit', () => { this.disabled = true; }, { once: true })"
+                                                        >
+                                                            <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m5 12 4 4L19 6" /></svg>
+                                                            {{ $canEndEvent ? 'End event' : 'Not available yet' }}
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </div>
+
+                                            <form action="{{ route('waiting.list.cancel', $request) }}" method="POST" class="flex flex-col rounded-xl border border-rose-200 bg-white p-5 shadow-sm dark:border-rose-500/30 dark:bg-zinc-950" x-data="{ cancellationReason: @js(old('Cancellation_Reason', '')) }">
+                                                @csrf
+                                                <div class="flex items-start gap-3">
+                                                    <span class="flex size-10 shrink-0 items-center justify-center rounded-full bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300">
+                                                        <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+                                                    </span>
+                                                    <div>
+                                                        <h4 class="font-black text-rose-950 dark:text-white">Event will not continue</h4>
+                                                        <p class="mt-1 text-sm leading-5 text-slate-600 dark:text-slate-300">Cancel the booking and release the reserved schedule.</p>
+                                                    </div>
+                                                </div>
+
+                                                <div class="mt-auto pt-5">
+                                            <label class="mb-2 block text-xs font-black uppercase tracking-wide text-slate-600 dark:text-slate-300" for="approved-cancellation-reason-{{ $request->RID }}">
+                                                Cancellation reason
+                                            </label>
                                             <select
                                                 id="approved-cancellation-reason-{{ $request->RID }}"
                                                 name="Cancellation_Reason"
                                                 required
-                                                class="min-w-0 flex-1 rounded-xl border border-rose-200 bg-white px-4 py-3 text-sm text-emerald-950 outline-none focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 dark:border-rose-500/30 dark:bg-zinc-900 dark:text-white"
+                                                x-model="cancellationReason"
+                                                class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-emerald-950 outline-none transition focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 dark:border-slate-700 dark:bg-zinc-900 dark:text-white"
                                             >
                                                 <option value="">Select a cancellation reason</option>
-                                                @foreach (['Change of plans', 'Schedule conflict', 'Event postponed', 'Event cancelled', 'Facility no longer needed'] as $reason)
+                                                @foreach (['Change of plans', 'Schedule conflict', 'Event postponed', 'Event cancelled', 'Facility no longer needed', 'Other'] as $reason)
                                                     <option value="{{ $reason }}">{{ $reason }}</option>
                                                 @endforeach
                                             </select>
+                                            @error('Cancellation_Reason')
+                                                <p class="mt-2 text-xs font-semibold text-red-600">{{ $message }}</p>
+                                            @enderror
+
+                                            <div x-cloak x-show="cancellationReason === 'Other'" x-transition class="mt-3">
+                                                <label class="mb-2 block text-xs font-black uppercase tracking-wide text-slate-600 dark:text-slate-300" for="approved-other-cancellation-reason-{{ $request->RID }}">Tell us the reason</label>
+                                                <textarea
+                                                    id="approved-other-cancellation-reason-{{ $request->RID }}"
+                                                    name="Other_Cancellation_Reason"
+                                                    rows="3"
+                                                    minlength="5"
+                                                    maxlength="1000"
+                                                    x-bind:required="cancellationReason === 'Other'"
+                                                    placeholder="Briefly explain why the event will not continue."
+                                                    class="w-full resize-y rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-emerald-950 outline-none transition focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 dark:border-slate-700 dark:bg-zinc-900 dark:text-white"
+                                                >{{ old('Other_Cancellation_Reason') }}</textarea>
+                                                <p class="mt-1.5 text-xs text-slate-500 dark:text-slate-400">Use at least 5 characters.</p>
+                                                @error('Other_Cancellation_Reason')
+                                                    <p class="mt-2 text-xs font-semibold text-red-600">{{ $message }}</p>
+                                                @enderror
+                                            </div>
                                             <button
                                                 type="submit"
-                                                class="shrink-0 rounded-xl bg-rose-600 px-6 py-3 text-sm font-black text-white shadow-sm transition hover:bg-rose-700 disabled:opacity-60"
+                                                class="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-rose-200 bg-white px-5 py-3 text-sm font-black text-rose-700 transition hover:border-rose-600 hover:bg-rose-600 hover:text-white focus:outline-none focus:ring-4 focus:ring-rose-500/15 disabled:opacity-60 dark:border-rose-500/40 dark:bg-transparent dark:text-rose-300 dark:hover:bg-rose-600 dark:hover:text-white"
                                                 data-ui-confirm="Cancel this approved facility request? Its reserved schedule will be released."
                                                 data-ui-confirm-title="Cancel approved request"
                                                 data-ui-confirm-label="Cancel request"
                                                 data-ui-confirm-variant="danger"
                                                 onclick="this.form?.addEventListener('submit', () => { this.disabled = true; }, { once: true })"
                                             >
-                                                Cancel approved request
+                                                <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+                                                Cancel booking
                                             </button>
                                         </div>
                                     </form>
+                                        </div>
+                                    </section>
                                 @endif
                             @else
                             <form action="{{ route('waiting.list.update', $request) }}" method="POST" enctype="multipart/form-data" class="mt-6 grid gap-4 lg:grid-cols-2">

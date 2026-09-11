@@ -47,9 +47,10 @@
                 x-data="{
                     step: {{ $errors->hasAny(['Amenity_ID', 'Amenity_ID.*', 'Proposed_Date', 'Proposed_End_Date', 'Daily_Schedules', 'Daily_Schedules.*', 'Purpose_Categories', 'Purpose_Categories.*', 'Other_Purpose', 'Reservation_Frequency', 'Facility_Importance', 'Requirements_Fit', 'Reserve_Again_Intent', 'Capacity', 'attachment']) ? 2 : 1 }},
                     submitting: false,
+                    selectedAmenities: @js(array_map('strval', old('Amenity_ID', []))),
                     dailySchedules: @js(old('Daily_Schedules', [])),
-                    sharedStartTime: @js(data_get(old('Daily_Schedules', []), '0.start', '09:00')),
-                    sharedEndTime: @js(data_get(old('Daily_Schedules', []), '0.end', '10:00')),
+                    sharedStartTime: @js(data_get(old('Daily_Schedules', []), '0.start', '')),
+                    sharedEndTime: @js(data_get(old('Daily_Schedules', []), '0.end', '')),
                     slots: @js($scheduling['slots']),
                     endSlots: [...@js($scheduling['slots']), @js($scheduling['closes_at'])],
                     availability: {},
@@ -164,7 +165,10 @@
                         }
                         return status;
                     },
-                    scheduleStatus(schedule) { return this.slotStatus(schedule.date, schedule.start, schedule.end); },
+                    scheduleStatus(schedule) {
+                        if (!schedule?.start || !schedule?.end) return 'incomplete';
+                        return this.slotStatus(schedule.date, schedule.start, schedule.end);
+                    },
                     hasApprovedConflict() { return this.dailySchedules.some(schedule => this.scheduleStatus(schedule) === 'approved'); },
                     hasPendingWarning() { return !this.hasApprovedConflict() && this.dailySchedules.some(schedule => this.scheduleStatus(schedule) === 'pending'); },
                     hasClosure() { return this.dailySchedules.some(schedule => this.scheduleStatus(schedule) === 'unavailable'); },
@@ -492,36 +496,63 @@
                                 @endif
 
                                 <div>
-                                    <x-ui::checkbox.group label="Amenities">
+                                    <div class="mb-3 flex flex-wrap items-end justify-between gap-2">
+                                        <div>
+                                            <h3 class="text-sm font-bold text-emerald-950 dark:text-white">Optional amenities</h3>
+                                            <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Select only the items you need. You can adjust the quantity after selecting one.</p>
+                                        </div>
+                                        <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-200" x-text="`${selectedAmenities.length} selected`"></span>
+                                    </div>
+
+                                    <div class="grid gap-3 sm:grid-cols-2">
                                         @forelse ($availableAmenities as $amenity)
-                                            <div class="grid gap-3 rounded-xl border border-zinc-200 p-3 dark:border-zinc-700 sm:grid-cols-[1fr_9rem] sm:items-end">
-                                                <x-ui::checkbox
-                                                    name="Amenity_ID[]"
-                                                    value="{{ $amenity->AID }}"
-                                                    label="{{ $amenity->name }} — {{ number_format($amenity->inventory_quantity) }} units available"
-                                                    :checked="in_array(
-                                                        (string) $amenity->AID,
-                                                        array_map('strval', old('Amenity_ID', []))
-                                                    )"
-                                                />
-                                                <x-ui::input
-                                                    name="Amenity_Quantity[{{ $amenity->AID }}]"
-                                                    type="number"
-                                                    min="1"
-                                                    max="{{ $amenity->inventory_quantity }}"
-                                                    label="Units needed"
-                                                    value="{{ old('Amenity_Quantity.'.$amenity->AID, 1) }}"
-                                                />
-                                                @error('Amenity_Quantity.'.$amenity->AID)
-                                                    <span class="text-sm text-red-600 sm:col-span-2">{{ $message }}</span>
-                                                @enderror
+                                            <div
+                                                class="rounded-xl border p-4 transition"
+                                                :class="selectedAmenities.includes('{{ $amenity->AID }}') ? 'border-emerald-500 bg-emerald-50 ring-2 ring-emerald-500/10 dark:border-emerald-500 dark:bg-emerald-950/25' : 'border-zinc-200 bg-white hover:border-emerald-300 dark:border-zinc-700 dark:bg-zinc-900'"
+                                            >
+                                                <label class="flex cursor-pointer items-start gap-3">
+                                                    <input
+                                                        type="checkbox"
+                                                        name="Amenity_ID[]"
+                                                        value="{{ $amenity->AID }}"
+                                                        x-model="selectedAmenities"
+                                                        class="mt-0.5 size-5 rounded border-zinc-300 text-emerald-600 focus:ring-emerald-600"
+                                                    >
+                                                    <span class="min-w-0 flex-1">
+                                                        <span class="block font-bold text-emerald-950 dark:text-white">{{ $amenity->name }}</span>
+                                                        <span class="mt-1 block text-xs text-zinc-500 dark:text-zinc-400">
+                                                            {{ number_format($amenity->inventory_quantity) }} {{ Str::plural('unit', $amenity->inventory_quantity) }} available
+                                                        </span>
+                                                    </span>
+                                                    <span x-show="selectedAmenities.includes('{{ $amenity->AID }}')" class="text-emerald-600" aria-hidden="true">✓</span>
+                                                </label>
+
+                                                <div x-cloak x-show="selectedAmenities.includes('{{ $amenity->AID }}')" x-transition class="mt-4 border-t border-emerald-200 pt-3 dark:border-emerald-800">
+                                                    <label for="amenity-quantity-{{ $amenity->AID }}" class="mb-1.5 block text-xs font-bold text-emerald-900 dark:text-emerald-200">How many do you need?</label>
+                                                    <div class="flex items-center gap-2">
+                                                        <input
+                                                            id="amenity-quantity-{{ $amenity->AID }}"
+                                                            name="Amenity_Quantity[{{ $amenity->AID }}]"
+                                                            type="number"
+                                                            min="1"
+                                                            max="{{ $amenity->inventory_quantity }}"
+                                                            value="{{ old('Amenity_Quantity.'.$amenity->AID, 1) }}"
+                                                            x-bind:disabled="!selectedAmenities.includes('{{ $amenity->AID }}')"
+                                                            class="h-10 w-24 rounded-lg border border-emerald-200 bg-white px-3 text-sm font-semibold text-emerald-950 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10 dark:border-emerald-800 dark:bg-zinc-950 dark:text-white"
+                                                        >
+                                                        <span class="text-xs text-zinc-500">Maximum {{ number_format($amenity->inventory_quantity) }}</span>
+                                                    </div>
+                                                    @error('Amenity_Quantity.'.$amenity->AID)
+                                                        <span class="mt-2 block text-sm text-red-600">{{ $message }}</span>
+                                                    @enderror
+                                                </div>
                                             </div>
                                         @empty
-                                            <p class="text-sm text-emerald-900/70 dark:text-zinc-300">
-                                                No amenities are currently available for this facility.
-                                            </p>
+                                            <div class="rounded-xl border border-dashed border-zinc-300 p-5 text-center text-sm text-zinc-500 dark:border-zinc-700 sm:col-span-2">
+                                                No optional amenities are currently available for this facility.
+                                            </div>
                                         @endforelse
-                                    </x-ui::checkbox.group>
+                                    </div>
 
                                     @error('Amenity_ID')
                                         <span class="text-red-600 text-sm">{{ $message }}</span>
@@ -612,7 +643,7 @@
                                             <div x-show="!availabilityLoading && !availabilityError" class="mt-4 space-y-3">
                                                 <template x-for="schedule in dailySchedules" :key="`timeline-${schedule.date}`">
                                                     <div>
-                                                        <div class="mb-1 flex justify-between text-xs"><span class="font-semibold" x-text="new Date(`${schedule.date}T12:00:00`).toLocaleDateString(undefined, {weekday:'short', month:'short', day:'numeric'})"></span><span class="capitalize" x-text="scheduleStatus(schedule) === 'approved' ? 'Already Booked' : scheduleStatus(schedule) === 'pending' ? 'Pending Request' : scheduleStatus(schedule) === 'past' ? 'Time Elapsed' : scheduleStatus(schedule)"></span></div>
+                                                    <div class="mb-1 flex justify-between text-xs"><span class="font-semibold" x-text="new Date(`${schedule.date}T12:00:00`).toLocaleDateString(undefined, {weekday:'short', month:'short', day:'numeric'})"></span><span class="capitalize" x-text="scheduleStatus(schedule) === 'incomplete' ? 'Choose a time' : scheduleStatus(schedule) === 'approved' ? 'Already Booked' : scheduleStatus(schedule) === 'pending' ? 'Pending Request' : scheduleStatus(schedule) === 'past' ? 'Time Elapsed' : scheduleStatus(schedule)"></span></div>
                                                         <div class="flex h-5 overflow-hidden rounded-full bg-zinc-200" role="img" :aria-label="`Daily availability for ${schedule.date}`">
                                                             <template x-for="slot in slots" :key="`${schedule.date}-${slot}`"><span class="flex-1 border-r border-white/40" :style="`background:${slotStatus(schedule.date, slot, addMinutes(slot, 30)) === 'available' ? '#10b981' : slotStatus(schedule.date, slot, addMinutes(slot, 30)) === 'pending' ? '#f59e0b' : slotStatus(schedule.date, slot, addMinutes(slot, 30)) === 'approved' ? '#ef4444' : '#a1a1aa'}`"></span></template>
                                                         </div>

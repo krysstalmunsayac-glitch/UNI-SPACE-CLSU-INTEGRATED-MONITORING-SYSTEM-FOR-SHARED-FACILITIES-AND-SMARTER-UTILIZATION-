@@ -100,6 +100,7 @@
                                 size="sm"
                                 :color="match($request->Status) {
                                     'Approved'  => 'green',
+                                    'Awaiting Payment' => 'amber',
                                     'Rejected'  => 'red',
                                     'Cancelled' => 'amber',
                                     'Ended'     => 'zinc',
@@ -133,6 +134,15 @@
                                     @endif
                                     @if ($request->canTransitionTo('Approved'))
                                         <x-ui::menu.separator />
+                                        @if ((float) ($request->facility?->Price ?? 0) > 0 && $request->canTransitionTo('Awaiting Payment'))
+                                            <x-ui::menu.item
+                                                icon="tag"
+                                                class="text-amber-700 dark:text-amber-300"
+                                                wire:click="openPaymentModal({{ $request->RID }})"
+                                            >
+                                                Awaiting payment
+                                            </x-ui::menu.item>
+                                        @endif
                                         <x-ui::menu.item
                                             icon="check"
                                             class="text-green-600 dark:text-green-400"
@@ -169,6 +179,14 @@
                                             href="{{ route('requests.attachment.download', $request) }}"
                                         >
                                             Download attachment
+                                        </x-ui::menu.item>
+                                    @endif
+                                    @if ($request->Payment_Proof_Path)
+                                        <x-ui::menu.item
+                                            icon="arrow-down-tray"
+                                            href="{{ route('requests.payment-proof.download', $request) }}"
+                                        >
+                                            Download payment proof
                                         </x-ui::menu.item>
                                     @endif
                                     @if (auth()->user()->isSuperAdmin())

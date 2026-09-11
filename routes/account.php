@@ -1,8 +1,8 @@
 <?php
 
 use App\Http\Controllers\EventsController;
-use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\FacilitiesController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Middleware\PreventBackHistory;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
@@ -32,6 +32,14 @@ Route::middleware([
     Route::get('/requests/{requestModel}/attachment', [FacilitiesController::class, 'downloadAttachment'])
         ->middleware('throttle:30,1')
         ->name('requests.attachment.download');
+
+    Route::post('/requests/{requestModel}/payment-proof', [FacilitiesController::class, 'uploadPaymentProof'])
+        ->middleware(['role:user', 'throttle:10,1'])
+        ->name('requests.payment-proof.upload');
+
+    Route::get('/requests/{requestModel}/payment-proof', [FacilitiesController::class, 'downloadPaymentProof'])
+        ->middleware('throttle:30,1')
+        ->name('requests.payment-proof.download');
 
     Volt::route('/profile', 'settings.external-profile')
         ->middleware('role:user')

@@ -50,6 +50,7 @@
                         'Longitude' => $facility->Longitude,
                     ])->values());
                     const focusedFacilityId = @js($focusedFacilityId ?? null);
+                    let requestedFacilityId = focusedFacilityId;
                     const bounds = L.latLngBounds();
                     const navigationPanel = document.getElementById('map-navigation-panel');
                     const facilitySelect = document.getElementById('map-facility-filter');
@@ -73,6 +74,12 @@
                     let lastAutomaticRouteCoordinates = null;
                     let lastAutomaticRouteAt = 0;
                     const facilityMarkers = new Map();
+                    document.addEventListener('dashboard:focus-facility', event => {
+                        requestedFacilityId = event.detail?.facilityId ?? null;
+                        if (!requestedFacilityId || !facilityMarkers.has(Number(requestedFacilityId))) return;
+                        if (facilitySelect) facilitySelect.value = String(requestedFacilityId);
+                        selectFacility(String(requestedFacilityId));
+                    });
                     const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, character => ({
                         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;',
                     })[character]);
@@ -402,9 +409,9 @@
 
                         populateFacilityFilters();
 
-                        if (focusedFacilityId && facilityMarkers.has(Number(focusedFacilityId))) {
-                            if (facilitySelect) facilitySelect.value = String(focusedFacilityId);
-                            selectFacility(String(focusedFacilityId));
+                        if (requestedFacilityId && facilityMarkers.has(Number(requestedFacilityId))) {
+                            if (facilitySelect) facilitySelect.value = String(requestedFacilityId);
+                            selectFacility(String(requestedFacilityId));
                         } else {
                             selectFacility('all');
                         }

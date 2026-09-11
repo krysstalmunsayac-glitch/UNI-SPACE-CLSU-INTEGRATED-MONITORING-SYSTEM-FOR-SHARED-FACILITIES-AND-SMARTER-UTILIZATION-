@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 
 class Amenities extends Model
@@ -72,7 +72,7 @@ class Amenities extends Model
         return Requests::query()
             ->whereDate('Proposed_Date', '<=', $endDate)
             ->whereDate(DB::raw('COALESCE(Proposed_End_Date, Proposed_Date)'), '>=', $startDate)
-            ->whereIn('Status', ['Pending', 'Approved'])
+            ->whereIn('Status', ['Pending', 'Awaiting Payment', 'Approved'])
             ->when($ignoreRequestId, fn ($query) => $query->where('RID', '!=', $ignoreRequestId))
             ->where('Proposed_Start_Time', '<', $endTime)
             ->where('Proposed_End_Time', '>', $startTime)
@@ -104,7 +104,7 @@ class Amenities extends Model
             ->whereNull('requests.deleted_at')
             ->whereDate('requests.Proposed_Date', '<=', $endDate)
             ->whereDate(DB::raw('COALESCE(requests.Proposed_End_Date, requests.Proposed_Date)'), '>=', $startDate)
-            ->whereIn('requests.Status', ['Pending', 'Approved'])
+            ->whereIn('requests.Status', ['Pending', 'Awaiting Payment', 'Approved'])
             ->when($ignoreRequestId, fn ($query) => $query->where('requests.RID', '!=', $ignoreRequestId))
             ->where('requests.Proposed_Start_Time', '<', $endTime)
             ->where('requests.Proposed_End_Time', '>', $startTime)

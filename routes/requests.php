@@ -42,5 +42,8 @@ Route::middleware([
 
             Route::post('{requestModel}/cancel', 'cancelWaitingList')
                 ->name('waiting.list.cancel');
+
+            Route::post('{requestModel}/end', 'endWaitingList')
+                ->name('waiting.list.end');
         });
 });

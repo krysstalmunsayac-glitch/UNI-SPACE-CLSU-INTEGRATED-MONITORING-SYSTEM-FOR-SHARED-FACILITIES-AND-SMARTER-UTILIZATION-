@@ -41,6 +41,10 @@ class Requests extends Model
         'Proposed_End_Time',
         'Daily_Schedules',
         'Status',
+        'Payment_Amount',
+        'Payment_Deadline',
+        'Payment_Proof_Path',
+        'Payment_Proof_Uploaded_At',
         'Cancellation_Reason',
         'Rejection_Reason',
         'Review_Notes',
@@ -66,11 +70,15 @@ class Requests extends Model
         'Purpose_Categories' => 'array',
         'Review_Requested_At' => 'datetime',
         'Is_Guest_Booking' => 'boolean',
+        'Payment_Amount' => 'decimal:2',
+        'Payment_Deadline' => 'datetime',
+        'Payment_Proof_Uploaded_At' => 'datetime',
     ];
 
     /** @var array<string, list<string>> */
     private const STATUS_TRANSITIONS = [
-        'Pending' => ['Approved', 'Rejected', 'Cancelled'],
+        'Pending' => ['Awaiting Payment', 'Approved', 'Rejected', 'Cancelled'],
+        'Awaiting Payment' => ['Approved', 'Rejected', 'Cancelled'],
         'Approved' => ['Cancelled', 'Ended'],
         'Rejected' => [],
         'Cancelled' => [],
@@ -120,6 +128,7 @@ class Requests extends Model
 
             $newStatus = $changes['Status'] ?? null;
             $action = match ($newStatus) {
+                'Awaiting Payment' => 'payment_requested',
                 'Approved' => 'request_approved',
                 'Rejected' => 'request_rejected',
                 'Cancelled' => 'request_cancelled',
@@ -130,6 +139,7 @@ class Requests extends Model
             };
 
             $description = match ($action) {
+                'payment_requested' => "Requested payment for request #{$request->RID}.",
                 'request_approved' => "Approved request #{$request->RID}.",
                 'request_rejected' => "Rejected request #{$request->RID}.",
                 'request_cancelled' => "Cancelled request #{$request->RID}.",
@@ -236,7 +246,7 @@ class Requests extends Model
         $endedCount = 0;
 
         static::query()
-            ->whereIn('Status', ['Pending', 'Approved'])
+            ->whereIn('Status', ['Pending', 'Awaiting Payment', 'Approved'])
             ->where(function (Builder $query) use ($today, $currentTime) {
                 $query->whereDate(DB::raw('COALESCE(Proposed_End_Date, Proposed_Date)'), '<', $today)
                     ->orWhere(function (Builder $query) use ($today, $currentTime) {
@@ -420,7 +430,7 @@ class Requests extends Model
             ->where('Facility_ID', $facilityId)
             ->whereDate('Proposed_Date', '<=', $endDate)
             ->whereDate(DB::raw('COALESCE(Proposed_End_Date, Proposed_Date)'), '>=', $startDate)
-            ->where('Status', 'Approved')
+            ->whereIn('Status', ['Awaiting Payment', 'Approved'])
             ->when($ignoreRequestId, fn (Builder $query) => $query->where('RID', '!=', $ignoreRequestId))
             ->when($lockForUpdate, fn (Builder $query) => $query->lockForUpdate())
             ->where(function (Builder $query) use ($startTime, $endTime) {

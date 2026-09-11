@@ -501,6 +501,47 @@ class FacilitiesController extends Controller
             ]);
     }
 
+    public function endWaitingList(Request $request, Requests $requestModel)
+    {
+        if ($requestModel->User_ID !== auth()->id()) {
+            abort(403);
+        }
+
+        $eventStart = Carbon::parse(
+            $requestModel->Proposed_Date->toDateString().' '.$requestModel->Proposed_Start_Time->format('H:i:s')
+        );
+
+        if ($requestModel->Status !== 'Approved' || $eventStart->isFuture()) {
+            return redirect()
+                ->route('dashboard', ['request' => $requestModel->RID])
+                ->with('warning', $eventStart->isFuture()
+                    ? 'You can end this event after its scheduled start time. Cancel the booking instead if it will not proceed.'
+                    : 'This event can no longer be ended.');
+        }
+
+        DB::transaction(function () use ($requestModel): void {
+            $lockedRequest = Requests::query()->lockForUpdate()->findOrFail($requestModel->RID);
+
+            if ($lockedRequest->Status !== 'Approved') {
+                throw ValidationException::withMessages([
+                    'request' => 'This event has already ended or its status has changed.',
+                ]);
+            }
+
+            $lockedRequest->update(['Status' => 'Ended']);
+            $lockedRequest->delete();
+        }, 3);
+
+        return redirect()
+            ->route('dashboard', ['request' => $requestModel->RID])
+            ->with('success', 'Your event has ended. The booking is now read-only and you may leave optional feedback.')
+            ->with('sweet_alert', [
+                'title' => 'Event ended',
+                'text' => 'The booking was marked as ended. Thank you for using the facility.',
+                'icon' => 'success',
+            ]);
+    }
+
     /**
      * Download a request attachment after enforcing record-level access.
      */
@@ -533,11 +574,50 @@ class FacilitiesController extends Controller
         );
     }
 
+    public function uploadPaymentProof(Request $request, Requests $requestModel)
+    {
+        abort_unless($requestModel->User_ID === $request->user()->id, 403);
+        abort_unless($requestModel->Status === 'Awaiting Payment', 409, 'This request is not awaiting payment.');
+
+        $validated = $request->validate([
+            'payment_proof' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
+        ]);
+
+        if ($requestModel->Payment_Proof_Path) {
+            Storage::disk('local')->delete($requestModel->Payment_Proof_Path);
+        }
+
+        $path = $validated['payment_proof']->store('payment-proofs', 'local');
+        $requestModel->update([
+            'Payment_Proof_Path' => $path,
+            'Payment_Proof_Uploaded_At' => now(),
+        ]);
+
+        return redirect()->route('dashboard', ['request' => $requestModel->RID])
+            ->with('success', 'Your proof of payment was uploaded successfully and is ready for administrator review.');
+    }
+
+    public function downloadPaymentProof(Request $request, Requests $requestModel): StreamedResponse
+    {
+        $user = $request->user();
+        $isOwner = $requestModel->User_ID === $user->id;
+        $isAuthorizedAdmin = $user->isSuperAdmin() || ($user->isAdmin()
+            && $requestModel->facility()->whereHas('assignedAdmins', fn ($query) => $query->where('users.id', $user->id))->exists());
+
+        abort_unless($isOwner || $isAuthorizedAdmin, 403);
+        abort_unless($requestModel->Payment_Proof_Path && Storage::disk('local')->exists($requestModel->Payment_Proof_Path), 404);
+
+        return Storage::disk('local')->download(
+            $requestModel->Payment_Proof_Path,
+            'payment-proof-request-'.$requestModel->RID.'.'.pathinfo($requestModel->Payment_Proof_Path, PATHINFO_EXTENSION),
+        );
+    }
+
     /**
      * Prevent limited shared amenities from being reserved beyond their stock
      * during an overlapping date and time window.
      *
-     * @param  array<int, int>  $amenityQuantities Amenity IDs keyed to requested units.
+     * @param  array<int, int>  $amenityQuantities  Amenity IDs keyed to requested units.
      */
     private function validateAmenityAvailability(
         array $amenityQuantities,

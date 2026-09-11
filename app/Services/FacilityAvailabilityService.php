@@ -49,7 +49,7 @@ class FacilityAvailabilityService
                     'facility:FID,Facility_Name',
                 ])
                 ->where('Facility_ID', $facility->FID)
-                ->whereIn('Status', ['Pending', 'Approved'])
+                ->whereIn('Status', ['Pending', 'Awaiting Payment', 'Approved'])
                 ->lockForUpdate()
                 ->get();
 

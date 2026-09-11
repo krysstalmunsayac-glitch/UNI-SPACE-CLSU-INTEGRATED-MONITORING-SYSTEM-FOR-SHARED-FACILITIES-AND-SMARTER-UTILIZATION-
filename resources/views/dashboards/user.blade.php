@@ -269,6 +269,41 @@
     @push('scripts')
         <script>
             window.initUserDashboard = window.initUserDashboard || function () {
+                const currentUrl = new URL(window.location.href);
+                const shouldFocusMap = currentUrl.hash === '#map' && currentUrl.searchParams.has('map_facility');
+                if (shouldFocusMap) {
+                    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+
+                    const scrollToMap = () => {
+                        const mapSection = document.getElementById('map');
+                        if (!mapSection) return;
+
+                        const headerHeight = document.querySelector('header')?.offsetHeight ?? 80;
+                        const targetTop = mapSection.getBoundingClientRect().top + window.scrollY - headerHeight - 16;
+                        window.scrollTo({ top: Math.max(0, targetTop), behavior: 'auto' });
+                    };
+
+                    requestAnimationFrame(() => requestAnimationFrame(scrollToMap));
+                    setTimeout(scrollToMap, 350);
+                    setTimeout(scrollToMap, 1200);
+                }
+
+                document.querySelectorAll('[data-map-facility-link]').forEach(link => {
+                    if (link.dataset.mapLinkInitialized) return;
+                    link.dataset.mapLinkInitialized = 'true';
+                    link.addEventListener('click', event => {
+                        event.preventDefault();
+                        document.dispatchEvent(new CustomEvent('dashboard:focus-facility', {
+                            detail: { facilityId: link.dataset.mapFacilityLink },
+                        }));
+                        document.getElementById('map')?.scrollIntoView({
+                            behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+                            block: 'start',
+                        });
+                        history.pushState(null, '', '#map');
+                    });
+                });
+
                 const revealElements = [
                     ...document.querySelectorAll('#about section > div, #facilities > div, #calendar > div, #requests > div, #map > div, #help > div'),
                     ...document.querySelectorAll('#about > section:first-child > div > div, #about article, .facility-card, #requests details, #help details'),
@@ -392,6 +427,11 @@
             document.addEventListener('DOMContentLoaded', window.initUserDashboard);
             document.addEventListener('livewire:navigated', window.initUserDashboard);
             window.addEventListener('pageshow', window.initUserDashboard);
+            window.addEventListener('load', () => {
+                const url = new URL(window.location.href);
+                if (url.hash !== '#map' || !url.searchParams.has('map_facility')) return;
+                setTimeout(window.initUserDashboard, 50);
+            });
         </script>
     @endpush
 </x-layouts.home.header>
