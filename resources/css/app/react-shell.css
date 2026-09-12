@@ -120,12 +120,20 @@
 
 .react-app-sidebar.is-collapsed .react-sidebar-brand > a {
     display: flex;
-    width: 54px;
-    height: 54px;
+    width: 62px;
+    height: 58px;
+    border: 1px solid #009639;
+    border-radius: 18px;
+    background: #009639;
+    padding: 5px;
+    box-shadow: 0 8px 18px rgb(0 150 57 / 0.18);
 }
 
 .react-app-sidebar.is-collapsed .react-sidebar-brand img {
-    border-radius: 14px;
+    width: 100%;
+    height: 100%;
+    border-radius: 12px;
+    object-fit: cover;
 }
 
 .react-app-sidebar nav {

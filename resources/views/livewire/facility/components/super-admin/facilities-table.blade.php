@@ -27,19 +27,36 @@
                             </div>
                             <div class="min-h-0 flex-1 overflow-y-auto p-2">
                                 @foreach ($this->requestableFacilities as $requestableFacility)
-                                    <x-ui::menu.item
-                                        icon="calendar-days"
-                                        href="{{ route('admin.requests.create', $requestableFacility) }}"
-                                        class="min-w-0! rounded-xl! py-2.5!"
-                                        x-show="facilitySearch === '' || @js(strtolower($requestableFacility->Facility_Name.' '.$requestableFacility->Office)).includes(facilitySearch.toLowerCase())"
-                                    >
-                                        <span class="block min-w-0 whitespace-normal">
-                                            <span class="block break-words font-semibold leading-5">{{ $requestableFacility->Facility_Name }}</span>
-                                            @if ($requestableFacility->Office)
-                                                <span class="mt-0.5 block break-words text-xs leading-4 text-zinc-500 dark:text-zinc-400">{{ $requestableFacility->Office }}</span>
-                                            @endif
-                                        </span>
-                                    </x-ui::menu.item>
+                                    @if ($requestableFacility->Status === 'Available')
+                                        <x-ui::menu.item
+                                            icon="calendar-days"
+                                            href="{{ route('admin.requests.create', $requestableFacility) }}"
+                                            class="min-w-0! rounded-xl! py-2.5!"
+                                            x-show="facilitySearch === '' || @js(strtolower($requestableFacility->Facility_Name.' '.$requestableFacility->Office)).includes(facilitySearch.toLowerCase())"
+                                        >
+                                            <span class="block min-w-0 whitespace-normal">
+                                                <span class="block break-words font-semibold leading-5">{{ $requestableFacility->Facility_Name }}</span>
+                                                @if ($requestableFacility->Office)
+                                                    <span class="mt-0.5 block break-words text-xs leading-4 text-zinc-500 dark:text-zinc-400">{{ $requestableFacility->Office }}</span>
+                                                @endif
+                                            </span>
+                                        </x-ui::menu.item>
+                                    @else
+                                        <button
+                                            type="button"
+                                            disabled
+                                            class="flex min-h-9 w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm opacity-60"
+                                            x-show="facilitySearch === '' || @js(strtolower($requestableFacility->Facility_Name.' '.$requestableFacility->Office)).includes(facilitySearch.toLowerCase())"
+                                        >
+                                            <x-ui::icon.calendar-days class="size-5 shrink-0" />
+                                            <span class="block min-w-0 whitespace-normal">
+                                                <span class="block break-words font-semibold leading-5">{{ $requestableFacility->Facility_Name }}</span>
+                                                <span class="mt-0.5 block break-words text-xs leading-4 text-red-600 dark:text-red-300">
+                                                    Unavailable{{ $requestableFacility->Available_At ? ' until '.$requestableFacility->Available_At->format('M j, Y g:i A') : '' }}
+                                                </span>
+                                            </span>
+                                        </button>
+                                    @endif
                                 @endforeach
                             </div>
                         </div>
@@ -127,6 +144,16 @@
                             >
                                 {{ $facility->Status ?: 'Not specified' }}
                             </span>
+                            @if ($facility->Status === 'Unavailable' && $facility->Deactivated_At)
+                                <span class="mt-1 block text-xs font-semibold text-red-700 dark:text-red-300">
+                                    Deactivated {{ $facility->Deactivated_At->format('M j, Y g:i A') }}
+                                </span>
+                            @endif
+                            @if ($facility->Status === 'Unavailable' && $facility->Available_At)
+                                <span class="mt-0.5 block text-xs font-semibold text-red-600 dark:text-red-300">
+                                    Until {{ $facility->Available_At->format('M j, Y g:i A') }}
+                                </span>
+                            @endif
                         </button>
                     </x-ui::table.cell>
 

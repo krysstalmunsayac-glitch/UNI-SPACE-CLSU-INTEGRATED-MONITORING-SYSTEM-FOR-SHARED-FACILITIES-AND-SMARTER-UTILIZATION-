@@ -50,7 +50,7 @@
                             </div>
                         </x-ui::table.cell>
 
-                        <x-ui::table.cell>{{ $feedback->facility?->Facility_Name ?? '—' }}</x-ui::table.cell>
+                        <x-ui::table.cell>{{ $feedback->facility?->Facility_Name ?? $feedback->request?->facility?->Facility_Name ?? '—' }}</x-ui::table.cell>
 
                         <x-ui::table.cell>
                             <span class="whitespace-nowrap font-semibold text-amber-500">

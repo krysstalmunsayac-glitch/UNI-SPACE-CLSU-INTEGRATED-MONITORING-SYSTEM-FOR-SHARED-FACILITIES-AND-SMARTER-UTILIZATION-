@@ -10,8 +10,6 @@ class FacilityController extends Controller
 {
     public function show(Facilities $facility): View
     {
-        abort_unless($facility->Status === 'Available', 404);
-
         $facility->load([
             'images',
             'amenities' => fn ($query) => $query

@@ -12,7 +12,7 @@
                     }).setView(campusCenter, 16);
                     mapElement.classList.remove('flex', 'items-center', 'justify-center');
 
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
                         maxZoom: 19,
                         attribution: '&copy; OpenStreetMap contributors',
                     }).addTo(map);

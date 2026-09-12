@@ -13,6 +13,7 @@
             : ($facility->Price !== null
                 ? ((float) $facility->Price > 0 ? '₱'.number_format((float) $facility->Price, 2) : 'No rental fee')
                 : 'Rate upon inquiry');
+        $isAvailable = $facility->Status === 'Available';
     @endphp
 
     <main class="min-h-screen bg-zinc-100 pb-20 pt-10 text-zinc-950 sm:pt-14">
@@ -65,9 +66,32 @@
                 </section>
 
                 <article class="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
-                    <span class="inline-flex rounded-full bg-zinc-200 px-3 py-1 text-xs font-black uppercase tracking-wide text-zinc-700">{{ ucfirst($facility->facility_type ?: 'Facility') }}</span>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="inline-flex rounded-full bg-zinc-200 px-3 py-1 text-xs font-black uppercase tracking-wide text-zinc-700">{{ ucfirst($facility->facility_type ?: 'Facility') }}</span>
+                        <span @class([
+                            'inline-flex rounded-full px-3 py-1 text-xs font-black uppercase tracking-wide text-white',
+                            'bg-emerald-700' => $isAvailable,
+                            'bg-red-600' => ! $isAvailable,
+                        ])>{{ $isAvailable ? 'Available' : 'Unavailable' }}</span>
+                    </div>
                     <h1 class="mt-4 text-3xl font-black leading-tight sm:text-4xl">{{ $facility->Facility_Name }}</h1>
                     <p class="mt-4 leading-7 text-zinc-600">{{ $facility->Description ?: 'Campus facility available for reservation.' }}</p>
+
+                    @if (! $isAvailable)
+                        <div class="mt-5 rounded-2xl border border-red-100 bg-red-50 p-4 font-semibold text-red-700">
+                            <p>This facility is unavailable.</p>
+                            @if ($facility->Deactivated_At)
+                                <p class="mt-2 text-sm">
+                                    Deactivated on {{ $facility->Deactivated_At->format('M j, Y g:i A') }}.
+                                </p>
+                            @endif
+                            @if ($facility->Available_At)
+                                <p class="mt-1 text-sm">
+                                    Available again on {{ $facility->Available_At->format('M j, Y g:i A') }}.
+                                </p>
+                            @endif
+                        </div>
+                    @endif
 
                     <dl class="mt-7 grid gap-3 sm:grid-cols-2">
                         <div class="rounded-2xl bg-emerald-50 p-4"><dt class="text-xs font-black uppercase tracking-wide text-emerald-700">Capacity</dt><dd class="mt-2 font-bold">{{ $facility->Capacity ? number_format($facility->Capacity).' people' : 'Not specified' }}</dd></div>
@@ -91,9 +115,15 @@
                         <div><h2 class="text-sm font-black uppercase tracking-wide text-emerald-700">Protocols and guidelines</h2><p class="mt-2 whitespace-pre-line leading-7 text-zinc-600">{{ $facility->protocols_and_guidelines ?: ($facility->Protocols ?: 'No protocols listed.') }}</p></div>
                     </div>
 
-                    <a href="{{ route('requests.create', $facility) }}" class="mt-8 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-emerald-700 px-6 py-3 font-black text-white transition hover:bg-emerald-800">
-                        Book This Facility
-                    </a>
+                    @if ($isAvailable)
+                        <a href="{{ route('requests.create', $facility) }}" class="mt-8 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-emerald-700 px-6 py-3 font-black text-white transition hover:bg-emerald-800">
+                            Book This Facility
+                        </a>
+                    @else
+                        <span class="mt-8 inline-flex min-h-12 w-full cursor-not-allowed items-center justify-center rounded-xl bg-zinc-200 px-6 py-3 font-black text-zinc-500">
+                            Currently Unavailable
+                        </span>
+                    @endif
                     @guest
                         <p class="mt-3 text-center text-xs font-semibold text-zinc-500">You will be asked to sign in before submitting a booking request.</p>
                     @endguest

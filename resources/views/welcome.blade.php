@@ -30,7 +30,6 @@
         $heroSlides = [
             ['image' => 'images/siel-space-slide-01.jpg', 'alt' => 'CLSU athletic field and grandstand'],
             ['image' => 'images/siel-space-slide-02.jpg', 'alt' => 'CLSU auditorium viewed from the balcony'],
-            ['image' => 'images/siel-space-slide-03.jpg', 'alt' => 'Rows of seats inside the CLSU auditorium'],
             ['image' => 'images/siel-space-slide-04.jpg', 'alt' => 'Central aisle and seating inside the CLSU auditorium'],
             ['image' => 'images/siel-space-slide-05.jpg', 'alt' => 'Front entrance of the CLSU auditorium'],
             ['image' => 'images/siel-space-slide-06.jpg', 'alt' => 'Angled exterior view of the CLSU auditorium'],
@@ -49,9 +48,17 @@
                 clearInterval(this.timer);
                 this.timer = setInterval(() => this.active = (this.active + 1) % this.total, 10000);
             },
+            stop() { clearInterval(this.timer); },
             goTo(index) { this.active = index; this.start(); },
+            previous() { this.active = (this.active - 1 + this.total) % this.total; this.start(); },
+            next() { this.active = (this.active + 1) % this.total; this.start(); },
             destroy() { clearInterval(this.timer); }
         }"
+        x-on:keydown.left.prevent="previous()"
+        x-on:keydown.right.prevent="next()"
+        tabindex="0"
+        aria-roledescription="carousel"
+        aria-label="SIEL Space campus images"
     >
         @foreach ($heroSlides as $slide)
             <img
@@ -65,6 +72,22 @@
             >
         @endforeach
         <div class="absolute inset-0 bg-black/55" aria-hidden="true"></div>
+        <button
+            type="button"
+            x-on:click="previous()"
+            class="absolute left-4 top-1/2 z-20 hidden size-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/70 bg-black/35 text-3xl font-black text-white shadow-lg backdrop-blur transition hover:bg-white hover:text-emerald-800 focus:outline-none focus:ring-2 focus:ring-yellow-400 sm:inline-flex"
+            aria-label="Show previous hero image"
+        >
+            ‹
+        </button>
+        <button
+            type="button"
+            x-on:click="next()"
+            class="absolute right-4 top-1/2 z-20 hidden size-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/70 bg-black/35 text-3xl font-black text-white shadow-lg backdrop-blur transition hover:bg-white hover:text-emerald-800 focus:outline-none focus:ring-2 focus:ring-yellow-400 sm:inline-flex"
+            aria-label="Show next hero image"
+        >
+            ›
+        </button>
         <div class="relative mx-auto flex min-h-[100svh] max-w-7xl items-center justify-center px-4 pb-16 pt-24 text-center sm:px-6 lg:px-8">
             <div class="max-w-5xl">
                 <p class="text-sm font-black uppercase tracking-[.3em] text-yellow-400 sm:text-base">Central Luzon State University</p>
@@ -77,12 +100,12 @@
                 </div>
             </div>
         </div>
-        <div class="absolute bottom-5 left-1/2 z-10 flex -translate-x-1/2 gap-2" role="group" aria-label="Choose hero image">
+        <div class="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-full bg-black/35 px-3 py-2 backdrop-blur" role="group" aria-label="Choose hero image">
             @foreach ($heroSlides as $slide)
                 <button
                     type="button"
-                    class="h-2.5 w-8 rounded-full border border-white transition-colors"
-                    x-bind:class="active === {{ $loop->index }} ? 'bg-yellow-400' : 'bg-white/40 hover:bg-white'"
+                    class="h-3 rounded-full border border-white transition-all"
+                    x-bind:class="active === {{ $loop->index }} ? 'w-9 bg-yellow-400' : 'w-3 bg-white/50 hover:bg-white'"
                     x-on:click="goTo({{ $loop->index }})"
                     aria-label="Show image {{ $loop->iteration }} of {{ count($heroSlides) }}"
                     x-bind:aria-current="active === {{ $loop->index }} ? 'true' : null"
@@ -137,7 +160,7 @@
             @endif
 
             <div class="mt-20 border-t border-zinc-300 pt-14">
-                <p class="text-sm font-black uppercase tracking-[.2em] text-[#009639]">Facility directory</p><h2 class="mt-3 text-4xl font-black tracking-tight text-zinc-950 sm:text-5xl">Available facilities</h2><p class="mt-4 max-w-2xl text-lg text-zinc-600">Compare spaces using their essential details, then book the one that fits your activity.</p>
+                <p class="text-sm font-black uppercase tracking-[.2em] text-[#009639]">Facility directory</p><h2 class="mt-3 text-4xl font-black tracking-tight text-zinc-950 sm:text-5xl">Campus facilities</h2><p class="mt-4 max-w-2xl text-lg text-zinc-600">Compare spaces using their essential details, then book an available facility that fits your activity.</p>
             </div>
             <div class="mt-10 grid gap-4 rounded-2xl border border-zinc-200 bg-white p-5 lg:grid-cols-[1fr_190px_220px]">
                 <label class="block"><span class="mb-2 block text-xs font-black uppercase tracking-wide text-zinc-700">Search</span><input id="facility-search" type="search" placeholder="Search facilities..." class="h-14 w-full rounded-xl border border-zinc-300 bg-white px-4 text-zinc-950 outline-none focus:border-[#009639] focus:ring-2 focus:ring-[#009639]/15"></label>
@@ -149,7 +172,7 @@
                 @forelse ($facilities as $facility)
                     @include('pages.partials.facility-summary-card', ['facility' => $facility, 'hidden' => $loop->index >= 6])
                 @empty
-                    <div class="col-span-full rounded-2xl border border-dashed border-zinc-300 bg-white p-10 text-center text-zinc-600">No facilities are currently available for reservation.</div>
+                    <div class="col-span-full rounded-2xl border border-dashed border-zinc-300 bg-white p-10 text-center text-zinc-600">No facilities are currently listed.</div>
                 @endforelse
             </div>
             @if ($facilities->count() > 6)

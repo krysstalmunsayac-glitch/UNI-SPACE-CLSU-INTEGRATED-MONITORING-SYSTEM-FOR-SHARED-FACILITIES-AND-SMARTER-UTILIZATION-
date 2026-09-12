@@ -16,6 +16,8 @@
     if ($facilityPhotos->isEmpty() && filled($facility->Image_URL)) {
         $facilityPhotos->push($facility->primaryImageUrl());
     }
+
+    $isAvailable = $facility->Status === 'Available';
 @endphp
 
 <article
@@ -39,6 +41,10 @@
             },
         }"
     >
+        @if (! $isAvailable)
+            <div class="absolute inset-0 z-10 bg-zinc-950/35" aria-hidden="true"></div>
+        @endif
+
         @if ($facilityPhotos->isNotEmpty())
             <a href="{{ route('facilities.show', $facility) }}" class="block h-full w-full">
                 <img
@@ -59,7 +65,7 @@
             </div>
         @endif
 
-        <span class="absolute left-4 top-4 z-10 rounded-full bg-zinc-200 px-3 py-1 text-xs font-black uppercase tracking-wide text-zinc-700 shadow-sm ring-1 ring-black/10">
+        <span class="absolute left-4 top-4 z-20 rounded-full bg-zinc-200 px-3 py-1 text-xs font-black uppercase tracking-wide text-zinc-700 shadow-sm ring-1 ring-black/10">
             {{ $facility->facility_type ? ucfirst($facility->facility_type) : 'Facility' }}
         </span>
 
@@ -105,6 +111,19 @@
             {{ $facility->Description ?? 'Campus facility available for reservation.' }}
         </p>
 
+        @if ($isAvailable)
+            <div class="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-sm font-black uppercase tracking-wide text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300">
+                Available
+            </div>
+        @else
+            <div class="mt-4 rounded-xl border border-red-100 bg-red-50 p-3 text-sm font-semibold text-red-700 dark:border-red-900/40 dark:bg-red-950/20 dark:text-red-300">
+                <span class="block font-black uppercase tracking-wide">Unavailable</span>
+                @if ($facility->Available_At)
+                    <span class="mt-1 block">Available again {{ $facility->Available_At->format('M j, Y g:i A') }}</span>
+                @endif
+            </div>
+        @endif
+
         <dl class="mt-5 grid grid-cols-2 gap-3">
             <div class="rounded-xl bg-emerald-50 p-3 dark:bg-emerald-950/30">
                 <dt class="text-[11px] font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Capacity</dt>
@@ -148,9 +167,15 @@
             <a href="{{ route('facilities.show', $facility) }}" class="inline-flex items-center justify-center rounded-xl border-2 border-emerald-700 bg-white px-4 py-3 text-sm font-bold text-emerald-700 transition hover:bg-emerald-50">
                 Review Details
             </a>
-            <a href="{{ route('requests.create', $facility) }}" class="inline-flex items-center justify-center rounded-xl bg-emerald-700 px-4 py-3 text-sm font-bold text-white transition hover:bg-emerald-800">
-                Book
-            </a>
+            @if ($isAvailable)
+                <a href="{{ route('requests.create', $facility) }}" class="inline-flex items-center justify-center rounded-xl bg-emerald-700 px-4 py-3 text-sm font-bold text-white transition hover:bg-emerald-800">
+                    Book
+                </a>
+            @else
+                <span class="inline-flex cursor-not-allowed items-center justify-center rounded-xl bg-zinc-200 px-4 py-3 text-sm font-bold text-zinc-500">
+                    Unavailable
+                </span>
+            @endif
         </div>
     </div>
 </article>

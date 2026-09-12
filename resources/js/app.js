@@ -259,7 +259,7 @@ window.facilityLocationPicker = function (livewire) {
                     this.$refs.map.replaceChildren();
 
                     this.map = L.map(this.$refs.map, { scrollWheelZoom: false }).setView(center, hasSavedPin ? 18 : 16);
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
                         maxZoom: 20,
                         attribution: '&copy; OpenStreetMap contributors',
                     }).addTo(this.map);

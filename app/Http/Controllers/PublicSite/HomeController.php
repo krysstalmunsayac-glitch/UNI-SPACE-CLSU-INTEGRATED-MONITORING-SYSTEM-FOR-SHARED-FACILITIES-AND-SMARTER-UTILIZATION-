@@ -28,7 +28,8 @@ class HomeController extends Controller
                     $facilityName = $schedule->request?->facility?->Facility_Name
                         ?? "Request #{$schedule->Request_ID}";
                     $eventTitle = $request?->event?->Event_Title
-                        ?? 'Reserved facility';
+                        ?? $request?->Purpose
+                        ?? $facilityName;
                     $date = Carbon::parse($schedule->Date)->toDateString();
                     $start = Carbon::parse($date.' '.Carbon::parse($schedule->Start_Time)->format('H:i:s'));
                     $end = Carbon::parse($date.' '.Carbon::parse($schedule->End_Time)->format('H:i:s'));
@@ -58,7 +59,6 @@ class HomeController extends Controller
             ->with(['images', 'amenities' => fn ($query) => $query
                 ->where('amenities.Status', 'Available')
                 ->orderBy('amenities.name')])
-            ->where('Status', 'Available')
             ->orderBy('Facility_Name')
             ->get();
 
@@ -89,7 +89,7 @@ class HomeController extends Controller
             ->values();
 
         $homepageStats = [
-            'available_facilities' => $facilities->count(),
+            'available_facilities' => $facilities->where('Status', 'Available')->count(),
             'facility_types' => $facilities->pluck('facility_type')->filter()->map(fn ($type) => strtolower($type))->unique()->count(),
             'requests_this_month' => Requests::query()
                 ->whereBetween('Created_at', [now()->startOfMonth(), now()->endOfMonth()])

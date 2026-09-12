@@ -40,6 +40,8 @@ class Facilities extends Model
         'Longitude',
         'Capacity',
         'Status',
+        'Available_At',
+        'Deactivated_At',
     ];
 
     protected $casts = [
@@ -47,6 +49,8 @@ class Facilities extends Model
         'Capacity' => 'integer',
         'Latitude' => 'float',
         'Longitude' => 'float',
+        'Available_At' => 'datetime',
+        'Deactivated_At' => 'datetime',
     ];
 
     public function primaryImageUrl(): string

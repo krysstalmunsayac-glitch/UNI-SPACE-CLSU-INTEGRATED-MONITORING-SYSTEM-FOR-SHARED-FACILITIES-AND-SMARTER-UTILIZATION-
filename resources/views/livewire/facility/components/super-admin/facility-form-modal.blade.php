@@ -28,6 +28,29 @@
                         </x-ui::select>
                     </div>
 
+                    @if ($Status === 'Unavailable')
+                        <div class="sm:col-span-2 xl:col-span-3">
+                            <div class="grid gap-3 rounded-xl border border-red-100 bg-red-50/60 p-4 dark:border-red-900/40 dark:bg-red-950/10 sm:grid-cols-[minmax(0,1fr)_6rem_6rem_6rem]">
+                                <x-ui::input wire:model="Available_Date" type="date" label="Available again date" min="{{ now()->toDateString() }}" />
+                                <x-ui::select wire:model="Available_Hour" label="Hour">
+                                    @foreach (range(1, 12) as $hour)
+                                        <x-ui::select.option value="{{ str_pad((string) $hour, 2, '0', STR_PAD_LEFT) }}">{{ str_pad((string) $hour, 2, '0', STR_PAD_LEFT) }}</x-ui::select.option>
+                                    @endforeach
+                                </x-ui::select>
+                                <x-ui::select wire:model="Available_Minute" label="Minute">
+                                    @foreach (['00', '15', '30', '45'] as $minute)
+                                        <x-ui::select.option value="{{ $minute }}">{{ $minute }}</x-ui::select.option>
+                                    @endforeach
+                                </x-ui::select>
+                                <x-ui::select wire:model="Available_Period" label="AM/PM">
+                                    <x-ui::select.option value="AM">AM</x-ui::select.option>
+                                    <x-ui::select.option value="PM">PM</x-ui::select.option>
+                                </x-ui::select>
+                            </div>
+                            @error('Available_Date') <span class="mt-1 block text-sm text-red-600">{{ $message }}</span> @enderror
+                        </div>
+                    @endif
+
                     <div>
                         <x-ui::select wire:model="facility_type" label="Facility type" required>
                             <x-ui::select.option value="">Select type</x-ui::select.option>

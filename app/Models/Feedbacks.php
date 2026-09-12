@@ -37,11 +37,11 @@ class Feedbacks extends Model
 
     public function facility(): BelongsTo
     {
-        return $this->belongsTo(Facilities::class, 'Facility_ID', 'FID');
+        return $this->belongsTo(Facilities::class, 'Facility_ID', 'FID')->withTrashed();
     }
 
     public function request(): BelongsTo
     {
-        return $this->belongsTo(Requests::class, 'Request_ID', 'RID');
+        return $this->belongsTo(Requests::class, 'Request_ID', 'RID')->withTrashed();
     }
 }

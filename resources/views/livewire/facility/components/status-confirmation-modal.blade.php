@@ -14,6 +14,27 @@
 
             @if (! $pendingStatusWillActivate)
                 <x-ui::input wire:model="deactivationConfirmation" label="Type DEACTIVATE to confirm" placeholder="DEACTIVATE" autocomplete="off" />
+                <div>
+                    <span class="mb-1.5 block text-sm font-medium text-zinc-800 dark:text-zinc-200">Available again at</span>
+                    <div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_5rem_5rem_5rem]">
+                        <x-ui::input wire:model="Available_Date" type="date" label="Date" min="{{ now()->toDateString() }}" />
+                        <x-ui::select wire:model="Available_Hour" label="Hour">
+                            @foreach (range(1, 12) as $hour)
+                                <x-ui::select.option value="{{ str_pad((string) $hour, 2, '0', STR_PAD_LEFT) }}">{{ str_pad((string) $hour, 2, '0', STR_PAD_LEFT) }}</x-ui::select.option>
+                            @endforeach
+                        </x-ui::select>
+                        <x-ui::select wire:model="Available_Minute" label="Min">
+                            @foreach (['00', '15', '30', '45'] as $minute)
+                                <x-ui::select.option value="{{ $minute }}">{{ $minute }}</x-ui::select.option>
+                            @endforeach
+                        </x-ui::select>
+                        <x-ui::select wire:model="Available_Period" label="AM/PM">
+                            <x-ui::select.option value="AM">AM</x-ui::select.option>
+                            <x-ui::select.option value="PM">PM</x-ui::select.option>
+                        </x-ui::select>
+                    </div>
+                    @error('Available_Date') <span class="mt-1 block text-sm text-red-600">{{ $message }}</span> @enderror
+                </div>
             @endif
 
             <div class="flex gap-2">

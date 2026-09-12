@@ -4,6 +4,7 @@ use App\Models\Facilities;
 use App\Services\FacilityAvailabilityService;
 use App\Support\Ui;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Validate;
@@ -94,6 +95,17 @@ new #[Layout('components.layouts.app')] class extends Component
     #[Validate('required|in:Available,Unavailable')]
     public ?string $Status = 'Available';
 
+    #[Validate('nullable|date|after:now')]
+    public ?string $Available_At = null;
+
+    public ?string $Available_Date = null;
+
+    public string $Available_Hour = '08';
+
+    public string $Available_Minute = '00';
+
+    public string $Available_Period = 'AM';
+
     public function applySearch(): void
     {
         $this->search = trim($this->searchInput);
@@ -145,12 +157,18 @@ new #[Layout('components.layouts.app')] class extends Component
             'Latitude',
             'Longitude',
             'Capacity',
+            'Available_At',
+            'Available_Date',
         ]);
 
         $this->editingId = null;
         $this->viewMode = false;
         $this->showCreateConfirmation = false;
         $this->Status = 'Available';
+        $this->Available_At = null;
+        $this->Available_Hour = '08';
+        $this->Available_Minute = '00';
+        $this->Available_Period = 'AM';
         $this->resetValidation();
     }
 
@@ -184,6 +202,7 @@ new #[Layout('components.layouts.app')] class extends Component
         $this->Longitude = $facility->Longitude;
         $this->Capacity = $facility->Capacity;
         $this->Status = $facility->Status;
+        $this->setAvailableAtFields($facility->Available_At);
         $this->images = [];
         $this->existingImages = $facility->images()
             ->get(['id', 'image_path'])
@@ -218,6 +237,11 @@ new #[Layout('components.layouts.app')] class extends Component
 
         $this->showCreateConfirmation = false;
 
+        $availableAt = $this->availableAtValue();
+        $existingFacility = $this->editingId
+            ? Facilities::query()->findOrFail($this->editingId)
+            : null;
+
         $data = [
             'Facility_Name' => $this->Facility_Name,
             'facility_type' => $this->facility_type,
@@ -232,12 +256,16 @@ new #[Layout('components.layouts.app')] class extends Component
             'Longitude' => $this->Longitude,
             'Capacity' => $this->Capacity,
             'Status' => $this->Status,
+            'Available_At' => $this->Status === 'Unavailable' ? $availableAt : null,
+            'Deactivated_At' => $this->Status === 'Unavailable'
+                ? ($existingFacility?->Deactivated_At ?? now())
+                : null,
         ];
 
         $wasEditing = $this->editingId !== null;
 
         $facility = $wasEditing
-            ? tap(Facilities::query()->findOrFail($this->editingId))->update($data)
+            ? tap($existingFacility)->update($data)
             : Facilities::query()->create($data);
 
         if ($wasEditing && $this->removedImageIds !== []) {
@@ -386,6 +414,7 @@ new #[Layout('components.layouts.app')] class extends Component
         $this->pendingStatusId = $facility->FID;
         $this->pendingStatusName = $facility->Facility_Name;
         $this->pendingStatusWillActivate = $facility->Status === 'Unavailable';
+        $this->setAvailableAtFields($facility->Available_At);
         $this->deactivationConfirmation = '';
         $this->resetValidation('deactivationConfirmation');
         $this->showStatusConfirmation = true;
@@ -398,13 +427,18 @@ new #[Layout('components.layouts.app')] class extends Component
         if ($facility->Status !== 'Unavailable') {
             $this->validate([
                 'deactivationConfirmation' => ['required', 'in:DEACTIVATE'],
+                'Available_Date' => ['nullable', 'date', 'after_or_equal:today'],
+                'Available_Hour' => ['required_with:Available_Date', 'in:01,02,03,04,05,06,07,08,09,10,11,12'],
+                'Available_Minute' => ['required_with:Available_Date', 'in:00,15,30,45'],
+                'Available_Period' => ['required_with:Available_Date', 'in:AM,PM'],
             ], [
                 'deactivationConfirmation.required' => 'Type DEACTIVATE to confirm.',
                 'deactivationConfirmation.in' => 'Type DEACTIVATE exactly to confirm.',
+                'Available_Date.after_or_equal' => 'Choose today or a future date.',
             ]);
         }
 
-        $cancelledCount = app(FacilityAvailabilityService::class)->toggle($facility);
+        $cancelledCount = app(FacilityAvailabilityService::class)->toggle($facility, $this->availableAtValue());
         $facility->refresh();
 
         Ui::toast(
@@ -416,6 +450,8 @@ new #[Layout('components.layouts.app')] class extends Component
 
         $this->showStatusConfirmation = false;
         $this->pendingStatusId = null;
+        $this->Available_At = null;
+        $this->Available_Date = null;
         $this->deactivationConfirmation = '';
     }
 
@@ -423,9 +459,38 @@ new #[Layout('components.layouts.app')] class extends Component
     public function requestableFacilities()
     {
         return Facilities::query()
-            ->where('Status', 'Available')
             ->orderBy('Facility_Name')
-            ->get(['FID', 'Facility_Name', 'Office']);
+            ->get(['FID', 'Facility_Name', 'Office', 'Status', 'Available_At']);
+    }
+
+    private function setAvailableAtFields($availableAt): void
+    {
+        $this->Available_At = $availableAt?->format('Y-m-d H:i:s');
+        $this->Available_Date = $availableAt?->format('Y-m-d');
+        $this->Available_Hour = $availableAt?->format('h') ?? '08';
+        $this->Available_Minute = $availableAt?->format('i') ?? '00';
+        $this->Available_Period = $availableAt?->format('A') ?? 'AM';
+    }
+
+    private function availableAtValue(): ?string
+    {
+        if ($this->Status !== 'Unavailable' || ! $this->Available_Date) {
+            return null;
+        }
+
+        $hour = (int) $this->Available_Hour;
+        $hour = $this->Available_Period === 'PM' && $hour !== 12 ? $hour + 12 : $hour;
+        $hour = $this->Available_Period === 'AM' && $hour === 12 ? 0 : $hour;
+
+        $availableAt = \Carbon\Carbon::parse(sprintf('%s %02d:%s:00', $this->Available_Date, $hour, $this->Available_Minute));
+
+        if ($availableAt->isPast()) {
+            throw ValidationException::withMessages([
+                'Available_Date' => 'Choose a future date and time.',
+            ]);
+        }
+
+        return $availableAt->format('Y-m-d H:i:s');
     }
 
     #[Computed]

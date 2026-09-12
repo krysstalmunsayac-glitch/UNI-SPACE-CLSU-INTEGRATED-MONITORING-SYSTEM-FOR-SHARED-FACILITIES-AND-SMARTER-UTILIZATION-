@@ -200,12 +200,12 @@ class Requests extends Model
 
     public function event(): BelongsTo
     {
-        return $this->belongsTo(Events::class, 'Event_ID');
+        return $this->belongsTo(Events::class, 'Event_ID')->withTrashed();
     }
 
     public function facility(): BelongsTo
     {
-        return $this->belongsTo(Facilities::class, 'Facility_ID', 'FID');
+        return $this->belongsTo(Facilities::class, 'Facility_ID', 'FID')->withTrashed();
     }
 
     public function amenities(): BelongsToMany

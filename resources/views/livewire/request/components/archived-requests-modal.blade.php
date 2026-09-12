@@ -23,8 +23,9 @@
                         <x-ui::table.column>Request ID</x-ui::table.column>
                         <x-ui::table.column>User</x-ui::table.column>
                         <x-ui::table.column>Event date</x-ui::table.column>
-                        <x-ui::table.column>Facility</x-ui::table.column>
                         <x-ui::table.column>Time</x-ui::table.column>
+                        <x-ui::table.column>Event type</x-ui::table.column>
+                        <x-ui::table.column>Facility</x-ui::table.column>
                         <x-ui::table.column>Status</x-ui::table.column>
                         <x-ui::table.column>Archived</x-ui::table.column>
                         <x-ui::table.column>Actions</x-ui::table.column>
@@ -54,7 +55,6 @@
                                         <div class="text-xs font-normal text-zinc-500 dark:text-zinc-400">to {{ $request->Proposed_End_Date->format('M d, Y') }}</div>
                                     @endif
                                 </x-ui::table.cell>
-                                <x-ui::table.cell class="min-w-44">{{ $request->facility?->Facility_Name ?? '—' }}</x-ui::table.cell>
                                 <x-ui::table.cell class="whitespace-nowrap">
                                     @if (count($request->Daily_Schedules ?? []) > 1)
                                         <span class="font-medium">Daily times vary</span>
@@ -63,6 +63,19 @@
                                         {{ $request->Proposed_Start_Time->format('g:i A') }} – {{ $request->Proposed_End_Time->format('g:i A') }}
                                     @endif
                                 </x-ui::table.cell>
+                                <x-ui::table.cell class="whitespace-nowrap">
+                                    @if ($request->event?->Event_Scope)
+                                        <x-ui::badge
+                                            size="sm"
+                                            :color="$request->event->Event_Scope === 'Internal' ? 'green' : 'amber'"
+                                        >
+                                            {{ $request->event->Event_Scope }} event
+                                        </x-ui::badge>
+                                    @else
+                                        <span class="text-xs text-zinc-500 dark:text-zinc-400">Not set</span>
+                                    @endif
+                                </x-ui::table.cell>
+                                <x-ui::table.cell class="min-w-44">{{ $request->facility?->Facility_Name ?? '—' }}</x-ui::table.cell>
                                 <x-ui::table.cell>
                                     <x-ui::badge
                                         size="sm"
@@ -99,7 +112,7 @@
                             </x-ui::table.row>
                         @empty
                             <x-ui::table.row>
-                                <x-ui::table.cell colspan="8" class="py-8 text-center">No archived requests match your current search or status filter.</x-ui::table.cell>
+                                <x-ui::table.cell colspan="9" class="py-8 text-center">No archived requests match your current search or status filter.</x-ui::table.cell>
                             </x-ui::table.row>
                         @endforelse
                     </x-ui::table.rows>

@@ -18,6 +18,27 @@ new #[Layout('components.layouts.app')] class extends Component {
 
     use WithPagination;
 
+    private const FACILITY_TYPE_COLORS = [
+        'auditorium' => ['bg' => '#2563eb', 'border' => '#1d4ed8'],
+        'classroom' => ['bg' => '#d97706', 'border' => '#b45309'],
+        'conference' => ['bg' => '#006b2b', 'border' => '#009639'],
+        'gymnasium' => ['bg' => '#7c3aed', 'border' => '#6d28d9'],
+        'laboratory' => ['bg' => '#0891b2', 'border' => '#0e7490'],
+        'lounge' => ['bg' => '#db2777', 'border' => '#be185d'],
+        'office' => ['bg' => '#4f46e5', 'border' => '#4338ca'],
+        'outdoor' => ['bg' => '#16a34a', 'border' => '#15803d'],
+        'sports' => ['bg' => '#ea580c', 'border' => '#c2410c'],
+    ];
+
+    private const FALLBACK_FACILITY_TYPE_COLORS = [
+        ['bg' => '#0f766e', 'border' => '#115e59'],
+        ['bg' => '#9333ea', 'border' => '#7e22ce'],
+        ['bg' => '#ca8a04', 'border' => '#a16207'],
+        ['bg' => '#0284c7', 'border' => '#0369a1'],
+        ['bg' => '#c026d3', 'border' => '#a21caf'],
+        ['bg' => '#65a30d', 'border' => '#4d7c0f'],
+    ];
+
     // ---- View state ----
     #[Url]
     public string $view = 'weekly'; // weekly | monthly
@@ -398,7 +419,7 @@ new #[Layout('components.layouts.app')] class extends Component {
                 });
             })
             ->orderBy('Facility_Name')
-            ->get(['FID', 'Facility_Name']);
+            ->get(['FID', 'Facility_Name', 'facility_type']);
     }
 
     #[Computed]
@@ -445,6 +466,43 @@ new #[Layout('components.layouts.app')] class extends Component {
         ];
     }
 
+    #[Computed]
+    public function facilityTypeLegend(): array
+    {
+        return $this->facilitiesList
+            ->pluck('facility_type')
+            ->filter()
+            ->unique()
+            ->sort()
+            ->map(fn (string $type) => [
+                'label' => $type,
+                ...$this->facilityTypeColors($type),
+            ])
+            ->values()
+            ->toArray();
+    }
+
+    private function facilityTypeColors(?string $type): array
+    {
+        $type = trim((string) $type);
+
+        if ($type === '') {
+            return ['bg' => '#64748b', 'border' => '#475569'];
+        }
+
+        $key = str($type)->lower()->trim()->toString();
+
+        foreach (self::FACILITY_TYPE_COLORS as $needle => $colors) {
+            if (str_contains($key, $needle)) {
+                return $colors;
+            }
+        }
+
+        return self::FALLBACK_FACILITY_TYPE_COLORS[
+            crc32($key) % count(self::FALLBACK_FACILITY_TYPE_COLORS)
+        ];
+    }
+
     /**
      * Returns filtered FullCalendar events.
      */
@@ -454,7 +512,7 @@ new #[Layout('components.layouts.app')] class extends Component {
         return Schedule::query()
             ->with([
                 'request:RID,Event_ID,Facility_ID,User_ID,Is_Guest_Booking,Guest_Name,Purpose,Status',
-                'request.facility:FID,Facility_Name',
+                'request.facility:FID,Facility_Name,facility_type',
                 'request.event:EID,Event_Title',
                 'request.user:id,name',
             ])
@@ -493,6 +551,8 @@ new #[Layout('components.layouts.app')] class extends Component {
 
                 $facility = $schedule->request?->facility?->Facility_Name
                     ?? 'Request #' . $schedule->Request_ID;
+                $facilityType = $schedule->request?->facility?->facility_type;
+                $facilityColors = $this->facilityTypeColors($facilityType);
 
                 $eventName = $schedule->request?->event?->Event_Title ?? 'Reserved facility';
                 $isEnded = $schedule->request?->Status === 'Ended';
@@ -505,14 +565,16 @@ new #[Layout('components.layouts.app')] class extends Component {
                     'end' => "{$endDate}T{$end}",
                     'backgroundColor' => $isEnded
                         ? '#dc2626'
-                        : ($schedule->Status === 'Booked' ? '#006b2b' : '#9ca3af'),
+                        : ($schedule->Status === 'Booked' ? $facilityColors['bg'] : '#9ca3af'),
                     'borderColor' => $isEnded
                         ? '#991b1b'
-                        : ($schedule->Status === 'Booked' ? '#009639' : '#6b7280'),
+                        : ($schedule->Status === 'Booked' ? $facilityColors['border'] : '#6b7280'),
+                    'textColor' => '#ffffff',
                     'extendedProps' => [
                         'status' => $isEnded ? 'Ended' : $schedule->Status,
                         'scheduleId' => $schedule->SID,
                         'facility' => $facility,
+                        'facilityType' => $facilityType ?: 'Unspecified',
                         'event' => $eventName,
                         'purpose' => $schedule->request?->Purpose,
                         'requester' => $schedule->request?->requesterName(),

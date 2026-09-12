@@ -1,6 +1,71 @@
 <x-ui::card>
-    <div class="mb-4">
+    <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <x-ui::heading size="lg">Assigned Facilities</x-ui::heading>
+
+        @if ($this->requestableFacilities->isNotEmpty())
+            <x-ui::dropdown position="bottom" align="end">
+                <x-ui::button variant="primary" icon="calendar-days">
+                    Request Facility
+                </x-ui::button>
+
+                <x-ui::menu
+                    class="overflow-hidden! rounded-2xl! p-0! shadow-xl!"
+                    style="width: 24rem; max-width: calc(100vw - 2rem); max-height: min(22rem, calc(100vh - 2rem));"
+                >
+                    <div x-data="{ facilitySearch: '' }" class="flex max-h-[22rem] flex-col overflow-hidden">
+                        <div class="border-b border-zinc-200 bg-white p-3 dark:border-zinc-700 dark:bg-zinc-800">
+                            <label class="sr-only" for="office-request-facility-search">Search facilities</label>
+                            <input
+                                id="office-request-facility-search"
+                                x-model="facilitySearch"
+                                x-on:click.stop
+                                type="search"
+                                placeholder="Search facilities..."
+                                class="h-11 w-full rounded-xl border border-zinc-300 bg-white px-3 text-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/15 dark:border-zinc-600 dark:bg-zinc-900"
+                            >
+                        </div>
+                        <div class="min-h-0 flex-1 overflow-y-auto p-2">
+                            @foreach ($this->requestableFacilities as $requestableFacility)
+                                @if ($requestableFacility->Status === 'Available')
+                                    <x-ui::menu.item
+                                        icon="calendar-days"
+                                        href="{{ route('admin.requests.create', $requestableFacility) }}"
+                                        class="min-w-0! rounded-xl! py-2.5!"
+                                        x-show="facilitySearch === '' || @js(strtolower($requestableFacility->Facility_Name.' '.$requestableFacility->Office)).includes(facilitySearch.toLowerCase())"
+                                    >
+                                        <span class="block min-w-0 whitespace-normal">
+                                            <span class="block break-words font-semibold leading-5">{{ $requestableFacility->Facility_Name }}</span>
+                                            @if ($requestableFacility->Office)
+                                                <span class="mt-0.5 block break-words text-xs leading-4 text-zinc-500 dark:text-zinc-400">{{ $requestableFacility->Office }}</span>
+                                            @endif
+                                        </span>
+                                    </x-ui::menu.item>
+                                @else
+                                    <button
+                                        type="button"
+                                        disabled
+                                        class="flex min-h-9 w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm opacity-60"
+                                        x-show="facilitySearch === '' || @js(strtolower($requestableFacility->Facility_Name.' '.$requestableFacility->Office)).includes(facilitySearch.toLowerCase())"
+                                    >
+                                        <x-ui::icon.calendar-days class="size-5 shrink-0" />
+                                        <span class="block min-w-0 whitespace-normal">
+                                            <span class="block break-words font-semibold leading-5">{{ $requestableFacility->Facility_Name }}</span>
+                                            <span class="mt-0.5 block break-words text-xs leading-4 text-red-600 dark:text-red-300">
+                                                Unavailable{{ $requestableFacility->Available_At ? ' until '.$requestableFacility->Available_At->format('M j, Y g:i A') : '' }}
+                                            </span>
+                                        </span>
+                                    </button>
+                                @endif
+                            @endforeach
+                        </div>
+                    </div>
+                </x-ui::menu>
+            </x-ui::dropdown>
+        @else
+            <x-ui::button variant="primary" icon="calendar-days" disabled title="No facilities are currently available">
+                Request Facility
+            </x-ui::button>
+        @endif
     </div>
 
     <div class="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
@@ -40,6 +105,16 @@
                         >
                             {{ $facility->Status ?: 'Not specified' }}
                         </span>
+                        @if ($facility->Status === 'Unavailable' && $facility->Deactivated_At)
+                            <span class="mt-1 block text-xs font-semibold text-red-700 dark:text-red-300">
+                                Deactivated {{ $facility->Deactivated_At->format('M j, Y g:i A') }}
+                            </span>
+                        @endif
+                        @if ($facility->Status === 'Unavailable' && $facility->Available_At)
+                            <span class="mt-0.5 block text-xs font-semibold text-red-600 dark:text-red-300">
+                                Until {{ $facility->Available_At->format('M j, Y g:i A') }}
+                            </span>
+                        @endif
                     </button>
                 </div>
 
@@ -75,6 +150,23 @@
                             <span>{{ $facility->Office ?? '—' }}</span>
                         </div>
                     </div>
+
+                    @if ($facility->Status === 'Unavailable' && ($facility->Deactivated_At || $facility->Available_At))
+                        <div class="flex items-center gap-2 text-sm font-semibold text-red-600 dark:text-red-300">
+                            <x-ui::icon.calendar-days class="size-4" />
+                            <span>
+                                @if ($facility->Deactivated_At)
+                                    Deactivated {{ $facility->Deactivated_At->format('M j, Y g:i A') }}
+                                @endif
+                                @if ($facility->Deactivated_At && $facility->Available_At)
+                                    ·
+                                @endif
+                                @if ($facility->Available_At)
+                                    Available again {{ $facility->Available_At->format('M j, Y g:i A') }}
+                                @endif
+                            </span>
+                        </div>
+                    @endif
 
                     <div class="grid gap-3 border-t border-slate-200 pt-3 text-xs dark:border-slate-700">
                         <div>

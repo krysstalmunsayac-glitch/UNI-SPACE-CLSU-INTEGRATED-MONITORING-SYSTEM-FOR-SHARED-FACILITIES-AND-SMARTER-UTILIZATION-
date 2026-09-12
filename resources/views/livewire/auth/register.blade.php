@@ -292,9 +292,14 @@ new #[Layout('components.layouts.auth')] class extends Component
                 @enderror
             </div>
 
-            <x-ui::button type="button" variant="primary" wire:click="nextStep" :disabled="! $privacy_consent" class="mx-auto w-36 rounded-full bg-emerald-700 py-3 text-xs font-black uppercase tracking-wide text-white hover:bg-emerald-800">
-                Continue
-            </x-ui::button>
+            <div class="flex items-center justify-center gap-3">
+                <x-ui::button href="{{ route('login') }}" variant="ghost" class="w-36 rounded-full border border-emerald-700 py-3 text-xs font-black uppercase tracking-wide text-emerald-800 transition hover:bg-emerald-50 dark:border-emerald-300 dark:text-emerald-200 dark:hover:bg-zinc-800">
+                    Back
+                </x-ui::button>
+                <x-ui::button type="button" variant="primary" wire:click="nextStep" :disabled="! $privacy_consent" class="w-36 rounded-full bg-emerald-700 py-3 text-xs font-black uppercase tracking-wide text-white hover:bg-emerald-800">
+                    Continue
+                </x-ui::button>
+            </div>
         @elseif ($step === 2)
 
             <div class="grid gap-2">

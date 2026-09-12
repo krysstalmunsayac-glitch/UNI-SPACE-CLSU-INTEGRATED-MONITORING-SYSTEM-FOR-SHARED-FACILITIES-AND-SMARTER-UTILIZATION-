@@ -8,6 +8,7 @@
 
         <div class="mb-4 flex flex-wrap gap-x-5 gap-y-2 rounded-xl bg-zinc-50 px-4 py-3 text-xs text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300">
             <span><strong class="text-blue-700 dark:text-blue-300">Pending:</strong> waiting for review</span>
+            <span><strong class="text-amber-700 dark:text-amber-300">Awaiting Payment:</strong> payment is required before approval</span>
             <span><strong class="text-amber-700 dark:text-amber-300">Needs Revision:</strong> user must update details</span>
             <span><strong class="text-emerald-700 dark:text-emerald-300">Approved:</strong> ready and added to the schedule</span>
             <span><strong class="text-red-700 dark:text-red-300">Rejected:</strong> request was not accepted</span>
@@ -35,9 +36,11 @@
                     Event date
                 </x-ui::table.column>
 
-                <x-ui::table.column>Facility</x-ui::table.column>
-
                 <x-ui::table.column>Time</x-ui::table.column>
+
+                <x-ui::table.column>Event type</x-ui::table.column>
+
+                <x-ui::table.column>Facility</x-ui::table.column>
 
                 <x-ui::table.column
                     class="min-w-32 whitespace-nowrap"
@@ -82,10 +85,6 @@
                             @endif
                         </x-ui::table.cell>
 
-                        <x-ui::table.cell class="min-w-44">
-                            {{ $request->facility?->Facility_Name ?? '—' }}
-                        </x-ui::table.cell>
-
                         <x-ui::table.cell class="whitespace-nowrap">
                             @if (count($request->Daily_Schedules ?? []) > 1)
                                 <span class="font-medium">Daily times vary</span>
@@ -93,6 +92,23 @@
                             @else
                                 {{ $request->Proposed_Start_Time->format('g:i A') }} – {{ $request->Proposed_End_Time->format('g:i A') }}
                             @endif
+                        </x-ui::table.cell>
+
+                        <x-ui::table.cell class="whitespace-nowrap">
+                            @if ($request->event?->Event_Scope)
+                                <x-ui::badge
+                                    size="sm"
+                                    :color="$request->event->Event_Scope === 'Internal' ? 'green' : 'amber'"
+                                >
+                                    {{ $request->event->Event_Scope }} event
+                                </x-ui::badge>
+                            @else
+                                <span class="text-xs text-zinc-500 dark:text-zinc-400">Not set</span>
+                            @endif
+                        </x-ui::table.cell>
+
+                        <x-ui::table.cell class="min-w-44">
+                            {{ $request->facility?->Facility_Name ?? '—' }}
                         </x-ui::table.cell>
 
                         <x-ui::table.cell class="min-w-32 whitespace-nowrap">

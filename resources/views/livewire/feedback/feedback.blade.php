@@ -60,14 +60,27 @@ new #[Layout('components.layouts.app')] class extends Component {
     #[Computed]
     public function feedbacks()
     {
-        $query = Feedbacks::query()->with(['user:id,name', 'facility:FID,Facility_Name']);
+        $query = Feedbacks::query()->with([
+            'user:id,name',
+            'facility:FID,Facility_Name',
+            'request:RID,Facility_ID',
+            'request.facility:FID,Facility_Name',
+        ]);
 
         if (auth()->user()->isAdmin()) {
-            $query->whereHas('facility', fn ($facilityQuery) =>
-                $facilityQuery->whereHas('assignedAdmins', fn ($adminQuery) =>
-                    $adminQuery->where('users.id', auth()->id())
-                )
-            );
+            $query->where(function ($query) {
+                $query
+                    ->whereHas('facility', fn ($facilityQuery) =>
+                        $facilityQuery->whereHas('assignedAdmins', fn ($adminQuery) =>
+                            $adminQuery->where('users.id', auth()->id())
+                        )
+                    )
+                    ->orWhereHas('request.facility', fn ($facilityQuery) =>
+                        $facilityQuery->whereHas('assignedAdmins', fn ($adminQuery) =>
+                            $adminQuery->where('users.id', auth()->id())
+                        )
+                    );
+            });
         }
 
         if ($this->search) {

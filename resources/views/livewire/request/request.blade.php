@@ -907,6 +907,7 @@ new #[Layout('components.layouts.app')] class extends Component
         return $query->with([
             'user:id,name,email',
             'creator:id,name',
+            'event:EID,Event_Scope',
             'facility:FID,Facility_Name,Price',
         ])
             ->orderByDesc('deleted_at')
@@ -920,6 +921,7 @@ new #[Layout('components.layouts.app')] class extends Component
             ->with([
                 'user:id,name,email',
                 'creator:id,name',
+                'event:EID,Event_Scope',
                 'facility:FID,Facility_Name,Price',
             ])
             ->when(auth()->user()->isAdmin(), fn ($query) => $query->whereHas('facility.assignedAdmins', fn ($facilityQuery) => $facilityQuery->where('users.id', auth()->id())
@@ -942,11 +944,12 @@ new #[Layout('components.layouts.app')] class extends Component
             ->when($this->sortBy === 'priority', fn ($query) => $query
                 ->orderByRaw("CASE Status
                     WHEN 'Pending' THEN 0
-                    WHEN 'Approved' THEN 1
-                    WHEN 'Rejected' THEN 2
-                    WHEN 'Cancelled' THEN 3
-                    WHEN 'Ended' THEN 4
-                    ELSE 5
+                    WHEN 'Awaiting Payment' THEN 1
+                    WHEN 'Approved' THEN 2
+                    WHEN 'Rejected' THEN 3
+                    WHEN 'Cancelled' THEN 4
+                    WHEN 'Ended' THEN 5
+                    ELSE 6
                 END")
                 ->orderBy('Proposed_Date')
                 ->orderBy('RID'))

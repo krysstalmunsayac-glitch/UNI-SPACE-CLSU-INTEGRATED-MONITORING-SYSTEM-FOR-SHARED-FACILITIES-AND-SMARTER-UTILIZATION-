@@ -15,7 +15,21 @@ new #[Layout('components.layouts.app')] class extends Component {
 
     public string $archiveStatusFilter = '';
 
+    public string $archiveMonthFilter = '';
+
+    public string $archiveYearFilter = '';
+
     public function updatedArchiveStatusFilter(): void
+    {
+        $this->resetPage('archivedRequestsPage');
+    }
+
+    public function updatedArchiveMonthFilter(): void
+    {
+        $this->resetPage('archivedRequestsPage');
+    }
+
+    public function updatedArchiveYearFilter(): void
     {
         $this->resetPage('archivedRequestsPage');
     }
@@ -35,12 +49,54 @@ new #[Layout('components.layouts.app')] class extends Component {
             $query->where('Status', $this->archiveStatusFilter);
         }
 
+        if ($this->archiveMonthFilter !== '') {
+            $query->whereMonth('deleted_at', (int) $this->archiveMonthFilter);
+        }
+
+        if ($this->archiveYearFilter !== '') {
+            $query->whereYear('deleted_at', (int) $this->archiveYearFilter);
+        }
+
         return $query->with([
             'user:id,name',
             'facility:FID,Facility_Name',
         ])
             ->orderByDesc('deleted_at')
             ->paginate(8, pageName: 'archivedRequestsPage');
+    }
+
+    #[Computed]
+    public function archiveYears()
+    {
+        $query = Requests::query()->onlyTrashed()
+            ->whereNotNull('deleted_at')
+            ->orderByDesc('deleted_at');
+
+        if (auth()->user()?->isAdmin()) {
+            $query->whereHas('facility.assignedAdmins', fn ($facilityQuery) =>
+                $facilityQuery->where('users.id', auth()->id())
+            );
+        }
+
+        return $query->get(['deleted_at'])
+            ->map(fn (Requests $request) => $request->deleted_at?->year)
+            ->filter()
+            ->unique()
+            ->values();
+    }
+
+    public function archivePeriodLabel(): string
+    {
+        $month = $this->archiveMonthFilter !== ''
+            ? now()->month((int) $this->archiveMonthFilter)->format('F')
+            : null;
+
+        return match (true) {
+            $month && $this->archiveYearFilter !== '' => "{$month} {$this->archiveYearFilter}",
+            $month => $month.' across all years',
+            $this->archiveYearFilter !== '' => 'all months in '.$this->archiveYearFilter,
+            default => 'all archived months and years',
+        };
     }
 
     #[Computed]
@@ -163,13 +219,32 @@ new #[Layout('components.layouts.app')] class extends Component {
         <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Archived Requests</h2>
-                <x-ui::select wire:model.live="archiveStatusFilter" label="Request status" class="sm:w-48">
-                    <x-ui::select.option value="">All statuses</x-ui::select.option>
-                    <x-ui::select.option value="Cancelled">Cancelled</x-ui::select.option>
-                    <x-ui::select.option value="Approved">Approved</x-ui::select.option>
-                    <x-ui::select.option value="Ended">Event Ended</x-ui::select.option>
-                    <x-ui::select.option value="Rejected">Rejected</x-ui::select.option>
-                </x-ui::select>
+                <div class="grid gap-3 sm:grid-cols-3">
+                    <x-ui::select wire:model.live="archiveStatusFilter" label="Request status" class="sm:w-44">
+                        <x-ui::select.option value="">All statuses</x-ui::select.option>
+                        <x-ui::select.option value="Cancelled">Cancelled</x-ui::select.option>
+                        <x-ui::select.option value="Approved">Approved</x-ui::select.option>
+                        <x-ui::select.option value="Ended">Event Ended</x-ui::select.option>
+                        <x-ui::select.option value="Rejected">Rejected</x-ui::select.option>
+                    </x-ui::select>
+                    <x-ui::select wire:model.live="archiveMonthFilter" label="Archived month" class="sm:w-44">
+                        <x-ui::select.option value="">All months</x-ui::select.option>
+                        @foreach (range(1, 12) as $month)
+                            <x-ui::select.option value="{{ $month }}">{{ now()->month($month)->format('F') }}</x-ui::select.option>
+                        @endforeach
+                    </x-ui::select>
+                    <x-ui::select wire:model.live="archiveYearFilter" label="Archived year" class="sm:w-36">
+                        <x-ui::select.option value="">All years</x-ui::select.option>
+                        @forelse ($this->archiveYears as $year)
+                            <x-ui::select.option value="{{ $year }}">{{ $year }}</x-ui::select.option>
+                        @empty
+                            <x-ui::select.option value="{{ now()->year }}">{{ now()->year }}</x-ui::select.option>
+                        @endforelse
+                    </x-ui::select>
+                </div>
+            </div>
+            <div class="mt-4 rounded-lg border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-200">
+                Showing archived requests for {{ $this->archivePeriodLabel() }}.
             </div>
             <div class="mt-4 space-y-3">
                 @forelse ($this->archivedRequests as $request)

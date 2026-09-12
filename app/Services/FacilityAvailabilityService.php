@@ -32,16 +32,24 @@ class FacilityAvailabilityService
      *
      * @return int Number of active requests cancelled
      */
-    public function toggle(Facilities $facility): int
+    public function toggle(Facilities $facility, ?string $availableAt = null): int
     {
         if ($facility->Status === 'Unavailable') {
-            $facility->update(['Status' => 'Available']);
+            $facility->update([
+                'Status' => 'Available',
+                'Available_At' => null,
+                'Deactivated_At' => null,
+            ]);
 
             return 0;
         }
 
-        $cancelledRequests = DB::transaction(function () use ($facility) {
-            $facility->update(['Status' => 'Unavailable']);
+        $cancelledRequests = DB::transaction(function () use ($facility, $availableAt) {
+            $facility->update([
+                'Status' => 'Unavailable',
+                'Available_At' => $availableAt,
+                'Deactivated_At' => now(),
+            ]);
 
             $requests = Requests::query()
                 ->with([
