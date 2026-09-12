@@ -38,7 +38,7 @@
 
     <section
         id="home"
-        class="relative min-h-[100svh] scroll-mt-20 overflow-hidden bg-zinc-950 text-white"
+        class="relative flex min-h-[640px] scroll-mt-20 overflow-hidden bg-zinc-950 text-white lg:h-[100svh]"
         x-data="{
             active: 0,
             total: {{ count($heroSlides) }},
@@ -71,11 +71,12 @@
                 @if ($loop->first) fetchpriority="high" @endif
             >
         @endforeach
-        <div class="absolute inset-0 bg-black/55" aria-hidden="true"></div>
+        <div class="absolute inset-0 bg-gradient-to-b from-black/65 via-black/45 to-black/80" aria-hidden="true"></div>
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_20%,rgba(0,0,0,.28)_100%)]" aria-hidden="true"></div>
         <button
             type="button"
             x-on:click="previous()"
-            class="absolute left-4 top-1/2 z-20 hidden size-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/70 bg-black/35 text-3xl font-black text-white shadow-lg backdrop-blur transition hover:bg-white hover:text-emerald-800 focus:outline-none focus:ring-2 focus:ring-yellow-400 sm:inline-flex"
+            class="absolute left-5 top-1/2 z-20 hidden size-12 -translate-y-1/2 items-center justify-center border-0 bg-transparent text-4xl font-black text-white/80 transition hover:text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 sm:inline-flex lg:left-8"
             aria-label="Show previous hero image"
         >
             ‹
@@ -83,24 +84,24 @@
         <button
             type="button"
             x-on:click="next()"
-            class="absolute right-4 top-1/2 z-20 hidden size-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/70 bg-black/35 text-3xl font-black text-white shadow-lg backdrop-blur transition hover:bg-white hover:text-emerald-800 focus:outline-none focus:ring-2 focus:ring-yellow-400 sm:inline-flex"
+            class="absolute right-5 top-1/2 z-20 hidden size-12 -translate-y-1/2 items-center justify-center border-0 bg-transparent text-4xl font-black text-white/80 transition hover:text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 sm:inline-flex lg:right-8"
             aria-label="Show next hero image"
         >
             ›
         </button>
-        <div class="relative mx-auto flex min-h-[100svh] max-w-7xl items-center justify-center px-4 pb-16 pt-24 text-center sm:px-6 lg:px-8">
-            <div class="max-w-5xl">
-                <p class="text-sm font-black uppercase tracking-[.3em] text-yellow-400 sm:text-base">Central Luzon State University</p>
-                <h1 class="mt-4 text-6xl font-black leading-none tracking-[-.04em] text-white sm:text-8xl lg:text-9xl">SIEL SPACE</h1>
-                <p class="mt-5 text-2xl font-black tracking-tight text-white sm:text-3xl">Find. Schedule. Reserve.</p>
-                <p class="mx-auto mt-5 max-w-3xl text-lg leading-8 text-white/85 sm:text-xl">The centralized facility reservation platform of Central Luzon State University. Compare spaces, check schedules, and submit a request in one place.</p>
-                <div class="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
-                    <a href="#facilities" class="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#009639] px-7 py-3 font-bold text-white transition hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-yellow-400">Browse Facilities</a>
-                    <a href="{{ route('login') }}" class="inline-flex min-h-12 items-center justify-center rounded-xl border border-white bg-white px-7 py-3 font-bold text-zinc-950 transition hover:bg-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400">Request a Facility</a>
+        <div class="relative mx-auto flex min-h-[640px] w-full max-w-7xl items-center justify-center px-5 pb-24 pt-28 text-center sm:px-8 lg:h-[100svh] lg:min-h-0 lg:px-24 lg:pb-20 lg:pt-24">
+            <div class="max-w-4xl">
+                <p class="text-xs font-black uppercase tracking-[.32em] text-yellow-400 sm:text-sm lg:text-base">Central Luzon State University</p>
+                <h1 class="mt-5 text-5xl font-black leading-[.9] tracking-[-.045em] text-white sm:text-7xl lg:text-8xl xl:text-9xl">SIEL SPACE</h1>
+                <p class="mt-6 text-xl font-black tracking-tight text-white sm:text-2xl lg:text-3xl">Find. Schedule. Reserve.</p>
+                <p class="mx-auto mt-4 max-w-2xl text-base leading-7 text-white/85 sm:text-lg sm:leading-8">The centralized facility reservation platform of Central Luzon State University. Compare spaces, check schedules, and submit a request in one place.</p>
+                <div class="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+                    <a href="#facilities" class="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#009639] px-8 py-3 font-bold text-white shadow-lg shadow-black/20 transition hover:-translate-y-0.5 hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-yellow-400">Browse Facilities</a>
+                    <a href="{{ route('login') }}" class="inline-flex min-h-12 items-center justify-center rounded-xl border border-white/80 bg-white px-8 py-3 font-bold text-zinc-950 shadow-lg shadow-black/20 transition hover:-translate-y-0.5 hover:bg-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400">Request a Facility</a>
                 </div>
             </div>
         </div>
-        <div class="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-full bg-black/35 px-3 py-2 backdrop-blur" role="group" aria-label="Choose hero image">
+        <div class="absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-full border border-white/15 bg-black/35 px-3 py-2 backdrop-blur-md" role="group" aria-label="Choose hero image">
             @foreach ($heroSlides as $slide)
                 <button
                     type="button"

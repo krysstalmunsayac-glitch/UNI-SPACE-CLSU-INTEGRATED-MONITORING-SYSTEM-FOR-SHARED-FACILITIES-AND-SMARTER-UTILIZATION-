@@ -12,10 +12,21 @@
                     }).setView(campusCenter, 16);
                     mapElement.classList.remove('flex', 'items-center', 'justify-center');
 
-                    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+                    const osmTiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
                         maxZoom: 19,
-                        attribution: 'Tiles &copy; Esri &mdash; Source: Esri and its data providers',
+                        referrerPolicy: 'strict-origin-when-cross-origin',
+                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
                     }).addTo(map);
+                    let usingFallbackTiles = false;
+                    osmTiles.once('tileerror', () => {
+                        if (usingFallbackTiles) return;
+                        usingFallbackTiles = true;
+                        map.removeLayer(osmTiles);
+                        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+                            maxZoom: 19,
+                            attribution: 'Tiles &copy; Esri &mdash; Source: Esri and its data providers',
+                        }).addTo(map);
+                    });
 
                     const mainGateIcon = L.divIcon({
                         className: '',
