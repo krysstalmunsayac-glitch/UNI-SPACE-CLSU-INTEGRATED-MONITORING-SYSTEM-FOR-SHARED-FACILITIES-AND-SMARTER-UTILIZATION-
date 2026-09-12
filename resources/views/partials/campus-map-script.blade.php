@@ -12,9 +12,9 @@
                     }).setView(campusCenter, 16);
                     mapElement.classList.remove('flex', 'items-center', 'justify-center');
 
-                    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
                         maxZoom: 19,
-                        attribution: '&copy; OpenStreetMap contributors',
+                        attribution: 'Tiles &copy; Esri &mdash; Source: Esri and its data providers',
                     }).addTo(map);
 
                     const mainGateIcon = L.divIcon({

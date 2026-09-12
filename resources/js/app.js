@@ -259,9 +259,9 @@ window.facilityLocationPicker = function (livewire) {
                     this.$refs.map.replaceChildren();
 
                     this.map = L.map(this.$refs.map, { scrollWheelZoom: false }).setView(center, hasSavedPin ? 18 : 16);
-                    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                        maxZoom: 20,
-                        attribution: '&copy; OpenStreetMap contributors',
+                    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+                        maxZoom: 19,
+                        attribution: 'Tiles &copy; Esri &mdash; Source: Esri and its data providers',
                     }).addTo(this.map);
                     this.map.on('click', event => this.setPin(event.latlng.lat, event.latlng.lng));
                 }
