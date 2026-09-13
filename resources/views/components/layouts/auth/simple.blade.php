@@ -25,6 +25,11 @@
                     min-height: 640px;
                 }
 
+                .auth-card[data-auth-page="register"] .auth-form-panel {
+                    padding-top: 24px;
+                    padding-bottom: 24px;
+                }
+
                 .auth-form-logo {
                     position: relative;
                     top: -16px;

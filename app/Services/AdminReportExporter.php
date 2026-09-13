@@ -156,7 +156,7 @@ class AdminReportExporter
         return [
             'Audit ID', 'Date and Time', 'Performed By', 'Role', 'Action',
             'Record Type', 'Record ID', 'Description', 'Original Values',
-            'Updated Values', 'IP Address', 'User Agent',
+            'Updated Values',
         ];
     }
 
@@ -173,8 +173,6 @@ class AdminReportExporter
             $log->description,
             $this->auditValuesText($log->old_values),
             $this->auditValuesText($log->new_values),
-            $log->ip_address ?? '',
-            $log->user_agent ?? '',
         ];
     }
 

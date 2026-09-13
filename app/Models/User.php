@@ -196,6 +196,16 @@ class User extends Authenticatable implements MustVerifyEmail
         };
     }
 
+    public function accountTypeLabel(): string
+    {
+        return match ($this->account_type) {
+            'student' => 'Student',
+            'staff' => 'Staff',
+            'external' => 'External User',
+            default => $this->isSuperAdminOrAdmin() ? 'Staff' : 'Not specified',
+        };
+    }
+
     public static function usesClsuEmail(string $email): bool
     {
         $email = Str::lower(trim($email));

@@ -54,3 +54,28 @@ it('shows centered success feedback after activating an account', function () {
 
     expect($user->fresh()->is_active)->toBeTrue();
 });
+
+it('identifies students and staff in the user directory', function () {
+    $superAdmin = User::factory()->create([
+        'user_type' => 'super_admin',
+        'is_active' => true,
+    ]);
+    User::factory()->create([
+        'name' => 'Directory Student',
+        'user_type' => 'user',
+        'account_type' => 'student',
+    ]);
+    User::factory()->create([
+        'name' => 'Directory Staff',
+        'user_type' => 'user',
+        'account_type' => 'staff',
+    ]);
+
+    $this->actingAs($superAdmin);
+
+    Volt::test('user.user-management')
+        ->assertSee('Directory Student')
+        ->assertSee('Student')
+        ->assertSee('Directory Staff')
+        ->assertSee('Staff');
+});

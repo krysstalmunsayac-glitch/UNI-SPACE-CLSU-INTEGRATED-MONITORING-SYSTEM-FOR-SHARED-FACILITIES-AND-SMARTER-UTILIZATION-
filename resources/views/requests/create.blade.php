@@ -45,7 +45,7 @@
             <div
                 class="grid items-start gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(28rem,1.1fr)]"
                 x-data="{
-                    step: {{ $errors->hasAny(['Amenity_ID', 'Amenity_ID.*', 'Proposed_Date', 'Proposed_End_Date', 'Daily_Schedules', 'Daily_Schedules.*', 'Purpose_Categories', 'Purpose_Categories.*', 'Other_Purpose', 'Reservation_Frequency', 'Facility_Importance', 'Requirements_Fit', 'Reserve_Again_Intent', 'Capacity', 'attachment']) ? 2 : 1 }},
+                    step: {{ $errors->hasAny(['Amenity_ID', 'Amenity_ID.*', 'Purpose_Categories', 'Purpose_Categories.*', 'Other_Purpose', 'Reservation_Frequency', 'Facility_Importance', 'Requirements_Fit', 'Reserve_Again_Intent', 'Capacity', 'attachment']) ? 3 : ($errors->hasAny(['Proposed_Date', 'Proposed_End_Date', 'Daily_Schedules', 'Daily_Schedules.*']) ? 2 : 1) }},
                     submitting: false,
                     selectedAmenities: @js(array_map('strval', old('Amenity_ID', []))),
                     dailySchedules: @js(old('Daily_Schedules', [])),
@@ -346,7 +346,12 @@
                                     class="flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold"
                                     :class="step === 2 ? 'bg-emerald-700 text-white' : 'bg-zinc-200 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300'"
                                 >2</span>
-                                <span class="text-sm font-semibold" :class="step === 2 ? 'text-emerald-950 dark:text-white' : 'text-zinc-500 dark:text-zinc-400'">Schedule & amenities</span>
+                                <span class="text-sm font-semibold" :class="step === 2 ? 'text-emerald-950 dark:text-white' : 'text-zinc-500 dark:text-zinc-400'">Schedule</span>
+                            </div>
+                            <div class="h-px flex-1 bg-emerald-900/10 dark:bg-white/10"></div>
+                            <div class="flex items-center gap-2">
+                                <span class="flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold" :class="step === 3 ? 'bg-emerald-700 text-white' : 'bg-zinc-200 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300'">3</span>
+                                <span class="text-sm font-semibold" :class="step === 3 ? 'text-emerald-950 dark:text-white' : 'text-zinc-500 dark:text-zinc-400'">Request details</span>
                             </div>
                         </div>
                         </div>
@@ -368,12 +373,12 @@
                             class="space-y-4"
                         >
                             @csrf
-                            <input type="hidden" name="_step" value="2">
+                            <input type="hidden" name="_step" x-bind:value="step">
 
                             {{-- STEP 1: Event details --}}
                             <div x-ref="eventDetails" x-show="step === 1" x-cloak class="space-y-4">
-                                <x-ui::heading size="lg">Event details</x-ui::heading>
-                                <p class="text-sm text-emerald-900/70 dark:text-zinc-300">Tell us about the event this request is for.</p>
+                                <x-ui::heading size="lg">Tell us about your event</x-ui::heading>
+                                <p class="text-sm text-emerald-900/70 dark:text-zinc-300">Add a clear event name and a short description so the facility team can review your request.</p>
 
                                 @if ($guestBooking)
                                     <div class="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-800 dark:bg-emerald-950/20">
@@ -402,7 +407,7 @@
 
                                 <div>
                                     <x-ui::input
-                                        label="Event title"
+                                        label="What is the name of your event?"
                                         name="Event_Title"
                                         value="{{ old('Event_Title') }}"
                                         required
@@ -414,7 +419,7 @@
 
                                 <div>
                                     <x-ui::textarea
-                                        label="Description"
+                                        label="What will happen during the event?"
                                         name="Description"
                                         rows="4"
                                         required
@@ -426,24 +431,26 @@
 
                                 <div class="grid gap-4 sm:grid-cols-2">
                                     <div>
-                                        <x-ui::select label="Event type" name="Type_Event" x-model="eventType" required>
-                                            <x-ui::select.option value="">Select a type</x-ui::select.option>
+                                        <x-ui::select label="What kind of event is this?" name="Type_Event" x-model="eventType" required>
+                                            <x-ui::select.option value="">Choose an event type</x-ui::select.option>
                                             {{-- Adjust these to match your Type_Event enum/values --}}
                                             <x-ui::select.option value="Meeting" :selected="old('Type_Event') == 'Meeting'">Meeting</x-ui::select.option>
                                             <x-ui::select.option value="Seminar" :selected="old('Type_Event') == 'Seminar'">Seminar</x-ui::select.option>
                                             <x-ui::select.option value="Workshop" :selected="old('Type_Event') == 'Workshop'">Workshop</x-ui::select.option>
                                             <x-ui::select.option value="Conference" :selected="old('Type_Event') == 'Conference'">Conference</x-ui::select.option>
+                                            <x-ui::select.option value="Birthday or Celebration" :selected="old('Type_Event') == 'Birthday or Celebration'">Birthday or celebration</x-ui::select.option>
                                             <x-ui::select.option value="Other" :selected="old('Type_Event') == 'Other'">Other</x-ui::select.option>
                                         </x-ui::select>
                                         @error('Type_Event') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                                     </div>
 
                                     <div>
-                                        <x-ui::select label="Event classification" name="Event_Scope" required>
-                                            <x-ui::select.option value="">Select internal or external</x-ui::select.option>
-                                            <x-ui::select.option value="Internal" :selected="old('Event_Scope') === 'Internal'">Internal event</x-ui::select.option>
-                                            <x-ui::select.option value="External" :selected="old('Event_Scope') === 'External'">External event</x-ui::select.option>
+                                        <x-ui::select label="Is this event connected to CLSU?" name="Event_Scope" required>
+                                            <x-ui::select.option value="">Choose the event purpose</x-ui::select.option>
+                                            <x-ui::select.option value="Internal" :selected="old('Event_Scope') === 'Internal'">Yes — official CLSU-related event</x-ui::select.option>
+                                            <x-ui::select.option value="External" :selected="old('Event_Scope') === 'External'">No — personal or non-CLSU event</x-ui::select.option>
                                         </x-ui::select>
+                                        <p class="mt-1 text-xs leading-5 text-zinc-500 dark:text-zinc-400">Choose based on the event purpose. A personal birthday is non-CLSU even when requested by a CLSU student or employee.</p>
                                         @error('Event_Scope') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                                     </div>
 
@@ -475,14 +482,21 @@
                                             }
                                         "
                                     >
-                                        Continue to schedule
+                                        Choose date and time
                                     </button>
                                 </div>
                             </div>
 
-                            {{-- STEP 2: Facility request details --}}
-                            <div x-show="step === 2" x-cloak class="space-y-4">
-                                <x-ui::heading size="lg">Schedule & amenities</x-ui::heading>
+                            {{-- STEPS 2–3: Schedule and request details --}}
+                            <div x-show="step >= 2" x-cloak class="space-y-4">
+                                <div x-show="step === 2">
+                                    <x-ui::heading size="lg">Choose your schedule</x-ui::heading>
+                                    <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Select the event date and the time you want to use the facility.</p>
+                                </div>
+                                <div x-show="step === 3">
+                                    <x-ui::heading size="lg">Amenities & request details</x-ui::heading>
+                                    <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Choose any extras you need, then complete the final details before sending your request.</p>
+                                </div>
 
                                 @if ($errors->hasAny(['Proposed_Date', 'Proposed_End_Date', 'Daily_Schedules', 'Daily_Schedules.*']))
                                     <div role="alert" class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-500/30 dark:bg-red-950/30 dark:text-red-200">
@@ -495,7 +509,7 @@
                                     </div>
                                 @endif
 
-                                <div>
+                                <div x-show="step === 3" x-cloak>
                                     <div class="mb-3 flex flex-wrap items-end justify-between gap-2">
                                         <div>
                                             <h3 class="text-sm font-bold text-emerald-950 dark:text-white">Optional amenities</h3>
@@ -563,7 +577,7 @@
                                     @enderror
                                 </div>
 
-                                <div class="grid gap-4 sm:grid-cols-2">
+                                <div x-show="step === 2" x-ref="scheduleDetails" class="grid gap-4 sm:grid-cols-2">
                                     <div>
                                         <x-ui::input
                                             label="First event day"
@@ -683,6 +697,10 @@
                                         @error('Daily_Schedules.*.end') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                                     </div>
 
+                                </div>
+
+                                <div x-show="step === 3" x-cloak class="grid gap-4 sm:grid-cols-2">
+
                                     @include('requests.partials.purpose-questionnaire')
 
                                     <div class="sm:col-span-2">
@@ -707,11 +725,32 @@
                                     <button
                                         type="button"
                                         class="inline-flex items-center justify-center rounded-xl border border-emerald-900/10 px-4 py-2 text-sm font-medium text-emerald-900 transition hover:border-emerald-700 hover:bg-emerald-50 dark:border-white/10 dark:text-zinc-200 dark:hover:bg-zinc-800"
-                                        x-on:click="step = 1; window.scrollTo({ top: 0, behavior: 'smooth' })"
+                                        x-on:click="step = step === 2 ? 1 : 2; window.scrollTo({ top: 0, behavior: 'smooth' })"
+                                        x-text="step === 2 ? 'Back to event' : 'Back to schedule'"
                                     >
                                         Back
                                     </button>
                                     <button
+                                        x-show="step === 2"
+                                        type="button"
+                                        class="inline-flex min-h-10 w-full items-center justify-center rounded-xl bg-emerald-700 px-5 text-sm font-semibold text-white transition hover:bg-emerald-800 sm:w-auto"
+                                        x-on:click="
+                                            const invalidField = Array.from($refs.scheduleDetails.querySelectorAll('input, select'))
+                                                .find(field => !field.checkValidity());
+                                            if (invalidField) {
+                                                invalidField.reportValidity();
+                                            } else if (hasBlockingConflict()) {
+                                                availabilityError = 'Choose an available date and time before continuing.';
+                                            } else {
+                                                step = 3;
+                                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                                            }
+                                        "
+                                    >
+                                        Continue to request details
+                                    </button>
+                                    <button
+                                        x-show="step === 3"
                                         type="submit"
                                         class="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 px-5 text-sm font-semibold text-white transition hover:bg-emerald-800 disabled:pointer-events-none disabled:opacity-60 sm:w-auto"
                                         data-ui-confirm="Are you sure you want to submit this reservation request? Please review the selected facility, date, time, and amenities before continuing."
@@ -723,7 +762,7 @@
                                         <span x-show="!submitting">{{ $guestBooking ? 'Submit guest request' : 'Send request' }}</span>
                                         <span x-cloak x-show="submitting">Submitting…</span>
                                     </button>
-                                    <a href="{{ $guestBooking ? (auth()->user()->isSuperAdmin() ? route('Facility.SuperAdmin') : route('Facility.OfficeAdmin')) : route('home') }}" class="inline-flex items-center justify-center rounded-xl border border-emerald-900/10 px-4 py-2 text-sm font-medium text-emerald-900 transition hover:border-emerald-700 hover:bg-emerald-50 dark:border-white/10 dark:text-zinc-200 dark:hover:bg-zinc-800">{{ $guestBooking ? 'Back to facilities' : 'Back to home' }}</a>
+                                    <a x-show="step === 3" href="{{ $guestBooking ? (auth()->user()->isSuperAdmin() ? route('Facility.SuperAdmin') : route('Facility.OfficeAdmin')) : route('home') }}" class="inline-flex items-center justify-center rounded-xl border border-emerald-900/10 px-4 py-2 text-sm font-medium text-emerald-900 transition hover:border-emerald-700 hover:bg-emerald-50 dark:border-white/10 dark:text-zinc-200 dark:hover:bg-zinc-800">{{ $guestBooking ? 'Back to facilities' : 'Back to home' }}</a>
                                 </div>
                             </div>
                         </form>

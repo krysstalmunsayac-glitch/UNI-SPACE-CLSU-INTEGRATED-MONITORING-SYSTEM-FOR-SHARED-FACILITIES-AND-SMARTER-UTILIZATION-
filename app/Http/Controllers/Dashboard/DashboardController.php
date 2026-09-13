@@ -80,7 +80,6 @@ class DashboardController extends Controller
             ->with(['images', 'amenities' => fn ($query) => $query
                 ->where('amenities.Status', 'Available')
                 ->orderBy('amenities.name')])
-            ->where('Status', 'Available')
             ->orderBy('Facility_Name')
             ->get();
 
@@ -113,6 +112,7 @@ class DashboardController extends Controller
         return view('dashboards.user', [
             'facilities' => $facilities,
             'facilityCategories' => $facilityCategories,
+            'showsUnavailableFacilities' => true,
             'mapFacilities' => Facilities::query()
                 ->orderBy('Facility_Name')
                 ->get([

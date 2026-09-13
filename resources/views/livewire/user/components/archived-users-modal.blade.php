@@ -32,6 +32,10 @@
                         </x-ui::table.column>
 
                         <x-ui::table.column>
+                            User type
+                        </x-ui::table.column>
+
+                        <x-ui::table.column>
                             Archived
                         </x-ui::table.column>
 
@@ -61,6 +65,20 @@
                                             </div>
                                         </div>
                                     </div>
+                                </x-ui::table.cell>
+
+                                <x-ui::table.cell>
+                                    <x-ui::badge
+                                        size="sm"
+                                        :color="match ($archivedUser->account_type) {
+                                            'student' => 'green',
+                                            'staff' => 'blue',
+                                            'external' => 'amber',
+                                            default => $archivedUser->isSuperAdminOrAdmin() ? 'blue' : 'zinc',
+                                        }"
+                                    >
+                                        {{ $archivedUser->accountTypeLabel() }}
+                                    </x-ui::badge>
                                 </x-ui::table.cell>
 
                                 <x-ui::table.cell class="whitespace-nowrap">
@@ -108,7 +126,7 @@
                         @empty
                             <x-ui::table.row>
                                 <x-ui::table.cell
-                                    colspan="5"
+                                    colspan="6"
                                     class="py-10 text-center"
                                 >
                                     <div class="space-y-2">

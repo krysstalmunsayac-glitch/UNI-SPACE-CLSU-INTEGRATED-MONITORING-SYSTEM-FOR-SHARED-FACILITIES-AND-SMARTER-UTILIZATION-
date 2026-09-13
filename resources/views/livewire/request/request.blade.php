@@ -123,6 +123,10 @@ new #[Layout('components.layouts.app')] class extends Component
 
     public ?string $Facility_Name = null;
 
+    public ?string $Facility_Office = null;
+
+    public ?string $Facility_Location = null;
+
     public ?string $Requester_Name = null;
 
     public ?string $Requester_Email = null;
@@ -130,6 +134,8 @@ new #[Layout('components.layouts.app')] class extends Component
     public ?string $Requester_Contact = null;
 
     public ?string $Requester_Office = null;
+
+    public ?string $Requester_Address = null;
 
     public bool $Is_Guest_Booking = false;
 
@@ -152,6 +158,24 @@ new #[Layout('components.layouts.app')] class extends Component
     public ?string $Reserve_Again_Intent = null;
 
     public ?string $attachmentPath = null;
+
+    public array $View_Daily_Schedules = [];
+
+    public ?string $Cancellation_Reason = null;
+
+    public ?string $Rejection_Reason = null;
+
+    public ?string $View_Review_Notes = null;
+
+    public ?string $View_Review_Requested_At = null;
+
+    public ?string $Payment_Proof_Path = null;
+
+    public ?string $Payment_Proof_Uploaded_At = null;
+
+    public ?string $Request_Created_At = null;
+
+    public ?string $Request_Updated_At = null;
 
     public function applySearch(): void
     {
@@ -205,10 +229,13 @@ new #[Layout('components.layouts.app')] class extends Component
         $this->Event_Title = null;
         $this->Event_Type = null;
         $this->Facility_Name = null;
+        $this->Facility_Office = null;
+        $this->Facility_Location = null;
         $this->Requester_Name = null;
         $this->Requester_Email = null;
         $this->Requester_Contact = null;
         $this->Requester_Office = null;
+        $this->Requester_Address = null;
         $this->Is_Guest_Booking = false;
         $this->Guest_Organization = null;
         $this->Created_By_Name = null;
@@ -220,6 +247,15 @@ new #[Layout('components.layouts.app')] class extends Component
         $this->Requirements_Fit = null;
         $this->Reserve_Again_Intent = null;
         $this->attachmentPath = null;
+        $this->View_Daily_Schedules = [];
+        $this->Cancellation_Reason = null;
+        $this->Rejection_Reason = null;
+        $this->View_Review_Notes = null;
+        $this->View_Review_Requested_At = null;
+        $this->Payment_Proof_Path = null;
+        $this->Payment_Proof_Uploaded_At = null;
+        $this->Request_Created_At = null;
+        $this->Request_Updated_At = null;
         $this->editingId = null;
         $this->viewingId = null;
         $this->reviewingId = null;
@@ -273,14 +309,26 @@ new #[Layout('components.layouts.app')] class extends Component
         $this->Event_Title = $request->event?->Event_Title;
         $this->Event_Type = $request->event?->Type_Event;
         $this->Facility_Name = $request->facility?->Facility_Name;
+        $this->Facility_Office = $request->facility?->Office;
+        $this->Facility_Location = $request->facility?->Location;
         $this->Is_Guest_Booking = $request->Is_Guest_Booking;
         $this->Requester_Name = $request->requesterName();
         $this->Requester_Email = $request->requesterEmail();
         $this->Requester_Contact = $request->Is_Guest_Booking ? $request->Guest_Contact : $request->user?->contact_number;
         $this->Requester_Office = $request->Is_Guest_Booking ? $request->Guest_Organization : $request->user?->office;
+        $this->Requester_Address = $request->Is_Guest_Booking ? null : $request->user?->address;
         $this->Guest_Organization = $request->Guest_Organization;
         $this->Created_By_Name = $request->creator?->name;
         $this->attachmentPath = $request->attachment_path;
+        $this->View_Daily_Schedules = $request->Daily_Schedules ?? [];
+        $this->Cancellation_Reason = $request->Cancellation_Reason;
+        $this->Rejection_Reason = $request->Rejection_Reason;
+        $this->View_Review_Notes = $request->Review_Notes;
+        $this->View_Review_Requested_At = $request->Review_Requested_At?->format('M j, Y g:i A');
+        $this->Payment_Proof_Path = $request->Payment_Proof_Path;
+        $this->Payment_Proof_Uploaded_At = $request->Payment_Proof_Uploaded_At?->format('M j, Y g:i A');
+        $this->Request_Created_At = $request->Created_at?->format('M j, Y g:i A');
+        $this->Request_Updated_At = $request->Updated_at?->format('M j, Y g:i A');
         $this->Requested_Amenities = $request->amenities
             ->map(fn (Amenities $amenity) => $amenity->name.' — '.number_format((int) $amenity->pivot->quantity).' units')
             ->values()

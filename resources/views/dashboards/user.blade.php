@@ -5,12 +5,14 @@
         #map { background: #f4f4f5; }
         #map .campus-map-layout > div { border-radius: 1rem; }
         #map .campus-map-layout > div:last-child { box-shadow: none; }
+        @media (prefers-reduced-motion: reduce) {
+            .external-hero-slide { transition: none; }
+        }
     </style>
     @php
         $heroSlides = [
             ['image' => 'images/siel-space-slide-01.jpg', 'alt' => 'CLSU athletic field and grandstand'],
             ['image' => 'images/siel-space-slide-02.jpg', 'alt' => 'CLSU auditorium viewed from the balcony'],
-            ['image' => 'images/siel-space-slide-03.jpg', 'alt' => 'Rows of seats inside the CLSU auditorium'],
             ['image' => 'images/siel-space-slide-04.jpg', 'alt' => 'Central aisle and seating inside the CLSU auditorium'],
             ['image' => 'images/siel-space-slide-05.jpg', 'alt' => 'Front entrance of the CLSU auditorium'],
             ['image' => 'images/siel-space-slide-06.jpg', 'alt' => 'Angled exterior view of the CLSU auditorium'],
@@ -19,7 +21,7 @@
 
     <section
         id="home"
-        class="relative min-h-[100svh] scroll-mt-20 overflow-hidden bg-zinc-950 text-white"
+        class="relative flex min-h-[640px] scroll-mt-20 overflow-hidden bg-zinc-950 text-white lg:h-[100svh]"
         x-data="{
             active: 0,
             total: {{ count($heroSlides) }},
@@ -29,9 +31,17 @@
                 clearInterval(this.timer);
                 this.timer = setInterval(() => this.active = (this.active + 1) % this.total, 10000);
             },
+            stop() { clearInterval(this.timer); },
             goTo(index) { this.active = index; this.start(); },
+            previous() { this.active = (this.active - 1 + this.total) % this.total; this.start(); },
+            next() { this.active = (this.active + 1) % this.total; this.start(); },
             destroy() { clearInterval(this.timer); }
         }"
+        x-on:keydown.left.prevent="previous()"
+        x-on:keydown.right.prevent="next()"
+        tabindex="0"
+        aria-roledescription="carousel"
+        aria-label="SIEL Space campus images"
     >
         @foreach ($heroSlides as $slide)
             <img
@@ -44,9 +54,13 @@
                 @if ($loop->first) fetchpriority="high" @endif
             >
         @endforeach
-        <div class="absolute inset-0 bg-black/55" aria-hidden="true"></div>
+        <div class="absolute inset-0 bg-gradient-to-b from-black/65 via-black/45 to-black/80" aria-hidden="true"></div>
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_20%,rgba(0,0,0,.28)_100%)]" aria-hidden="true"></div>
 
-        <div class="relative mx-auto grid min-h-[100svh] max-w-7xl items-center gap-8 px-4 pb-16 pt-24 sm:px-6 lg:grid-cols-[1.05fr_.95fr] lg:px-8">
+        <button type="button" x-on:click="previous()" class="absolute left-5 top-1/2 z-20 hidden size-12 -translate-y-1/2 items-center justify-center border-0 bg-transparent text-4xl font-black text-white/80 transition hover:text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 sm:inline-flex lg:left-8" aria-label="Show previous hero image">‹</button>
+        <button type="button" x-on:click="next()" class="absolute right-5 top-1/2 z-20 hidden size-12 -translate-y-1/2 items-center justify-center border-0 bg-transparent text-4xl font-black text-white/80 transition hover:text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 sm:inline-flex lg:right-8" aria-label="Show next hero image">›</button>
+
+        <div class="relative mx-auto grid min-h-[640px] w-full max-w-7xl items-center gap-8 px-4 pb-24 pt-28 sm:px-8 lg:h-[100svh] lg:min-h-0 lg:grid-cols-[1.05fr_.95fr] lg:px-24 lg:pb-20 lg:pt-24">
             <div class="max-w-3xl">
                 <p class="text-sm font-black uppercase tracking-[.28em] text-yellow-400">External user dashboard</p>
                 <h1 class="mt-4 text-5xl font-black leading-[.98] tracking-tight sm:text-6xl lg:text-7xl">Welcome back, {{ auth()->user()->name }}</h1>
@@ -57,7 +71,7 @@
                 </div>
             </div>
 
-            <aside class="overflow-hidden rounded-2xl border-t-4 border-yellow-400 bg-white p-7 text-zinc-950 sm:p-8" aria-label="External user reservation tools">
+            <aside class="overflow-hidden rounded-2xl border-t-4 border-emerald-700 bg-white p-7 text-zinc-950 sm:p-8" aria-label="External user reservation tools">
                 <p class="text-xs font-black uppercase tracking-[.2em] text-[#009639]">Your reservation hub</p>
                 <h2 class="mt-3 text-3xl font-black tracking-tight">Plan with confidence.</h2>
                 <p class="mt-3 leading-7 text-zinc-600">Everything you need to choose a venue and follow the progress of your request.</p>
@@ -69,9 +83,9 @@
             </aside>
         </div>
 
-        <div class="absolute bottom-5 left-1/2 z-10 flex -translate-x-1/2 gap-2" role="group" aria-label="Choose hero image">
+        <div class="absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-full border border-white/15 bg-black/35 px-3 py-2 backdrop-blur-md" role="group" aria-label="Choose hero image">
             @foreach ($heroSlides as $slide)
-                <button type="button" class="h-2.5 w-8 rounded-full border border-white transition-colors" x-bind:class="active === {{ $loop->index }} ? 'bg-yellow-400' : 'bg-white/40 hover:bg-white'" x-on:click="goTo({{ $loop->index }})" aria-label="Show image {{ $loop->iteration }} of {{ count($heroSlides) }}" x-bind:aria-current="active === {{ $loop->index }} ? 'true' : null"></button>
+                <button type="button" class="h-3 rounded-full border border-white transition-all" x-bind:class="active === {{ $loop->index }} ? 'w-9 bg-yellow-400' : 'w-3 bg-white/50 hover:bg-white'" x-on:click="goTo({{ $loop->index }})" aria-label="Show image {{ $loop->iteration }} of {{ count($heroSlides) }}" x-bind:aria-current="active === {{ $loop->index }} ? 'true' : null"></button>
             @endforeach
         </div>
     </section>
@@ -111,7 +125,7 @@
             @endif
 
             <div class="mt-20 border-t border-zinc-300 pt-14">
-                <p class="text-sm font-black uppercase tracking-[.2em] text-[#009639]">Facility directory</p><h2 class="mt-3 text-4xl font-black tracking-tight text-zinc-950 sm:text-5xl">Available facilities</h2><p class="mt-4 max-w-2xl text-lg text-zinc-600">Compare spaces using their essential details, then book the one that fits your activity.</p>
+                <p class="text-sm font-black uppercase tracking-[.2em] text-[#009639]">Facility directory</p><h2 class="mt-3 text-4xl font-black tracking-tight text-zinc-950 sm:text-5xl">{{ ($showsUnavailableFacilities ?? false) ? 'Campus facilities' : 'Available facilities' }}</h2><p class="mt-4 max-w-2xl text-lg text-zinc-600">Compare spaces using their essential details, then book an available facility that fits your activity.</p>
             </div>
             <div class="mt-10 grid gap-4 rounded-2xl border border-zinc-200 bg-white p-5 lg:grid-cols-[1fr_190px_220px]">
                 <label class="block">
@@ -161,7 +175,7 @@
                     ])
                 @empty
                     <div class="col-span-full rounded-2xl border border-dashed border-zinc-300 bg-white p-10 text-center text-zinc-600">
-                        No facilities are currently available for reservation.
+                        No facilities are currently listed.
                     </div>
                 @endforelse
             </div>
@@ -260,7 +274,7 @@
             <div><p class="text-sm font-black uppercase tracking-[.2em] text-[#009639]">Support</p><h2 class="mt-3 text-4xl font-black tracking-tight text-zinc-950">How can we help?</h2><p class="mt-5 leading-7 text-zinc-600">Central Luzon State University<br>Science City of Muñoz, Nueva Ecija 3120</p></div>
             <div class="border-t border-zinc-200">
                 @foreach (['How do I reserve a facility?' => 'Choose an available facility, click Book, then complete the request form.', 'Can I check existing reservations first?' => 'Yes. Use the booking calendar on this dashboard to review scheduled reservations.', 'How will I know if my request is approved?' => 'SIEL SPACE will notify you when your request status changes.', 'How far in advance should I book?' => 'Submit your request as early as possible. Requests are handled first-come, first-served.'] as $question => $answer)
-                    <details class="group border-b border-zinc-200 py-5"><summary class="flex cursor-pointer list-none items-center justify-between text-lg font-black text-zinc-950">{{ $question }}<span class="ml-4 text-[#009639] transition group-open:rotate-180">⌄</span></summary><p class="mt-3 max-w-2xl leading-7 text-zinc-600">{{ $answer }}</p></details>
+                    <details class="group border-b border-zinc-200 py-5"><summary class="flex cursor-pointer list-none items-center justify-between gap-4 text-lg font-black text-zinc-950">{{ $question }}<span class="flex size-8 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-[#009639] transition-transform group-open:rotate-180" aria-hidden="true"><svg class="size-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 7.5 5 5 5-5" /></svg></span></summary><p class="mt-3 max-w-2xl leading-7 text-zinc-600">{{ $answer }}</p></details>
                 @endforeach
             </div>
         </div>

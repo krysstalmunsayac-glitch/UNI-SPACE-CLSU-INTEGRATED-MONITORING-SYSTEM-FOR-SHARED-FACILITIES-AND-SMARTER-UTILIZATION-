@@ -14,6 +14,30 @@ new #[Layout('components.layouts.app')] class extends Component {
     public string $actionFilter = '';
     public string $dateFrom = '';
     public string $dateTo = '';
+    public bool $showViewModal = false;
+    public ?int $viewingId = null;
+
+    public function viewLog(int $logId): void
+    {
+        AuditLog::query()->findOrFail($logId);
+        $this->viewingId = $logId;
+        $this->showViewModal = true;
+    }
+
+    #[Computed]
+    public function viewingLog(): ?AuditLog
+    {
+        if (! $this->viewingId) {
+            return null;
+        }
+
+        return AuditLog::query()->with([
+            'actor:id,name,user_type',
+            'requestRecord:RID,User_ID,Facility_ID',
+            'requestRecord.user:id,name,email',
+            'requestRecord.facility:FID,Facility_Name',
+        ])->find($this->viewingId);
+    }
 
     public function applyFilters(): void
     {
@@ -195,6 +219,7 @@ new #[Layout('components.layouts.app')] class extends Component {
                 <x-ui::select.option value="request_rejected">Rejected</x-ui::select.option>
                 <x-ui::select.option value="revision_requested">Revision requested</x-ui::select.option>
                 <x-ui::select.option value="request_updated">Updated</x-ui::select.option>
+                <x-ui::select.option value="schedule_updated">Schedule changed</x-ui::select.option>
                 <x-ui::select.option value="request_cancelled">Cancelled</x-ui::select.option>
                 <x-ui::select.option value="event_ended">Event ended</x-ui::select.option>
                 <x-ui::select.option value="request_archived">Archived</x-ui::select.option>
@@ -218,6 +243,7 @@ new #[Layout('components.layouts.app')] class extends Component {
                 <x-ui::table.column>Request</x-ui::table.column>
                 <x-ui::table.column>User / facility</x-ui::table.column>
                 <x-ui::table.column>Details</x-ui::table.column>
+                <x-ui::table.column>View</x-ui::table.column>
             </x-ui::table.columns>
 
             <x-ui::table.rows>
@@ -227,6 +253,7 @@ new #[Layout('components.layouts.app')] class extends Component {
                             'request_approved' => 'green',
                             'request_rejected', 'request_deleted' => 'red',
                             'revision_requested', 'request_cancelled' => 'amber',
+                            'schedule_updated' => 'violet',
                             'event_ended' => 'zinc',
                             default => 'blue',
                         };
@@ -249,16 +276,26 @@ new #[Layout('components.layouts.app')] class extends Component {
                         </x-ui::table.cell>
                         <x-ui::table.cell>
                             <p class="max-w-sm">{{ $log->description }}</p>
-                            @if ($log->new_values)
+                            @if ($log->action === 'schedule_updated' && $log->old_values && $log->new_values)
+                                <p class="mt-1 max-w-md whitespace-normal text-xs font-medium text-zinc-600 dark:text-zinc-300">
+                                    {{ $log->old_values['Date'] ?? '—' }} {{ $log->old_values['Start_Time'] ?? '' }}–{{ $log->old_values['End_Time'] ?? '' }}
+                                    →
+                                    {{ $log->new_values['Date'] ?? '—' }} {{ $log->new_values['Start_Time'] ?? '' }}–{{ $log->new_values['End_Time'] ?? '' }}
+                                </p>
+                            @endif
+                            @if ($log->new_values && $log->action !== 'schedule_updated')
                                 <p class="mt-1 max-w-md whitespace-normal break-words text-xs text-zinc-500">
                                     {{ collect($log->new_values)->map(fn ($value, $key) => str($key)->replace('_', ' ')->title().': '.(is_scalar($value) ? $value : json_encode($value)))->implode(' · ') }}
                                 </p>
                             @endif
                         </x-ui::table.cell>
+                        <x-ui::table.cell>
+                            <x-ui::button wire:click="viewLog({{ $log->id }})" variant="outline" size="sm">View</x-ui::button>
+                        </x-ui::table.cell>
                     </x-ui::table.row>
                 @empty
                     <x-ui::table.row>
-                        <x-ui::table.cell colspan="6">
+                        <x-ui::table.cell colspan="7">
                             <div class="flex flex-col items-center justify-center gap-2 py-12 text-center text-zinc-500">
                                 <x-ui::icon.clipboard-document-list class="size-9 text-zinc-300" />
                                 <p>No audit records match the selected filters.</p>
@@ -269,4 +306,63 @@ new #[Layout('components.layouts.app')] class extends Component {
             </x-ui::table.rows>
         </x-ui::table>
     </x-ui::card>
+
+    @if ($showViewModal && $this->viewingLog)
+        @php($viewLog = $this->viewingLog)
+        <x-ui::modal wire:model.self="showViewModal" class="!overflow-x-hidden md:!w-[44rem]">
+            <div class="min-w-0 space-y-6">
+                <div class="flex items-start justify-between gap-4 border-b border-zinc-200 pb-4 dark:border-zinc-700">
+                    <div>
+                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-emerald-700 dark:text-emerald-300">Audit record #{{ $viewLog->id }}</p>
+                        <h2 class="mt-1 text-2xl font-black text-zinc-950 dark:text-white">{{ str($viewLog->action)->replace('_', ' ')->title() }}</h2>
+                        <p class="mt-1 text-sm text-zinc-500">{{ $viewLog->created_at->format('M d, Y h:i:s A') }}</p>
+                    </div>
+                    <x-ui::button wire:click="$set('showViewModal', false)" variant="ghost">Close</x-ui::button>
+                </div>
+
+                <dl class="grid gap-4 sm:grid-cols-2">
+                    <div class="rounded-xl bg-zinc-50 p-4 dark:bg-zinc-900">
+                        <dt class="text-xs font-bold uppercase tracking-wide text-zinc-500">Performed by</dt>
+                        <dd class="mt-1 font-bold text-zinc-950 dark:text-white">{{ $viewLog->actor?->name ?? 'System' }}</dd>
+                        <dd class="text-sm text-zinc-500">{{ $viewLog->actor?->roleLabel() ?? 'Automated action' }}</dd>
+                    </div>
+                    <div class="rounded-xl bg-zinc-50 p-4 dark:bg-zinc-900">
+                        <dt class="text-xs font-bold uppercase tracking-wide text-zinc-500">Request</dt>
+                        <dd class="mt-1 font-bold text-zinc-950 dark:text-white">REQ-{{ str_pad((string) $viewLog->auditable_id, 5, '0', STR_PAD_LEFT) }}</dd>
+                        <dd class="text-sm text-zinc-500">{{ $viewLog->requestRecord?->facility?->Facility_Name ?? 'No facility' }}</dd>
+                    </div>
+                    <div class="rounded-xl bg-zinc-50 p-4 dark:bg-zinc-900 sm:col-span-2">
+                        <dt class="text-xs font-bold uppercase tracking-wide text-zinc-500">End user</dt>
+                        <dd class="mt-1 font-bold text-zinc-950 dark:text-white">{{ $viewLog->requestRecord?->user?->name ?? 'Guest or unavailable user' }}</dd>
+                        <dd class="text-sm text-zinc-500">{{ $viewLog->requestRecord?->user?->email }}</dd>
+                    </div>
+                </dl>
+
+                <div>
+                    <h3 class="text-xs font-bold uppercase tracking-wide text-zinc-500">Details</h3>
+                    <p class="mt-2 rounded-xl border border-zinc-200 p-4 text-zinc-800 dark:border-zinc-700 dark:text-zinc-200">{{ $viewLog->description }}</p>
+                </div>
+
+                @if ($viewLog->old_values || $viewLog->new_values)
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        @foreach ([['Previous values', $viewLog->old_values], ['New values', $viewLog->new_values]] as [$heading, $values])
+                            <div class="min-w-0 overflow-hidden rounded-xl border border-zinc-200 p-4 dark:border-zinc-700">
+                                <h3 class="text-xs font-bold uppercase tracking-wide text-zinc-500">{{ $heading }}</h3>
+                                <dl class="mt-3 space-y-2 text-sm">
+                                    @forelse (($values ?? []) as $key => $value)
+                                        <div class="min-w-0 border-b border-zinc-100 pb-2 last:border-0 dark:border-zinc-700">
+                                            <dt class="font-semibold text-zinc-600 dark:text-zinc-300">{{ str($key)->replace('_', ' ')->title() }}</dt>
+                                            <dd class="mt-1 min-w-0 break-all font-medium leading-5 text-zinc-950 dark:text-white">{{ is_scalar($value) ? $value : json_encode($value) }}</dd>
+                                        </div>
+                                    @empty
+                                        <p class="text-zinc-500">No values recorded.</p>
+                                    @endforelse
+                                </dl>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+            </div>
+        </x-ui::modal>
+    @endif
 </div>

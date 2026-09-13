@@ -93,7 +93,6 @@
             <div class="max-w-4xl">
                 <p class="text-xs font-black uppercase tracking-[.32em] text-yellow-400 sm:text-sm lg:text-base">Central Luzon State University</p>
                 <h1 class="mt-5 text-5xl font-black leading-[.9] tracking-[-.045em] text-white sm:text-7xl lg:text-8xl xl:text-9xl">SIEL SPACE</h1>
-                <p class="mt-6 text-xl font-black tracking-tight text-white sm:text-2xl lg:text-3xl">Find. Schedule. Reserve.</p>
                 <p class="mx-auto mt-4 max-w-2xl text-base leading-7 text-white/85 sm:text-lg sm:leading-8">The centralized facility reservation platform of Central Luzon State University. Compare spaces, check schedules, and submit a request in one place.</p>
                 <div class="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
                     <a href="#facilities" class="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#009639] px-8 py-3 font-bold text-white shadow-lg shadow-black/20 transition hover:-translate-y-0.5 hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-yellow-400">Browse Facilities</a>
@@ -206,7 +205,7 @@
             <div><p class="text-sm font-black uppercase tracking-[.2em] text-[#009639]">Support</p><h2 class="mt-3 text-4xl font-black tracking-tight text-zinc-950">How can we help?</h2><p class="mt-5 leading-7 text-zinc-600">Central Luzon State University<br>Science City of Muñoz, Nueva Ecija 3120</p></div>
             <div class="border-t border-zinc-200">
                 @foreach (['How do I create an account?' => 'Use the Sign In button, then choose create an account if you are new to SIEL SPACE.', 'Who can use SIEL SPACE?' => 'Students, faculty, authorized staff, and external visitors can browse available facilities and submit requests.', 'Is there a cost to book facilities?' => 'Some facilities may have a listed rate or office approval requirement.', 'How far in advance can I book a facility?' => 'Submit your request as early as possible. Requests are handled first-come, first-served.'] as $question => $answer)
-                    <details class="group border-b border-zinc-200 py-5"><summary class="flex cursor-pointer list-none items-center justify-between text-lg font-black text-zinc-950">{{ $question }}<span class="ml-4 text-[#009639] transition group-open:rotate-180">⌄</span></summary><p class="mt-3 max-w-2xl leading-7 text-zinc-600">{{ $answer }}</p></details>
+                    <details class="group border-b border-zinc-200 py-5"><summary class="flex cursor-pointer list-none items-center justify-between gap-4 text-lg font-black text-zinc-950">{{ $question }}<span class="flex size-8 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-[#009639] transition-transform group-open:rotate-180" aria-hidden="true"><svg class="size-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 7.5 5 5 5-5" /></svg></span></summary><p class="mt-3 max-w-2xl leading-7 text-zinc-600">{{ $answer }}</p></details>
                 @endforeach
             </div>
         </div>

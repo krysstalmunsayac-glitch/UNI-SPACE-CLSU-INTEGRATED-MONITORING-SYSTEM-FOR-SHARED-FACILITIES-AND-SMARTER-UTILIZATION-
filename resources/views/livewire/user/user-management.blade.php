@@ -713,7 +713,8 @@ new #[Layout('components.layouts.app')] class extends Component
                     $searchQuery
                         ->where('name', 'like', $term)
                         ->orWhere('email', 'like', $term)
-                        ->orWhere('clsu_id', 'like', $term);
+                        ->orWhere('clsu_id', 'like', $term)
+                        ->orWhere('account_type', 'like', $term);
                 });
             })
             ->orderBy($this->sortBy, $this->sortDirection)
@@ -732,6 +733,7 @@ new #[Layout('components.layouts.app')] class extends Component
                 $query->where('name', 'like', '%'.$this->search.'%')
                     ->orWhere('email', 'like', '%'.$this->search.'%')
                     ->orWhere('clsu_id', 'like', '%'.$this->search.'%')
+                    ->orWhere('account_type', 'like', '%'.$this->search.'%')
                     ->orWhere('user_type', 'like', '%'.$this->search.'%');
             }))
             ->orderByDesc('deleted_at')

@@ -99,26 +99,35 @@ new #[Layout('components.layouts.auth')] class extends Component
             return;
         }
 
+        if ($this->step === 2) {
+            $this->validate([
+                'account_type' => ['required', Rule::in(['staff', 'student', 'external'])],
+                'name' => ['required', 'string', 'min:2', 'max:100'],
+                'clsu_id' => $this->clsuIdRules(),
+                'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
+            ], [
+                'account_type.required' => 'Select whether you are staff, a CLSU student, or an external user.',
+                'email.clsu_email' => 'Staff and CLSU students must use an @clsu2.edu.ph email address.',
+                'email.external_email' => 'External users must use a non-CLSU email address.',
+                'clsu_id.required' => 'Enter your unique CLSU ID.',
+                'clsu_id.regex' => 'Enter a valid CLSU ID in the format 22-1773.',
+                'clsu_id.unique' => 'This CLSU ID is already associated with an account or pending registration.',
+            ]);
+
+            $this->validateAccountEmailType();
+            $this->step = 3;
+
+            return;
+        }
+
         $this->validate([
-            'account_type' => ['required', Rule::in(['staff', 'student', 'external'])],
-            'name' => ['required', 'string', 'min:2', 'max:100'],
-            'clsu_id' => $this->clsuIdRules(),
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'contact_number' => ['required', 'string', 'regex:'.User::PH_CONTACT_REGEX],
             'address' => ['required', 'string', 'min:5', 'max:500'],
         ], [
-            'account_type.required' => 'Select whether you are staff, a CLSU student, or an external user.',
-            'email.clsu_email' => 'Staff and CLSU students must use an @clsu2.edu.ph email address.',
-            'email.external_email' => 'External users must use a non-CLSU email address.',
-            'clsu_id.required' => 'Enter your unique CLSU ID.',
-            'clsu_id.regex' => 'Enter a valid CLSU ID in the format 22-1773.',
-            'clsu_id.unique' => 'This CLSU ID is already associated with an account or pending registration.',
             'contact_number.regex' => 'Enter a valid PH mobile number: 09XXXXXXXXX or +639XXXXXXXXX.',
         ]);
 
-        $this->validateAccountEmailType();
-
-        $this->step = 3;
+        $this->step = 4;
     }
 
     public function previousStep(): void
@@ -231,7 +240,7 @@ new #[Layout('components.layouts.auth')] class extends Component
             <input wire:model="website" id="website" name="website" type="text" tabindex="-1" autocomplete="off">
         </div>
         <div class="flex w-full items-start">
-            @foreach ([1 => 'Account', 2 => 'Details', 3 => 'Security'] as $number => $label)
+            @foreach ([1 => 'Account', 2 => 'Details', 3 => 'Contact', 4 => 'Security'] as $number => $label)
                 <div class="flex min-w-0 flex-1 flex-col items-center gap-2 text-center">
                     <span @class([
                         'flex size-9 items-center justify-center rounded-full text-sm font-black',
@@ -244,8 +253,8 @@ new #[Layout('components.layouts.auth')] class extends Component
                         'text-emerald-900/45 dark:text-zinc-500' => $step !== $number,
                     ])>{{ $label }}</span>
                 </div>
-                @if ($number < 3)
-                    <span class="mt-4 h-px w-8 shrink-0 bg-emerald-900/15 dark:bg-white/15 sm:w-12"></span>
+                @if ($number < 4)
+                    <span class="mt-4 h-px w-5 shrink-0 bg-emerald-900/15 dark:bg-white/15 sm:w-8"></span>
                 @endif
             @endforeach
         </div>
@@ -277,7 +286,7 @@ new #[Layout('components.layouts.auth')] class extends Component
             <div class="rounded-xl border border-emerald-900/10 p-4 dark:border-white/10">
                 <h3 class="text-sm font-black text-emerald-900 dark:text-emerald-200">Data Privacy Notice and Consent</h3>
                 <p class="mt-2 text-xs leading-5 text-emerald-900/70 dark:text-zinc-300">
-                    SIEL SPACE collects your name, email address, CLSU ID when applicable, contact number, address, account credentials, and reservation activity to create and secure your account, process facility requests, communicate decisions, manage schedules, and maintain operational and audit records. Data is stored in authorized systems, protected through access controls and security safeguards, retained only as necessary, and accessed only by authorized CLSU personnel or parties permitted or required by law.
+                    SIEL SPACE uses your account and reservation information to provide and secure facility-booking services. Your data is protected, retained only when necessary, and accessed only by authorized personnel or as required by law.
                 </p>
                 <a href="{{ route('terms') }}#privacy-notice" target="_blank" rel="noopener noreferrer" class="mt-2 inline-block text-xs font-black text-emerald-800 underline underline-offset-2 dark:text-emerald-300">
                     View Full Data Privacy Notice<span class="sr-only"> (opens in a new tab)</span>
@@ -317,12 +326,87 @@ new #[Layout('components.layouts.auth')] class extends Component
                 </div>
             @endif
 
+            <div class="flex items-center justify-center gap-3">
+                <x-ui::button type="button" variant="ghost" wire:click="previousStep" class="w-36 rounded-full border border-emerald-700 py-3 text-xs font-black uppercase tracking-wide text-emerald-800 transition hover:bg-emerald-50 dark:border-emerald-300 dark:text-emerald-200 dark:hover:bg-zinc-800">Back</x-ui::button>
+                <x-ui::button type="button" variant="primary" wire:click="nextStep" class="w-36 rounded-full bg-emerald-700 py-3 text-xs font-black uppercase tracking-wide text-white hover:bg-emerald-800">Next</x-ui::button>
+            </div>
+        @elseif ($step === 3)
+
             <div class="grid gap-2">
                 <x-ui::input wire:model="contact_number" id="contact_number" label="{{ __('Contact Number') }}" type="tel" name="contact_number" required minlength="11" maxlength="13" pattern="(?:09[0-9]{9}|\+639[0-9]{9})" title="Use 09XXXXXXXXX or +639XXXXXXXXX." autocomplete="tel" placeholder="09123456789" />
             </div>
 
-            <div class="grid gap-2">
-                <x-ui::input wire:model="address" id="address" label="{{ __('Address') }}" type="text" name="address" required minlength="5" maxlength="500" autocomplete="street-address" placeholder="123 Main St, City" />
+            <div
+                class="grid gap-2"
+                x-data="{ unavailable: true, loading: false }"
+            >
+                @if (false)
+                <div class="grid gap-3 sm:grid-cols-2">
+                    <div class="relative" x-on:click.outside="provinceOpen = false">
+                        <label for="address_province" class="mb-1.5 block text-sm font-semibold text-emerald-800 dark:text-emerald-300">Province</label>
+                        <div class="relative">
+                            <input
+                                id="address_province"
+                                x-model.debounce.300ms="province"
+                                x-on:focus="provinceOpen = true"
+                                x-on:input="provinceOpen = true"
+                                x-on:keydown.escape="provinceOpen = false"
+                                type="text"
+                                required
+                                autocomplete="off"
+                                placeholder="Type or select province"
+                                class="h-[3.25rem] w-full border border-emerald-900/10 bg-emerald-950/[.045] px-4 pr-11 text-base font-semibold text-zinc-900 outline-none transition placeholder:text-emerald-900/45 focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
+                            >
+                            <button type="button" x-on:click="provinceOpen = ! provinceOpen" class="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-emerald-800" aria-label="Toggle province options">
+                                <x-ui::icon.chevron-down class="size-4 transition" x-bind:class="provinceOpen && 'rotate-180'" />
+                            </button>
+                        </div>
+                        <div x-show="provinceOpen" x-transition.opacity x-cloak class="absolute z-40 mt-1 h-40 w-full overscroll-contain overflow-y-scroll border border-zinc-200 bg-white py-1 shadow-xl [scrollbar-color:#009639_#f4f4f5] [scrollbar-width:thin] dark:border-zinc-700 dark:bg-zinc-900 dark:[scrollbar-color:#34d399_#27272a]">
+                            <template x-for="option in filteredProvinces" :key="option">
+                                <button type="button" x-on:click="province = option; provinceOpen = false" class="block w-full px-4 py-2.5 text-left text-sm font-semibold text-zinc-800 hover:bg-emerald-50 hover:text-emerald-800 dark:text-zinc-200 dark:hover:bg-emerald-950/30" x-text="option"></button>
+                            </template>
+                            <p x-show="filteredProvinces.length === 0" class="px-4 py-3 text-sm text-zinc-500">No province found</p>
+                        </div>
+                    </div>
+
+                    <div class="relative" x-on:click.outside="cityOpen = false">
+                        <label for="address_city" class="mb-1.5 block text-sm font-semibold text-emerald-800 dark:text-emerald-300">City / Municipality</label>
+                        <div class="relative">
+                            <input
+                                id="address_city"
+                                x-model.debounce.300ms="city"
+                                x-on:focus="cityOpen = true"
+                                x-on:input="cityOpen = true"
+                                x-on:keydown.escape="cityOpen = false"
+                                type="text"
+                                required
+                                autocomplete="off"
+                                placeholder="Type or select city"
+                                class="h-[3.25rem] w-full border border-emerald-900/10 bg-emerald-950/[.045] px-4 pr-11 text-base font-semibold text-zinc-900 outline-none transition placeholder:text-emerald-900/45 focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
+                                x-bind:disabled="! province"
+                            >
+                            <button type="button" x-on:click="cityOpen = ! cityOpen" x-bind:disabled="! province" class="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-emerald-800 disabled:opacity-40" aria-label="Toggle city and municipality options">
+                                <x-ui::icon.chevron-down class="size-4 transition" x-bind:class="cityOpen && 'rotate-180'" />
+                            </button>
+                        </div>
+                        <div x-show="cityOpen && province" x-transition.opacity x-cloak class="absolute z-40 mt-1 h-40 w-full overscroll-contain overflow-y-scroll border border-zinc-200 bg-white py-1 shadow-xl [scrollbar-color:#009639_#f4f4f5] [scrollbar-width:thin] dark:border-zinc-700 dark:bg-zinc-900 dark:[scrollbar-color:#34d399_#27272a]">
+                            <template x-for="option in filteredCities" :key="option">
+                                <button type="button" x-on:click="city = option; cityOpen = false" class="block w-full px-4 py-2.5 text-left text-sm font-semibold text-zinc-800 hover:bg-emerald-50 hover:text-emerald-800 dark:text-zinc-200 dark:hover:bg-emerald-950/30" x-text="option"></button>
+                            </template>
+                            <p x-show="filteredCities.length === 0" class="px-4 py-3 text-sm text-zinc-500">No city or municipality found</p>
+                        </div>
+                    </div>
+                </div>
+
+                @endif
+
+                <div>
+                    <x-ui::input wire:model="address" id="address" label="{{ __('City / Municipality and Province') }}" type="text" name="address" required minlength="5" maxlength="500" autocomplete="street-address" placeholder="e.g. Science City of Muñoz, Nueva Ecija" />
+                </div>
+                <p class="text-xs font-semibold text-emerald-900/60 dark:text-zinc-400">Enter your city or municipality followed by your province.</p>
+                @error('address')
+                    <p class="text-sm font-semibold text-red-600">{{ $message }}</p>
+                @enderror
             </div>
 
             <div class="flex items-center justify-center gap-3">

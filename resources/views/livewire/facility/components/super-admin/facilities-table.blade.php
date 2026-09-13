@@ -124,13 +124,13 @@
                         <p class="max-w-56 line-clamp-3 whitespace-pre-line text-xs leading-5 text-zinc-600 dark:text-zinc-300">{{ $facility->rates ?: '—' }}</p>
                     </x-ui::table.cell>
 
-                    <x-ui::table.cell class="min-w-32 whitespace-nowrap">
+                    <x-ui::table.cell class="min-w-44">
                         <button
                             type="button"
                             wire:click="requestToggleStatus({{ $facility->FID }})"
                             wire:loading.attr="disabled"
                             wire:target="requestToggleStatus({{ $facility->FID }})"
-                            class="group rounded-full transition hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 disabled:cursor-wait disabled:opacity-60 dark:focus:ring-offset-zinc-900"
+                            class="group flex w-full max-w-44 flex-col items-center rounded-lg px-1 py-1 text-center transition hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 disabled:cursor-wait disabled:opacity-60 dark:hover:bg-zinc-800 dark:focus:ring-offset-zinc-900"
                             aria-label="Change {{ $facility->Facility_Name }} status from {{ $facility->Status }} to {{ $facility->Status === 'Unavailable' ? 'Available' : 'Unavailable' }}"
                             title="Click to mark as {{ $facility->Status === 'Unavailable' ? 'available' : 'unavailable' }}"
                         >
@@ -145,13 +145,15 @@
                                 {{ $facility->Status ?: 'Not specified' }}
                             </span>
                             @if ($facility->Status === 'Unavailable' && $facility->Deactivated_At)
-                                <span class="mt-1 block text-xs font-semibold text-red-700 dark:text-red-300">
-                                    Deactivated {{ $facility->Deactivated_At->format('M j, Y g:i A') }}
+                                <span class="mt-1.5 block text-[11px] font-medium leading-4 text-zinc-500 dark:text-zinc-400">
+                                    <span class="block">Deactivated</span>
+                                    <span class="block whitespace-nowrap">{{ $facility->Deactivated_At->format('M j, Y · g:i A') }}</span>
                                 </span>
                             @endif
                             @if ($facility->Status === 'Unavailable' && $facility->Available_At)
-                                <span class="mt-0.5 block text-xs font-semibold text-red-600 dark:text-red-300">
-                                    Until {{ $facility->Available_At->format('M j, Y g:i A') }}
+                                <span class="mt-1 block text-[11px] font-semibold leading-4 text-amber-700 dark:text-amber-300">
+                                    <span class="block">Available again</span>
+                                    <span class="block whitespace-nowrap">{{ $facility->Available_At->format('M j, Y · g:i A') }}</span>
                                 </span>
                             @endif
                         </button>

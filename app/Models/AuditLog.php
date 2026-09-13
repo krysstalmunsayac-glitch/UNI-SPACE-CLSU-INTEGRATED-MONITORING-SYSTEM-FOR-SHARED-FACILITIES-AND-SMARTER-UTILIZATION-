@@ -15,8 +15,6 @@ class AuditLog extends Model
         'description',
         'old_values',
         'new_values',
-        'ip_address',
-        'user_agent',
     ];
 
     protected $casts = [
@@ -43,8 +41,6 @@ class AuditLog extends Model
         ?int $actorId = null,
         bool $useAuthenticatedActor = true,
     ): self {
-        $httpRequest = app()->runningInConsole() ? null : request();
-
         return static::query()->create([
             'actor_id' => $useAuthenticatedActor ? auth()->id() : $actorId,
             'action' => $action,
@@ -53,8 +49,6 @@ class AuditLog extends Model
             'description' => $description,
             'old_values' => $oldValues ?: null,
             'new_values' => $newValues ?: null,
-            'ip_address' => $httpRequest?->ip(),
-            'user_agent' => $httpRequest ? mb_substr((string) $httpRequest->userAgent(), 0, 500) : null,
         ]);
     }
 }

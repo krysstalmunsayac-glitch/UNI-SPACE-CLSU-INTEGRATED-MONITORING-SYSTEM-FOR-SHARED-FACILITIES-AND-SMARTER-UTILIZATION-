@@ -7,12 +7,15 @@ use Livewire\Attributes\Validate;
 use Livewire\Attributes\Url;
 use Livewire\WithPagination;
 use App\Support\Ui;
+use App\Models\AuditLog;
 use App\Models\Facilities;
 use App\Models\Schedule;
 use App\Models\Requests;
+use App\Notifications\ScheduleUpdated;
 use App\Services\FacilityAvailabilityService;
 use App\Services\BookingPolicy;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Notification;
 
 new #[Layout('components.layouts.app')] class extends Component {
 
@@ -226,7 +229,35 @@ new #[Layout('components.layouts.app')] class extends Component {
             }
         }
 
+        $oldSchedule = [
+            'Date' => Carbon::parse($schedule->Date)->toDateString(),
+            'Start_Time' => substr((string) $schedule->getRawOriginal('Start_Time'), 0, 5),
+            'End_Time' => substr((string) $schedule->getRawOriginal('End_Time'), 0, 5),
+        ];
+        $newSchedule = collect($validated)->only(['Date', 'Start_Time', 'End_Time'])->all();
+        $scheduleChanged = $oldSchedule !== $newSchedule;
+
         $schedule->update($validated);
+
+        if ($scheduleChanged) {
+            $request->loadMissing(['user', 'facility']);
+
+            AuditLog::recordRequest(
+                $request,
+                'schedule_updated',
+                "Changed the schedule for request #{$request->RID}.",
+                $oldSchedule,
+                $newSchedule,
+            );
+
+            $notification = new ScheduleUpdated($request, $oldSchedule, $newSchedule);
+
+            if ($request->user) {
+                Notification::send($request->user, $notification);
+            } elseif ($request->Is_Guest_Booking && filled($request->Guest_Email)) {
+                Notification::route('mail', $request->Guest_Email)->notify($notification);
+            }
+        }
 
         $this->dispatch('calendar-refresh', events: $this->calendarEvents);
 

@@ -1,10 +1,10 @@
 {{-- View Modal (read-only) --}}
 <x-ui::modal
     wire:model.self="showViewModal"
-    class="!flex !max-h-[94vh] w-[96vw] max-w-[calc(210mm+3rem)] !flex-col !overflow-hidden !rounded-2xl !bg-zinc-100 !p-0 dark:!bg-zinc-900"
+    class="!flex !max-h-[94vh] !w-[96vw] !max-w-6xl !flex-col !overflow-hidden !rounded-2xl !bg-zinc-100 !p-0 dark:!bg-zinc-900"
 >
     <div class="min-h-0 flex-1 overflow-y-auto p-3 sm:p-6">
-        <article class="mx-auto min-h-[297mm] w-full max-w-[210mm] bg-white px-5 py-6 text-zinc-900 shadow-xl ring-1 ring-black/5 dark:bg-zinc-950 dark:text-white sm:px-[14mm] sm:py-[12mm]">
+        <article class="mx-auto w-full max-w-5xl bg-white px-5 py-6 text-zinc-900 shadow-xl ring-1 ring-black/5 dark:bg-zinc-950 dark:text-white sm:px-8 sm:py-8">
             <header class="flex flex-col gap-4 border-b-2 border-emerald-700 pb-5 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                     <p class="text-[11px] font-black uppercase tracking-[0.28em] text-emerald-700 dark:text-emerald-300">Siel Space</p>
@@ -45,6 +45,10 @@
                             <dt class="text-xs font-semibold text-zinc-500 dark:text-zinc-400">User ID</dt>
                             <dd class="font-medium">{{ $Is_Guest_Booking ? 'No End User account' : ($User_ID ? '#'.$User_ID : '—') }}</dd>
                         </div>
+                        <div>
+                            <dt class="text-xs font-semibold text-zinc-500 dark:text-zinc-400">Address</dt>
+                            <dd class="font-medium">{{ $Requester_Address ?: 'Not provided' }}</dd>
+                        </div>
                         @if ($Is_Guest_Booking)
                             <div>
                                 <dt class="text-xs font-semibold text-zinc-500 dark:text-zinc-400">Created by</dt>
@@ -75,10 +79,13 @@
 
                 <dl class="grid overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50/60 sm:grid-cols-2 dark:border-zinc-800 dark:bg-zinc-900/50">
                     @foreach ([
-                        'Proposed Date' => $Proposed_Date ? \Carbon\Carbon::parse($Proposed_Date)->format('M d, Y') : '—',
+                        'Date range' => $Proposed_Date ? \Carbon\Carbon::parse($Proposed_Date)->format('M d, Y').($Proposed_End_Date && $Proposed_End_Date !== $Proposed_Date ? ' – '.\Carbon\Carbon::parse($Proposed_End_Date)->format('M d, Y') : '') : '—',
                         'Time' => ($Proposed_Start_Time ?: '—').' – '.($Proposed_End_Time ?: '—'),
                         'Facility' => $Facility_Name ?? '—',
+                        'Facility location' => $Facility_Location ?: '—',
+                        'Managing office' => $Facility_Office ?: '—',
                         'Event' => $Event_Title ?? '—',
+                        'Event type' => $Event_Type ?: '—',
                         'Expected Attendees' => $Capacity ?? '—',
                     ] as $label => $value)
                         <div class="border-b border-zinc-200 px-4 py-3 last:border-b-0 sm:[&:nth-last-child(-n+2)]:border-b-0 sm:[&:nth-child(odd)]:border-r dark:border-zinc-800">
@@ -132,6 +139,40 @@
                 </dl>
             </section>
 
+            @if (! empty($View_Daily_Schedules))
+                <section class="mt-6">
+                    <h3 class="mb-3 text-[11px] font-black uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">Daily schedule</h3>
+                    <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                        @foreach ($View_Daily_Schedules as $dailySchedule)
+                            <div class="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900">
+                                <p class="text-sm font-bold">{{ isset($dailySchedule['date']) ? \Carbon\Carbon::parse($dailySchedule['date'])->format('M d, Y') : 'Date not recorded' }}</p>
+                                <p class="mt-1 text-xs text-zinc-500">{{ $dailySchedule['start'] ?? '—' }} – {{ $dailySchedule['end'] ?? '—' }}</p>
+                            </div>
+                        @endforeach
+                    </div>
+                </section>
+            @endif
+
+            @if ($View_Review_Notes || $Rejection_Reason || $Cancellation_Reason)
+                <section class="mt-6">
+                    <h3 class="mb-3 text-[11px] font-black uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">Administrative notes</h3>
+                    <dl class="grid gap-3 sm:grid-cols-2">
+                        @foreach ([
+                            ['Revision requested'.($View_Review_Requested_At ? ' · '.$View_Review_Requested_At : ''), $View_Review_Notes, 'border-amber-200 bg-amber-50 dark:border-amber-500/30 dark:bg-amber-500/10'],
+                            ['Rejection reason', $Rejection_Reason, 'border-rose-200 bg-rose-50 dark:border-rose-500/30 dark:bg-rose-500/10'],
+                            ['Cancellation reason', $Cancellation_Reason, 'border-zinc-300 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900'],
+                        ] as [$label, $note, $classes])
+                            @if ($note)
+                                <div class="rounded-lg border p-4 {{ $classes }}">
+                                    <dt class="text-xs font-bold uppercase tracking-wide">{{ $label }}</dt>
+                                    <dd class="mt-2 whitespace-pre-wrap text-sm">{{ $note }}</dd>
+                                </div>
+                            @endif
+                        @endforeach
+                    </dl>
+                </section>
+            @endif
+
             <section class="mt-6 border-t border-zinc-200 pt-5 dark:border-zinc-800">
                 <h3 class="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">Facility amenities</h3>
                 <div class="mt-3 flex flex-wrap gap-2">
@@ -144,14 +185,37 @@
                     @endif
                 </div>
             </section>
-        </article>
-        @if ($Status === 'Awaiting Payment')
-            <section class="mx-4 mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100 sm:mx-6">
-                <p class="font-black">Awaiting payment</p>
-                <p class="mt-1">Amount due: <strong>₱{{ number_format((float) $paymentAmount, 2) }}</strong></p>
-                <p>Deadline: {{ $paymentDeadline ? \Carbon\Carbon::parse($paymentDeadline)->format('M j, Y g:i A') : '—' }}</p>
+
+            <section class="mt-6 grid gap-3 border-t border-zinc-200 pt-5 text-sm sm:grid-cols-2 dark:border-zinc-800">
+                <div><span class="text-zinc-500">Submitted:</span> <strong>{{ $Request_Created_At ?: '—' }}</strong></div>
+                <div><span class="text-zinc-500">Last updated:</span> <strong>{{ $Request_Updated_At ?: '—' }}</strong></div>
             </section>
-        @endif
+
+            @if ($Status === 'Awaiting Payment')
+                <section class="mt-6 overflow-hidden rounded-xl border border-amber-300 bg-amber-50 text-amber-950 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
+                    <div class="border-b border-amber-200 px-5 py-3 dark:border-amber-500/30">
+                        <h3 class="text-xs font-black uppercase tracking-[0.18em]">Payment information</h3>
+                    </div>
+                    <dl class="grid sm:grid-cols-3">
+                        <div class="border-b border-amber-200 px-5 py-4 sm:border-b-0 sm:border-r dark:border-amber-500/30">
+                            <dt class="text-xs font-semibold opacity-70">Amount due</dt>
+                            <dd class="mt-1 text-lg font-black">₱{{ number_format((float) $paymentAmount, 2) }}</dd>
+                        </div>
+                        <div class="border-b border-amber-200 px-5 py-4 sm:border-b-0 sm:border-r dark:border-amber-500/30">
+                            <dt class="text-xs font-semibold opacity-70">Payment deadline</dt>
+                            <dd class="mt-1 text-sm font-bold">{{ $paymentDeadline ? \Carbon\Carbon::parse($paymentDeadline)->format('M j, Y g:i A') : '—' }}</dd>
+                        </div>
+                        <div class="px-5 py-4">
+                            <dt class="text-xs font-semibold opacity-70">Payment proof</dt>
+                            <dd class="mt-1 text-sm font-bold">{{ $Payment_Proof_Uploaded_At ?: 'Not yet uploaded' }}</dd>
+                            @if ($Payment_Proof_Path)
+                                <a href="{{ route('requests.payment-proof.download', $viewingId) }}" class="mt-2 inline-flex text-xs font-black underline">Download proof</a>
+                            @endif
+                        </div>
+                    </dl>
+                </section>
+            @endif
+        </article>
     </div>
 
     <footer class="flex shrink-0 flex-wrap gap-2 border-t border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-950 sm:px-6">

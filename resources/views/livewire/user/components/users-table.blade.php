@@ -23,6 +23,10 @@
                     Role
                 </x-ui::table.column>
 
+                <x-ui::table.column>
+                    User type
+                </x-ui::table.column>
+
                 <x-ui::table.column>Office</x-ui::table.column>
 
                 <x-ui::table.column
@@ -82,6 +86,22 @@
                                 inset="top bottom"
                             >
                                 {{ $user->roleLabel() }}
+                            </x-ui::badge>
+                        </x-ui::table.cell>
+
+                        {{-- Student, staff, or external user --}}
+                        <x-ui::table.cell>
+                            <x-ui::badge
+                                size="sm"
+                                :color="match ($user->account_type) {
+                                    'student' => 'green',
+                                    'staff' => 'blue',
+                                    'external' => 'amber',
+                                    default => $user->isSuperAdminOrAdmin() ? 'blue' : 'zinc',
+                                }"
+                                inset="top bottom"
+                            >
+                                {{ $user->accountTypeLabel() }}
                             </x-ui::badge>
                         </x-ui::table.cell>
 
@@ -218,7 +238,7 @@
                 @empty
                     <x-ui::table.row>
                         <x-ui::table.cell
-                            colspan="7"
+                            colspan="8"
                             class="py-12 text-center"
                         >
                             <div class="flex flex-col items-center gap-2 text-zinc-500">
