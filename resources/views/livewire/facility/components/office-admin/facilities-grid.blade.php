@@ -103,13 +103,8 @@
                                 'bg-zinc-600' => ! in_array($facility->Status, ['Available', 'Unavailable'], true),
                             ])
                         >
-                            {{ $facility->Status ?: 'Not specified' }}
+                            {{ $facility->Status === 'Unavailable' && $facility->Deactivated_At ? 'Deactivated' : ($facility->Status ?: 'Not specified') }}
                         </span>
-                        @if ($facility->Status === 'Unavailable' && $facility->Deactivated_At)
-                            <span class="mt-1 block text-xs font-semibold text-red-700 dark:text-red-300">
-                                Deactivated {{ $facility->Deactivated_At->format('M j, Y g:i A') }}
-                            </span>
-                        @endif
                         @if ($facility->Status === 'Unavailable' && $facility->Available_At)
                             <span class="mt-0.5 block text-xs font-semibold text-red-600 dark:text-red-300">
                                 Until {{ $facility->Available_At->format('M j, Y g:i A') }}

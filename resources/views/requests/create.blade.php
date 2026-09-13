@@ -28,8 +28,8 @@
                                 <p class="mt-1 font-black text-emerald-950 dark:text-white">{{ $facility->Capacity ? number_format($facility->Capacity).' people' : 'Not specified' }}</p>
                             </div>
                             <div class="rounded-2xl border border-emerald-100 bg-emerald-50/80 p-4 dark:border-emerald-500/20 dark:bg-emerald-500/10">
-                                <p class="text-xs font-semibold text-emerald-700 dark:text-emerald-300">Location</p>
-                                <p class="mt-1 line-clamp-2 font-black text-emerald-950 dark:text-white">{{ $facility->Location ?? 'Not specified' }}</p>
+                                <p class="text-xs font-semibold text-emerald-700 dark:text-emerald-300">Office</p>
+                                <p class="mt-1 line-clamp-2 font-black text-emerald-950 dark:text-white">{{ $facility->Office ?? 'Not specified' }}</p>
                             </div>
                         </div>
                     </div>
