@@ -78,22 +78,24 @@
                     <p class="mt-4 leading-7 text-zinc-600">{{ $facility->Description ?: 'Campus facility available for reservation.' }}</p>
 
                     @if (! $isAvailable)
-                        <div class="mt-5 rounded-2xl border border-red-100 bg-red-50 p-4 font-semibold text-red-700">
-                            <p>This facility is unavailable.</p>
-                            @if ($facility->Deactivated_At)
-                                <p class="mt-2 text-sm">
-                                    Deactivated on {{ $facility->Deactivated_At->format('M j, Y g:i A') }}.
-                                </p>
-                            @endif
+                        <div class="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-950">
+                            <div class="flex items-start gap-3">
+                                <span class="flex size-9 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700" aria-hidden="true">
+                                    <x-ui::icon.calendar-days class="size-5" />
+                                </span>
+                                <div>
+                                    <p class="font-black">Temporarily unavailable</p>
+                                    <p class="mt-1 text-sm leading-6 text-amber-900/80">This facility is not accepting reservation requests right now.</p>
+                                </div>
+                            </div>
                             @if ($facility->Available_At)
-                                <p class="mt-3 rounded-xl border border-red-200 bg-white/70 px-3 py-2 text-sm">
-                                    <span class="block text-xs font-black uppercase tracking-wide">Automatic reactivation</span>
+                                <p class="mt-4 rounded-xl border border-emerald-200 bg-white px-4 py-3 text-sm text-emerald-900">
+                                    <span class="block text-xs font-black uppercase tracking-wide text-emerald-700">Expected to reopen</span>
                                     <span class="mt-1 block text-base font-black">{{ $facility->Available_At->format('M j, Y \a\t g:i A') }}</span>
                                 </p>
                             @else
-                                <p class="mt-3 rounded-xl border border-red-200 bg-white/70 px-3 py-2 text-sm">
-                                    <span class="block text-xs font-black uppercase tracking-wide">Automatic reactivation</span>
-                                    <span class="mt-1 block">Not scheduled. This facility must be reactivated manually.</span>
+                                <p class="mt-4 rounded-xl border border-amber-200 bg-white/70 px-4 py-3 text-sm leading-6 text-amber-900">
+                                    A reopening date has not been announced yet. Please check back later or contact the managing office for assistance.
                                 </p>
                             @endif
                         </div>

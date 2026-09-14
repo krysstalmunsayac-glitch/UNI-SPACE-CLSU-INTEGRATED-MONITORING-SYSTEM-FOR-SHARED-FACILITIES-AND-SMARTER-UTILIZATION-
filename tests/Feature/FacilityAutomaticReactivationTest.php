@@ -39,7 +39,7 @@ it('shows the automatic reactivation time on the public facility page', function
 
     $this->get(route('facilities.show', $facility))
         ->assertOk()
-        ->assertSee('Automatic reactivation')
+        ->assertSee('Expected to reopen')
         ->assertSee($reactivationTime->format('M j, Y \a\t g:i A'));
 });
 
@@ -52,6 +52,6 @@ it('shows when automatic reactivation is not scheduled', function () {
 
     $this->get(route('facilities.show', $facility))
         ->assertOk()
-        ->assertSee('Automatic reactivation')
-        ->assertSee('Not scheduled. This facility must be reactivated manually.');
+        ->assertSee('Temporarily unavailable')
+        ->assertSee('A reopening date has not been announced yet.');
 });
