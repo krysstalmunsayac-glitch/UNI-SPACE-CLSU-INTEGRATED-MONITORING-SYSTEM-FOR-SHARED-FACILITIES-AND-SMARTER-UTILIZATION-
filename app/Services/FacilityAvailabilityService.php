@@ -27,6 +27,22 @@ class FacilityAvailabilityService
     public const MAX_DAYS = 31;
 
     /**
+     * Reactivate facilities whose temporary deactivation period has ended.
+     */
+    public function reactivateExpired(): int
+    {
+        return Facilities::query()
+            ->where('Status', 'Unavailable')
+            ->whereNotNull('Available_At')
+            ->where('Available_At', '<=', now())
+            ->update([
+                'Status' => 'Available',
+                'Available_At' => null,
+                'Deactivated_At' => null,
+            ]);
+    }
+
+    /**
      * Toggle a facility's availability and cancel any requests that can no
      * longer be fulfilled when it is deactivated.
      *

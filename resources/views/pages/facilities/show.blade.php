@@ -86,8 +86,14 @@
                                 </p>
                             @endif
                             @if ($facility->Available_At)
-                                <p class="mt-1 text-sm">
-                                    Available again on {{ $facility->Available_At->format('M j, Y g:i A') }}.
+                                <p class="mt-3 rounded-xl border border-red-200 bg-white/70 px-3 py-2 text-sm">
+                                    <span class="block text-xs font-black uppercase tracking-wide">Automatic reactivation</span>
+                                    <span class="mt-1 block text-base font-black">{{ $facility->Available_At->format('M j, Y \a\t g:i A') }}</span>
+                                </p>
+                            @else
+                                <p class="mt-3 rounded-xl border border-red-200 bg-white/70 px-3 py-2 text-sm">
+                                    <span class="block text-xs font-black uppercase tracking-wide">Automatic reactivation</span>
+                                    <span class="mt-1 block">Not scheduled. This facility must be reactivated manually.</span>
                                 </p>
                             @endif
                         </div>

@@ -105,9 +105,10 @@
                         >
                             {{ $facility->Status === 'Unavailable' && $facility->Deactivated_At ? 'Deactivated' : ($facility->Status ?: 'Not specified') }}
                         </span>
-                        @if ($facility->Status === 'Unavailable' && $facility->Available_At)
-                            <span class="mt-0.5 block text-xs font-semibold text-red-600 dark:text-red-300">
-                                Until {{ $facility->Available_At->format('M j, Y g:i A') }}
+                        @if ($facility->Status === 'Unavailable')
+                            <span class="mt-1 flex items-center justify-end gap-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                                <x-ui::icon.calendar-days class="size-3.5" />
+                                Reactivates {{ $facility->Available_At?->format('M j, Y g:i A') ?? 'manually' }}
                             </span>
                         @endif
                     </button>
@@ -146,19 +147,16 @@
                         </div>
                     </div>
 
-                    @if ($facility->Status === 'Unavailable' && ($facility->Deactivated_At || $facility->Available_At))
-                        <div class="flex items-center gap-2 text-sm font-semibold text-red-600 dark:text-red-300">
-                            <x-ui::icon.calendar-days class="size-4" />
-                            <span>
+                    @if ($facility->Status === 'Unavailable')
+                        <div class="grid gap-1.5 border-l-2 border-zinc-200 pl-3 text-sm dark:border-zinc-700">
+                            <span class="text-zinc-500 dark:text-zinc-400">
                                 @if ($facility->Deactivated_At)
                                     Deactivated {{ $facility->Deactivated_At->format('M j, Y g:i A') }}
                                 @endif
-                                @if ($facility->Deactivated_At && $facility->Available_At)
-                                    ·
-                                @endif
-                                @if ($facility->Available_At)
-                                    Available again {{ $facility->Available_At->format('M j, Y g:i A') }}
-                                @endif
+                            </span>
+                            <span class="flex items-center gap-1 font-semibold text-emerald-700 dark:text-emerald-300">
+                                <x-ui::icon.calendar-days class="size-4" />
+                                Reactivates {{ $facility->Available_At?->format('M j, Y g:i A') ?? 'manually' }}
                             </span>
                         </div>
                     @endif

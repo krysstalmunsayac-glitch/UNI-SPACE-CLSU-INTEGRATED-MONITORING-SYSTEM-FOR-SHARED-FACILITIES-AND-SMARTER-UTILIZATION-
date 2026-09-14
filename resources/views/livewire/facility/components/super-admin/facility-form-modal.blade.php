@@ -1,6 +1,6 @@
-<x-ui::modal wire:model.self="showModal" class="!w-[94vw] !max-w-6xl sm:!p-7">
-    <div class="space-y-5">
-        <div class="border-b border-zinc-200 pb-5 dark:border-zinc-700">
+<x-ui::modal wire:model.self="showModal" class="!w-[94vw] !max-w-6xl !overflow-hidden !p-0">
+    <div class="flex min-h-0 flex-col" style="height: min(90vh, calc(100vh - 2rem));">
+        <div class="shrink-0 border-b border-zinc-200 px-5 py-5 dark:border-zinc-700 sm:px-7">
             <x-ui::heading size="lg">
                 {{ $viewMode ? 'View Facility' : ($editingId ? 'Edit Facility' : 'Add Facility') }}
             </x-ui::heading>
@@ -9,7 +9,8 @@
             </x-ui::subheading>
         </div>
 
-        <fieldset @disabled($viewMode) class="space-y-5">
+        <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-color:#16a34a_#e4e4e7] [scrollbar-width:thin] dark:[scrollbar-color:#22c55e_#3f3f46]">
+        <fieldset @disabled($viewMode) class="space-y-5 px-5 py-5 sm:px-7">
             <section class="rounded-2xl border border-zinc-200 bg-zinc-50/70 p-5 dark:border-zinc-700 dark:bg-zinc-900/60">
                 <div class="mb-4">
                     <h3 class="font-bold text-zinc-900 dark:text-white">Basic information</h3>
@@ -82,7 +83,7 @@
                     wire:key="facility-location-picker-{{ $editingId ?? 'new' }}"
                     x-data="facilityLocationPicker($wire)"
                     x-init="openPicker()"
-                    class="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900"
+                    class="relative z-0 isolate rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900"
                 >
                     <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                         <div>
@@ -100,7 +101,7 @@
                     </div>
 
                     <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
-                        <div wire:ignore x-ref="map" class="h-72 w-full overflow-hidden rounded-xl border border-emerald-900/10 dark:border-white/10"></div>
+                        <div wire:ignore x-ref="map" class="relative z-0 h-72 w-full overflow-hidden rounded-xl border border-emerald-900/10 dark:border-white/10"></div>
 
                         <div class="space-y-4 rounded-xl bg-zinc-50 p-4 dark:bg-zinc-950">
                             <label class="block text-xs font-semibold text-zinc-600 dark:text-zinc-300">
@@ -222,8 +223,9 @@
                 @endif
             </section>
         </fieldset>
+        </div>
 
-        <div class="sticky bottom-0 z-20 flex flex-col justify-end gap-3 border-t border-zinc-200 bg-white py-4 dark:border-zinc-700 dark:bg-zinc-800 sm:flex-row">
+        <div class="relative z-50 flex shrink-0 flex-col justify-end gap-3 border-t border-zinc-200 bg-white px-5 py-4 shadow-[0_-8px_20px_-16px_rgba(0,0,0,0.35)] dark:border-zinc-700 dark:bg-zinc-800 sm:flex-row sm:px-7">
             @if (! $viewMode)
             <x-ui::button wire:click="save" variant="primary" class="w-full sm:w-auto sm:min-w-36">
                 {{ $editingId ? 'Update' : 'Create' }}

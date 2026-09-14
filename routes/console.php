@@ -2,14 +2,12 @@
 
 use App\Models\Requests;
 use App\Models\User;
+use App\Services\FacilityAvailabilityService;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
 use Illuminate\Support\Facades\Storage;
 
-Artisan::command('inspire', function () {
-    $this->comment(Inspiring::quote());
-})->purpose('Display an inspiring quote')->hourly();
 
 Artisan::command('requests:mark-ended', function () {
     $endedCount = Requests::markPastRequestsAsEnded();
@@ -22,6 +20,12 @@ Artisan::command('requests:archive-cancelled', function () {
 
     $this->info("Archived {$archivedCount} cancelled request(s).");
 })->purpose('Archive requests 10 days after cancellation');
+
+Artisan::command('facilities:reactivate', function (FacilityAvailabilityService $availability) {
+    $reactivatedCount = $availability->reactivateExpired();
+
+    $this->info("Reactivated {$reactivatedCount} facility/facilities whose deactivation period ended.");
+})->purpose('Reactivate temporarily unavailable facilities after their available-at time');
 
 Artisan::command('users:purge-deleted', function () {
     $purgedCount = User::onlyTrashed()
@@ -76,4 +80,5 @@ Artisan::command('requests:migrate-attachments-private', function () {
 
 Schedule::command('requests:mark-ended')->everyMinute();
 Schedule::command('requests:archive-cancelled')->hourly();
+Schedule::command('facilities:reactivate')->everyMinute();
 Schedule::command('users:purge-deleted')->daily();

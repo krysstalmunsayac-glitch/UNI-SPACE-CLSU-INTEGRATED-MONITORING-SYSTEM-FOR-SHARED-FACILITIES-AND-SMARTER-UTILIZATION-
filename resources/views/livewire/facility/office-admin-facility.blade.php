@@ -270,13 +270,14 @@ new #[Layout('components.layouts.app')] class extends Component
         if ($facility->Status !== 'Unavailable') {
             $this->validate([
                 'deactivationConfirmation' => ['required', 'in:DEACTIVATE'],
-                'Available_Date' => ['nullable', 'date', 'after_or_equal:today'],
+                'Available_Date' => ['required', 'date', 'after_or_equal:today'],
                 'Available_Hour' => ['required_with:Available_Date', 'in:01,02,03,04,05,06,07,08,09,10,11,12'],
                 'Available_Minute' => ['required_with:Available_Date', 'in:00,15,30,45'],
                 'Available_Period' => ['required_with:Available_Date', 'in:AM,PM'],
             ], [
                 'deactivationConfirmation.required' => 'Type DEACTIVATE to confirm.',
                 'deactivationConfirmation.in' => 'Type DEACTIVATE exactly to confirm.',
+                'Available_Date.required' => 'Choose when the facility will become available again.',
                 'Available_Date.after_or_equal' => 'Choose today or a future date.',
             ]);
         }
@@ -320,7 +321,7 @@ new #[Layout('components.layouts.app')] class extends Component
 
     private function availableAtValue(): ?string
     {
-        if ($this->Status !== 'Unavailable' || ! $this->Available_Date) {
+        if (! $this->Available_Date) {
             return null;
         }
 
@@ -342,6 +343,8 @@ new #[Layout('components.layouts.app')] class extends Component
     #[Computed]
     public function facilities()
     {
+        app(FacilityAvailabilityService::class)->reactivateExpired();
+
         $query = Facilities::query()
             ->with(['images' => fn ($query) => $query->oldest('id')->limit(1)])
             ->whereHas('assignedAdmins', function ($adminQuery) {
