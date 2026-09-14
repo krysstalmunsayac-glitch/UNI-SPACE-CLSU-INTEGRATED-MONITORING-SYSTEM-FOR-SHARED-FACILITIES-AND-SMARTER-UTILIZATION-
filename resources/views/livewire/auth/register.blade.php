@@ -81,9 +81,22 @@ new #[Layout('components.layouts.auth')] class extends Component
             ->delete();
     }
 
+    private function normalizeClsuId(): void
+    {
+        if (! $this->isInstitutionalAccount()) {
+            return;
+        }
+
+        $digits = substr((string) preg_replace('/\D+/', '', $this->clsu_id), 0, 6);
+        $this->clsu_id = strlen($digits) > 2
+            ? substr($digits, 0, 2).'-'.substr($digits, 2)
+            : $digits;
+    }
+
     public function nextStep(): void
     {
         $this->clearExpiredPendingRegistrations();
+        $this->normalizeClsuId();
 
         if ($this->step === 1) {
             $this->validate([
@@ -141,6 +154,7 @@ new #[Layout('components.layouts.auth')] class extends Component
     public function register(): void
     {
         $this->clearExpiredPendingRegistrations();
+        $this->normalizeClsuId();
 
         $throttleKey = 'register|'.request()->ip();
 
@@ -321,8 +335,8 @@ new #[Layout('components.layouts.auth')] class extends Component
 
             @if ($this->isInstitutionalAccount())
                 <div class="grid gap-2" wire:key="clsu-id-field">
-                    <x-ui::input wire:model="clsu_id" id="clsu_id" label="{{ __('CLSU ID') }}" type="text" name="clsu_id" required maxlength="7" inputmode="numeric" pattern="[0-9]{2}-[0-9]{4}" title="Use the format 25-1234." placeholder="25-1234" />
-                    <p class="text-xs font-semibold text-emerald-900/60 dark:text-zinc-400">This unique CLSU ID will be linked to your institutional email.</p>
+                    <x-ui::input wire:model="clsu_id" x-on:input="$event.target.value = $event.target.value.replace(/\D/g, '').slice(0, 6).replace(/^(\d{2})(\d)/, '$1-$2')" id="clsu_id" label="{{ __('CLSU ID') }}" type="text" name="clsu_id" required maxlength="7" inputmode="numeric" pattern="[0-9]{2}-[0-9]{4}" title="Enter six digits; the hyphen is added automatically." placeholder="25-1234" />
+                    <p class="text-xs font-semibold text-emerald-900/60 dark:text-zinc-400">Enter the six digits of your CLSU ID. The hyphen is added automatically.</p>
                 </div>
             @endif
 

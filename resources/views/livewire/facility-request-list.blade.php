@@ -18,7 +18,6 @@ new class extends Component {
 
     public function mount(): void
     {
-        Requests::markPastRequestsAsEnded();
         $this->normalizeFilters();
     }
 
@@ -93,7 +92,14 @@ new class extends Component {
                     </p>
                 </div>
                 <span class="inline-flex w-fit items-center rounded-full bg-emerald-800 px-4 py-2 text-sm font-black text-white">
-                    {{ $requests->count() }} of {{ $totalUserRequests }} submitted
+                    @if ($requests->isEmpty())
+                        {{ $requestStatus === '' ? '0' : '0 matching' }} of {{ $totalUserRequests }} submitted
+                    @else
+                        {{ $requests->firstItem() }}&ndash;{{ $requests->lastItem() }} of {{ $requests->total() }}{{ $requestStatus === '' ? ' submitted' : ' matching' }}
+                        @if ($requestStatus !== '')
+                            ({{ $totalUserRequests }} submitted)
+                        @endif
+                    @endif
                 </span>
             </div>
 
@@ -157,6 +163,8 @@ new class extends Component {
                         $isEnded = $status === 'Ended';
                         $needsRevision = $status === 'Pending' && filled($request->Review_Requested_At);
                         $canCancel = in_array($status, ['Pending', 'Approved'], true);
+                        $hasOldInput = (int) old('_request_id') === $request->RID;
+                        $oldForRequest = fn (string $key, mixed $default = null): mixed => $hasOldInput ? old($key, $default) : $default;
                         $statusClass = match ($status) {
                             'Approved' => 'bg-emerald-600 text-white',
                             'Awaiting Payment' => 'bg-amber-500 text-amber-950',
@@ -274,12 +282,27 @@ new class extends Component {
 
                                 @if ($isAwaitingPayment)
                                     <div class="mt-6 rounded-2xl border border-amber-300 bg-amber-50 p-5 text-amber-950 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
-                                        <h4 class="text-lg font-black">Payment instructions</h4>
-                                        <div class="mt-4 grid gap-3 text-sm sm:grid-cols-2">
-                                            <p><strong class="block">Amount due</strong><span class="text-lg font-black">₱{{ number_format((float) $request->Payment_Amount, 2) }}</span></p>
-                                            <p><strong class="block">Deadline</strong>{{ $request->Payment_Deadline?->format('M j, Y g:i A') }}</p>
-                                            <p class="sm:col-span-2"><strong>Payment method:</strong> Pay in cash at the Admin Cashier, then upload the official receipt below.</p>
+                                        <p class="text-xs font-black uppercase tracking-widest text-amber-700 dark:text-amber-300">Action needed</p>
+                                        <h4 class="mt-1 text-lg font-black">Complete your payment</h4>
+                                        <p class="mt-1 text-sm font-medium">Follow these steps so an administrator can review and approve your request.</p>
+
+                                        <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                                            <div class="rounded-xl bg-white/80 p-4 dark:bg-zinc-950/60">
+                                                <p class="text-xs font-black uppercase tracking-wide text-amber-700 dark:text-amber-300">Amount to pay</p>
+                                                <p class="mt-1 text-2xl font-black">₱{{ number_format((float) $request->Payment_Amount, 2) }}</p>
+                                            </div>
+                                            <div class="rounded-xl bg-white/80 p-4 dark:bg-zinc-950/60">
+                                                <p class="text-xs font-black uppercase tracking-wide text-amber-700 dark:text-amber-300">Pay on or before</p>
+                                                <p class="mt-1 text-base font-black">{{ $request->Payment_Deadline?->format('M j, Y · g:i A') ?? 'Contact the administrator' }}</p>
+                                            </div>
                                         </div>
+
+                                        <ol class="mt-5 space-y-3 text-sm">
+                                            <li class="flex gap-3"><span class="flex size-7 shrink-0 items-center justify-center rounded-full bg-amber-600 font-black text-white">1</span><span><strong class="block">Pay at the Admin Cashier</strong>Bring the amount shown above and pay in cash before the deadline.</span></li>
+                                            <li class="flex gap-3"><span class="flex size-7 shrink-0 items-center justify-center rounded-full bg-amber-600 font-black text-white">2</span><span><strong class="block">Keep your official receipt</strong>You will need a clear photo or PDF of it as proof of payment.</span></li>
+                                            <li class="flex gap-3"><span class="flex size-7 shrink-0 items-center justify-center rounded-full bg-amber-600 font-black text-white">3</span><span><strong class="block">Upload your receipt below</strong>Your request remains awaiting payment until an administrator verifies the upload.</span></li>
+                                        </ol>
+
                                         <form
                                             action="{{ route('requests.payment-proof.upload', $request) }}"
                                             method="POST"
@@ -288,6 +311,7 @@ new class extends Component {
                                             x-data="{ fileName: '' }"
                                         >
                                             @csrf
+                                            <input type="hidden" name="_request_id" value="{{ $request->RID }}">
                                             @if ($request->Payment_Proof_Path)
                                                 <div class="mb-4 flex flex-col gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-900 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100 sm:flex-row sm:items-center sm:justify-between">
                                                     <div class="flex items-start gap-3">
@@ -304,7 +328,7 @@ new class extends Component {
                                             @endif
 
                                             <label for="payment-proof-{{ $request->RID }}" class="block text-xs font-black uppercase tracking-wide text-slate-600 dark:text-slate-300">
-                                                {{ $request->Payment_Proof_Path ? 'Replace with a new file' : 'Receipt or proof of payment' }}
+                                                {{ $request->Payment_Proof_Path ? 'Choose a replacement receipt' : 'Upload your official receipt' }}
                                             </label>
                                             <input
                                                 id="payment-proof-{{ $request->RID }}"
@@ -315,7 +339,7 @@ new class extends Component {
                                                 x-on:change="fileName = $event.target.files[0]?.name || ''"
                                                 class="mt-2 block w-full rounded-xl border border-slate-200 p-2 text-sm text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-emerald-700 file:px-4 file:py-2 file:font-bold file:text-white hover:file:bg-emerald-800 dark:border-slate-700 dark:bg-zinc-900 dark:text-slate-300"
                                             >
-                                            <p class="mt-2 text-xs text-slate-500" x-text="fileName ? `Selected: ${fileName}` : 'PDF, JPG, or PNG up to 5 MB.'"></p>
+                                            <p class="mt-2 text-xs text-slate-500" x-text="fileName ? `Selected: ${fileName}` : 'Accepted files: PDF, JPG, or PNG (maximum 5 MB).' "></p>
                                             <button
                                                 type="submit"
                                                 x-bind:disabled="!fileName"
@@ -324,7 +348,9 @@ new class extends Component {
                                                 <span x-show="!fileName">Choose a file to continue</span>
                                                 <span x-show="fileName">{{ $request->Payment_Proof_Path ? 'Replace uploaded proof' : 'Upload proof of payment' }}</span>
                                             </button>
-                                            @error('payment_proof') <p class="mt-2 text-xs font-semibold text-red-600">{{ $message }}</p> @enderror
+                                            @if ($hasOldInput)
+                                                @error('payment_proof') <p class="mt-2 text-xs font-semibold text-red-600">{{ $message }}</p> @enderror
+                                            @endif
                                         </form>
                                     </div>
                                 @endif
@@ -396,6 +422,7 @@ new class extends Component {
                                                     @endunless
                                                     <form action="{{ route('waiting.list.end', $request) }}" method="POST">
                                                         @csrf
+                                                        <input type="hidden" name="_request_id" value="{{ $request->RID }}">
                                                         <button
                                                             type="submit"
                                                             @disabled(! $canEndEvent)
@@ -413,8 +440,9 @@ new class extends Component {
                                                 </div>
                                             </div>
 
-                                            <form action="{{ route('waiting.list.cancel', $request) }}" method="POST" class="flex flex-col rounded-xl border border-rose-200 bg-white p-5 shadow-sm dark:border-rose-500/30 dark:bg-zinc-950" x-data="{ cancellationReason: @js(old('Cancellation_Reason', '')) }">
+                                            <form action="{{ route('waiting.list.cancel', $request) }}" method="POST" class="flex flex-col rounded-xl border border-rose-200 bg-white p-5 shadow-sm dark:border-rose-500/30 dark:bg-zinc-950" x-data="{ cancellationReason: @js($hasOldInput ? old('Cancellation_Reason', '') : '') }">
                                                 @csrf
+                                                <input type="hidden" name="_request_id" value="{{ $request->RID }}">
                                                 <div class="flex items-start gap-3">
                                                     <span class="flex size-10 shrink-0 items-center justify-center rounded-full bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300">
                                                         <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
@@ -441,9 +469,11 @@ new class extends Component {
                                                     <option value="{{ $reason }}">{{ $reason }}</option>
                                                 @endforeach
                                             </select>
-                                            @error('Cancellation_Reason')
-                                                <p class="mt-2 text-xs font-semibold text-red-600">{{ $message }}</p>
-                                            @enderror
+                                            @if ($hasOldInput)
+                                                @error('Cancellation_Reason')
+                                                    <p class="mt-2 text-xs font-semibold text-red-600">{{ $message }}</p>
+                                                @enderror
+                                            @endif
 
                                             <div x-cloak x-show="cancellationReason === 'Other'" x-transition class="mt-3">
                                                 <label class="mb-2 block text-xs font-black uppercase tracking-wide text-slate-600 dark:text-slate-300" for="approved-other-cancellation-reason-{{ $request->RID }}">Tell us the reason</label>
@@ -456,11 +486,13 @@ new class extends Component {
                                                     x-bind:required="cancellationReason === 'Other'"
                                                     placeholder="Briefly explain why the event will not continue."
                                                     class="w-full resize-y rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-emerald-950 outline-none transition focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 dark:border-slate-700 dark:bg-zinc-900 dark:text-white"
-                                                >{{ old('Other_Cancellation_Reason') }}</textarea>
+                                                >{{ $hasOldInput ? old('Other_Cancellation_Reason') : '' }}</textarea>
                                                 <p class="mt-1.5 text-xs text-slate-500 dark:text-slate-400">Use at least 5 characters.</p>
-                                                @error('Other_Cancellation_Reason')
-                                                    <p class="mt-2 text-xs font-semibold text-red-600">{{ $message }}</p>
-                                                @enderror
+                                                @if ($hasOldInput)
+                                                    @error('Other_Cancellation_Reason')
+                                                        <p class="mt-2 text-xs font-semibold text-red-600">{{ $message }}</p>
+                                                    @enderror
+                                                @endif
                                             </div>
                                             <button
                                                 type="submit"
@@ -482,46 +514,47 @@ new class extends Component {
                             @else
                             <form action="{{ route('waiting.list.update', $request) }}" method="POST" enctype="multipart/form-data" class="mt-6 grid gap-4 lg:grid-cols-2">
                                 @csrf
+                                <input type="hidden" name="_request_id" value="{{ $request->RID }}">
                                 <div>
                                     <label for="event-title-{{ $request->RID }}" class="mb-2 block text-xs font-black uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Event title</label>
-                                    <input id="event-title-{{ $request->RID }}" name="Event_Title" value="{{ old('Event_Title', $request->event?->Event_Title) }}" placeholder="Enter event title" class="w-full rounded-xl border border-emerald-900/10 bg-white px-4 py-3 text-sm text-emerald-950 outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900 dark:text-white">
+                                    <input id="event-title-{{ $request->RID }}" name="Event_Title" value="{{ $oldForRequest('Event_Title', $request->event?->Event_Title) }}" placeholder="Enter event title" class="w-full rounded-xl border border-emerald-900/10 bg-white px-4 py-3 text-sm text-emerald-950 outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900 dark:text-white">
                                 </div>
                                 <div>
                                     <label for="event-type-{{ $request->RID }}" class="mb-2 block text-xs font-black uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Event type</label>
                                     <select id="event-type-{{ $request->RID }}" name="Type_Event" class="w-full rounded-xl border border-emerald-900/10 bg-white px-4 py-3 text-sm text-emerald-950 outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900 dark:text-white">
                                         <option value="">Select event type</option>
                                         @foreach (['Meeting', 'Seminar', 'Workshop', 'Conference', 'Other'] as $type)
-                                            <option value="{{ $type }}" {{ old('Type_Event', $request->event?->Type_Event) === $type ? 'selected' : '' }}>{{ $type }}</option>
+                                            <option value="{{ $type }}" {{ $oldForRequest('Type_Event', $request->event?->Type_Event) === $type ? 'selected' : '' }}>{{ $type }}</option>
                                         @endforeach
                                     </select>
                                 </div>
                                 <div class="lg:col-span-2">
                                     <label for="description-{{ $request->RID }}" class="mb-2 block text-xs font-black uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Description</label>
-                                    <textarea id="description-{{ $request->RID }}" name="Description" rows="3" placeholder="Describe the event" class="w-full rounded-xl border border-emerald-900/10 bg-white px-4 py-3 text-sm text-emerald-950 outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900 dark:text-white">{{ old('Description', $request->event?->Description) }}</textarea>
+                                    <textarea id="description-{{ $request->RID }}" name="Description" rows="3" placeholder="Describe the event" class="w-full rounded-xl border border-emerald-900/10 bg-white px-4 py-3 text-sm text-emerald-950 outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900 dark:text-white">{{ $oldForRequest('Description', $request->event?->Description) }}</textarea>
                                 </div>
                                 <div>
                                     <label for="start-date-{{ $request->RID }}" class="mb-2 block text-xs font-black uppercase tracking-wide text-emerald-700 dark:text-emerald-300">First event day</label>
-                                    <input id="start-date-{{ $request->RID }}" name="Proposed_Date" type="date" min="{{ app(\App\Services\BookingPolicy::class)->earliestDate(auth()->user()) }}" value="{{ old('Proposed_Date', $request->Proposed_Date?->toDateString()) }}" class="w-full rounded-xl border border-emerald-900/10 bg-white px-4 py-3 text-sm text-emerald-950 outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900 dark:text-white">
+                                    <input id="start-date-{{ $request->RID }}" name="Proposed_Date" type="date" min="{{ app(\App\Services\BookingPolicy::class)->earliestDate(auth()->user()) }}" value="{{ $oldForRequest('Proposed_Date', $request->Proposed_Date?->toDateString()) }}" class="w-full rounded-xl border border-emerald-900/10 bg-white px-4 py-3 text-sm text-emerald-950 outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900 dark:text-white">
                                 </div>
                                 <div>
                                     <label for="end-date-{{ $request->RID }}" class="mb-2 block text-xs font-black uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Last event day</label>
-                                    <input id="end-date-{{ $request->RID }}" name="Proposed_End_Date" type="date" min="{{ app(\App\Services\BookingPolicy::class)->earliestDate(auth()->user()) }}" value="{{ old('Proposed_End_Date', $request->Proposed_End_Date?->toDateString() ?? $request->Proposed_Date?->toDateString()) }}" class="w-full rounded-xl border border-emerald-900/10 bg-white px-4 py-3 text-sm text-emerald-950 outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900 dark:text-white">
+                                    <input id="end-date-{{ $request->RID }}" name="Proposed_End_Date" type="date" min="{{ app(\App\Services\BookingPolicy::class)->earliestDate(auth()->user()) }}" value="{{ $oldForRequest('Proposed_End_Date', $request->Proposed_End_Date?->toDateString() ?? $request->Proposed_Date?->toDateString()) }}" class="w-full rounded-xl border border-emerald-900/10 bg-white px-4 py-3 text-sm text-emerald-950 outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900 dark:text-white">
                                 </div>
                                 <div>
                                     <label for="capacity-{{ $request->RID }}" class="mb-2 block text-xs font-black uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Expected attendees</label>
-                                    <input id="capacity-{{ $request->RID }}" name="Capacity" type="number" min="1" value="{{ old('Capacity', $request->Capacity) }}" placeholder="Enter number of attendees" class="w-full rounded-xl border border-emerald-900/10 bg-white px-4 py-3 text-sm text-emerald-950 outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900 dark:text-white">
+                                    <input id="capacity-{{ $request->RID }}" name="Capacity" type="number" min="1" value="{{ $oldForRequest('Capacity', $request->Capacity) }}" placeholder="Enter number of attendees" class="w-full rounded-xl border border-emerald-900/10 bg-white px-4 py-3 text-sm text-emerald-950 outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900 dark:text-white">
                                 </div>
                                 <div>
                                     <label id="start-time-{{ $request->RID }}-label" for="start-time-{{ $request->RID }}" class="mb-2 block text-xs font-black uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Start time</label>
-                                    <x-ui::time-select id="start-time-{{ $request->RID }}" aria-labelledby="start-time-{{ $request->RID }}-label" name="Proposed_Start_Time" :value="old('Proposed_Start_Time', $request->Proposed_Start_Time?->format('H:i'))" :options="app(\App\Services\FacilityAvailabilityService::class)->slots()" />
+                                    <x-ui::time-select id="start-time-{{ $request->RID }}" aria-labelledby="start-time-{{ $request->RID }}-label" name="Proposed_Start_Time" :value="$oldForRequest('Proposed_Start_Time', $request->Proposed_Start_Time?->format('H:i'))" :options="app(\App\Services\FacilityAvailabilityService::class)->slots()" />
                                 </div>
                                 <div>
                                     <label id="end-time-{{ $request->RID }}-label" for="end-time-{{ $request->RID }}" class="mb-2 block text-xs font-black uppercase tracking-wide text-emerald-700 dark:text-emerald-300">End time</label>
-                                    <x-ui::time-select id="end-time-{{ $request->RID }}" aria-labelledby="end-time-{{ $request->RID }}-label" name="Proposed_End_Time" :value="old('Proposed_End_Time', data_get($request->Daily_Schedules, '0.end', $request->Proposed_End_Time?->format('H:i')))" :options="app(\App\Services\FacilityAvailabilityService::class)->endSlots()" />
+                                    <x-ui::time-select id="end-time-{{ $request->RID }}" aria-labelledby="end-time-{{ $request->RID }}-label" name="Proposed_End_Time" :value="$oldForRequest('Proposed_End_Time', data_get($request->Daily_Schedules, '0.end', $request->Proposed_End_Time?->format('H:i')))" :options="app(\App\Services\FacilityAvailabilityService::class)->endSlots()" />
                                 </div>
                                 <div>
                                     <label for="purpose-{{ $request->RID }}" class="mb-2 block text-xs font-black uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Purpose</label>
-                                    <input id="purpose-{{ $request->RID }}" name="Purpose" value="{{ old('Purpose', $request->Purpose) }}" placeholder="Enter reservation purpose" class="w-full rounded-xl border border-emerald-900/10 bg-white px-4 py-3 text-sm text-emerald-950 outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900 dark:text-white">
+                                    <input id="purpose-{{ $request->RID }}" name="Purpose" value="{{ $oldForRequest('Purpose', $request->Purpose) }}" placeholder="Enter reservation purpose" class="w-full rounded-xl border border-emerald-900/10 bg-white px-4 py-3 text-sm text-emerald-950 outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900 dark:text-white">
                                 </div>
                                 <div class="lg:col-span-2">
                                     <label class="mb-2 block text-xs font-black uppercase tracking-wide text-emerald-700 dark:text-emerald-300" for="attachment-{{ $request->RID }}">
@@ -545,10 +578,12 @@ new class extends Component {
                                             Download current request letter
                                         </a>
                                     @endif
-                                    @error('attachment') <p class="mt-1 text-xs font-semibold text-red-600">{{ $message }}</p> @enderror
+                                    @if ($hasOldInput)
+                                        @error('attachment') <p class="mt-1 text-xs font-semibold text-red-600">{{ $message }}</p> @enderror
+                                    @endif
                                 </div>
                                 @if ($canCancel)
-                                    <div class="lg:col-span-2" x-data="{ cancellationReason: @js(old('Cancellation_Reason', '')) }">
+                                    <div class="lg:col-span-2" x-data="{ cancellationReason: @js($oldForRequest('Cancellation_Reason', '')) }">
                                         <label class="mb-2 block text-xs font-black uppercase tracking-wide text-emerald-700 dark:text-emerald-300" for="Cancellation_Reason_{{ $request->RID }}">
                                             Reason for cancellation
                                         </label>
@@ -565,9 +600,11 @@ new class extends Component {
                                                 <option value="{{ $reason }}">{{ $reason }}</option>
                                             @endforeach
                                         </select>
-                                        @error('Cancellation_Reason')
-                                            <p class="mt-2 text-xs font-semibold text-red-600">{{ $message }}</p>
-                                        @enderror
+                                        @if ($hasOldInput)
+                                            @error('Cancellation_Reason')
+                                                <p class="mt-2 text-xs font-semibold text-red-600">{{ $message }}</p>
+                                            @enderror
+                                        @endif
 
                                         <div x-cloak x-show="cancellationReason === 'Other'" class="mt-3">
                                             <label class="mb-2 block text-xs font-black uppercase tracking-wide text-emerald-700 dark:text-emerald-300" for="Other_Cancellation_Reason_{{ $request->RID }}">Specific reason</label>
@@ -581,10 +618,12 @@ new class extends Component {
                                                 x-bind:required="cancellationReason === 'Other'"
                                                 placeholder="Please provide a specific reason for cancelling this request."
                                                 class="w-full rounded-xl border border-rose-200 bg-white px-4 py-3 text-sm text-emerald-950 outline-none focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 dark:border-rose-500/30 dark:bg-zinc-900 dark:text-white"
-                                            >{{ old('Other_Cancellation_Reason') }}</textarea>
-                                            @error('Other_Cancellation_Reason')
-                                                <p class="mt-2 text-xs font-semibold text-red-600">{{ $message }}</p>
-                                            @enderror
+                                            >{{ $oldForRequest('Other_Cancellation_Reason', '') }}</textarea>
+                                            @if ($hasOldInput)
+                                                @error('Other_Cancellation_Reason')
+                                                    <p class="mt-2 text-xs font-semibold text-red-600">{{ $message }}</p>
+                                                @enderror
+                                            @endif
                                         </div>
                                     </div>
                                 @endif
@@ -614,6 +653,7 @@ new class extends Component {
                             @if ($canCancel && ! $isApproved)
                                 <form id="cancel-request-{{ $request->RID }}" action="{{ route('waiting.list.cancel', $request) }}" method="POST" class="hidden">
                                     @csrf
+                                    <input type="hidden" name="_request_id" value="{{ $request->RID }}">
                                 </form>
                             @endif
                         </div>

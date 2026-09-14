@@ -1,25 +1,27 @@
 <x-mail::message>
-# Payment Required
+# Action needed: Complete your payment
 
 Hello {{ $userName }},
 
-Your facility request requires payment before it can be approved.
+Your facility request is ready for payment. Please complete the steps below so an administrator can review it.
 
 <x-mail::panel>
 **Request:** #{{ $request->RID }}  
 **Facility:** {{ $request->facility?->Facility_Name ?? 'N/A' }}  
 **Amount due:** ₱{{ number_format((float) $request->Payment_Amount, 2) }}  
 **Payment method:** Cash payment at the Admin Cashier  
-**Deadline:** {{ $request->Payment_Deadline?->format('F j, Y g:i A') }}
+**Pay on or before:** {{ $request->Payment_Deadline?->format('F j, Y g:i A') ?? 'Contact the administrator' }}
 </x-mail::panel>
 
-After paying, open your request in SIEL SPACE and upload a clear photo or PDF of the official receipt under **Payment proof**.
+1. Pay the amount above in cash at the Admin Cashier.
+2. Keep your official receipt.
+3. Open your request in SIEL SPACE and upload a clear photo or PDF of the receipt.
 
 <x-mail::button :url="$actionUrl">
 Upload Payment Proof
 </x-mail::button>
 
-Please keep your original receipt for verification. Your booking is not fully approved until an administrator reviews the payment.
+After you upload the receipt, an administrator will verify your payment. Your booking is not approved until that review is complete.
 
 Thank you,  
 SIEL SPACE  
