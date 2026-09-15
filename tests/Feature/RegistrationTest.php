@@ -35,6 +35,27 @@ it('accepts the staff ID format and sends a PIN to a clsu.edu.ph address', funct
     Notification::assertSentOnDemand(VerifyPendingRegistration::class);
 });
 
+it('accepts the six-digit ID format for staff', function () {
+    Notification::fake();
+
+    validRegistration('staff', '221234', 'staff@clsu.edu.ph')
+        ->call('register')
+        ->assertHasNoErrors()
+        ->assertRedirect();
+
+    expect(PendingRegistration::query()->where('email', 'staff@clsu.edu.ph')->value('clsu_id'))
+        ->toBe('22-1234');
+});
+
+it('accepts a clsu2.edu.ph email address for staff', function () {
+    Notification::fake();
+
+    validRegistration('staff', '0987654316', 'staff@clsu2.edu.ph')
+        ->call('register')
+        ->assertHasNoErrors()
+        ->assertRedirect();
+});
+
 it('keeps the student ID format separate from staff IDs', function () {
     Notification::fake();
 
@@ -50,4 +71,24 @@ it('recognizes both official CLSU email domains', function () {
     expect(User::usesClsuEmail('faculty@clsu.edu.ph'))->toBeTrue()
         ->and(User::usesClsuEmail('student@clsu2.edu.ph'))->toBeTrue()
         ->and(User::usesClsuEmail('person@example.com'))->toBeFalse();
+});
+
+it('blocks CLSU email addresses from external user registration', function (string $email) {
+    Notification::fake();
+
+    validRegistration('external', '', $email)
+        ->call('register')
+        ->assertHasErrors(['email']);
+})->with([
+    'primary CLSU domain' => 'person@clsu.edu.ph',
+    'secondary CLSU domain' => 'person@clsu2.edu.ph',
+]);
+
+it('allows a non-CLSU email for external user registration', function () {
+    Notification::fake();
+
+    validRegistration('external', '', 'person@gmail.com')
+        ->call('register')
+        ->assertHasNoErrors()
+        ->assertRedirect();
 });

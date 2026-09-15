@@ -95,9 +95,11 @@ new #[Layout('components.layouts.auth')] class extends Component
 
         if ($this->account_type === 'staff') {
             $digits = substr($digits, 0, 10);
-            $this->clsu_id = strlen($digits) > 8
-                ? substr($digits, 0, 8).'-'.substr($digits, 8)
-                : $digits;
+            $this->clsu_id = match (true) {
+                strlen($digits) === 6 => substr($digits, 0, 2).'-'.substr($digits, 2),
+                strlen($digits) > 8 => substr($digits, 0, 8).'-'.substr($digits, 8),
+                default => $digits,
+            };
 
             return;
         }
@@ -139,7 +141,7 @@ new #[Layout('components.layouts.auth')] class extends Component
                 'email.external_email' => 'External users must use a non-CLSU email address.',
                 'clsu_id.required' => 'Enter your unique CLSU ID.',
                 'clsu_id.regex' => $this->account_type === 'staff'
-                    ? 'Enter a valid staff ID in the format 09876543-16.'
+                    ? 'Enter a valid staff ID in the format 09876543-16 or 22-1234.'
                     : 'Enter a valid student ID in the format 22-1234.',
                 'clsu_id.unique' => 'This CLSU ID is already associated with an account or pending registration.',
             ]);
@@ -205,7 +207,7 @@ new #[Layout('components.layouts.auth')] class extends Component
             'account_type.required' => 'Select whether you are staff, a CLSU student, or an external user.',
             'clsu_id.required' => 'Enter your unique CLSU ID.',
             'clsu_id.regex' => $this->account_type === 'staff'
-                ? 'Enter a valid staff ID in the format 00000000-00.'
+                ? 'Enter a valid staff ID in the format 00000000-00 or 00-0000.'
                 : 'Enter a valid student ID in the format 00-0000.',
             'clsu_id.unique' => 'This CLSU ID is already associated with an account or pending registration.',
             'contact_number.regex' => 'Enter a valid PH mobile number: 09XXXXXXXXX or +639XXXXXXXXX.',
@@ -255,7 +257,7 @@ new #[Layout('components.layouts.auth')] class extends Component
 
         if ($this->account_type === 'external' && $this->usesClsuEmail()) {
             throw ValidationException::withMessages([
-                'email' => 'Choose Staff or CLSU Student when using an @clsu2.edu.ph email address.',
+                'email' => 'Choose Staff or CLSU Student when using an @clsu.edu.ph or @clsu2.edu.ph email address.',
             ]);
         }
     }
@@ -350,13 +352,16 @@ new #[Layout('components.layouts.auth')] class extends Component
 
             <div class="grid gap-2">
                 <x-ui::input wire:model.live.debounce.400ms="email" id="email" label="{{ __('Email address') }}" type="email" name="email" required maxlength="255" autocomplete="email" placeholder="name@clsu.edu.ph" />
+                @if ($account_type === 'staff')
+                    <p class="text-xs font-semibold text-emerald-900/60 dark:text-zinc-400">Staff may use an @clsu.edu.ph or @clsu2.edu.ph email address.</p>
+                @endif
             </div>
 
             @if ($this->isInstitutionalAccount())
                 <div class="grid gap-2" wire:key="clsu-id-field">
                     @if ($account_type === 'staff')
-                        <x-ui::input wire:model="clsu_id" x-on:input="$event.target.value = $event.target.value.replace(/\D/g, '').slice(0, 10).replace(/^(\d{8})(\d)/, '$1-$2')" id="clsu_id" label="{{ __('Staff ID') }}" type="text" name="clsu_id" required maxlength="11" inputmode="numeric" pattern="[0-9]{8}-[0-9]{2}" title="Use the staff ID format 09876543-16." placeholder="09876543-16" />
-                        <p class="text-xs font-semibold text-emerald-900/60 dark:text-zinc-400">Staff ID: eight digits, a hyphen, then two digits.</p>
+                        <x-ui::input wire:model="clsu_id" x-on:input="const digits = $event.target.value.replace(/\D/g, '').slice(0, 10); $event.target.value = digits.length === 6 ? digits.replace(/^(\d{2})(\d{4})$/, '$1-$2') : digits.replace(/^(\d{8})(\d)/, '$1-$2')" id="clsu_id" label="{{ __('Staff ID') }}" type="text" name="clsu_id" required maxlength="11" inputmode="numeric" pattern="(?:[0-9]{8}-[0-9]{2}|[0-9]{2}-[0-9]{4})" title="Use the staff ID format 09876543-16 or 22-1234." placeholder="09876543-16 or 22-1234" />
+                        <p class="text-xs font-semibold text-emerald-900/60 dark:text-zinc-400">Staff ID: use either 09876543-16 or the six-digit format 22-1234.</p>
                     @else
                         <x-ui::input wire:model="clsu_id" x-on:input="$event.target.value = $event.target.value.replace(/\D/g, '').slice(0, 6).replace(/^(\d{2})(\d)/, '$1-$2')" id="clsu_id" label="{{ __('Student ID') }}" type="text" name="clsu_id" required maxlength="7" inputmode="numeric" pattern="[0-9]{2}-[0-9]{4}" title="Use the student ID format 22-1234." placeholder="22-1234" />
                         <p class="text-xs font-semibold text-emerald-900/60 dark:text-zinc-400">Student ID: two digits, a hyphen, then four digits.</p>

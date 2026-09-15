@@ -18,7 +18,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public const STUDENT_ID_REGEX = '/^\d{2}-\d{4}$/';
 
-    public const STAFF_ID_REGEX = '/^\d{8}-\d{2}$/';
+    public const STAFF_ID_REGEX = '/^(?:\d{8}-\d{2}|\d{2}-\d{4})$/';
 
     public const CLSU_EMAIL_DOMAINS = ['clsu.edu.ph', 'clsu2.edu.ph'];
 
