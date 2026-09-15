@@ -60,11 +60,15 @@ new #[Layout('components.layouts.auth')] class extends Component
 
     private function clsuIdRules(): array
     {
+        $idRegex = $this->account_type === 'staff'
+            ? User::STAFF_ID_REGEX
+            : User::STUDENT_ID_REGEX;
+
         return [
             Rule::excludeIf(fn (): bool => ! $this->isInstitutionalAccount()),
             Rule::requiredIf(fn (): bool => $this->isInstitutionalAccount()),
             'string',
-            'regex:'.User::CLSU_ID_REGEX,
+            'regex:'.$idRegex,
             'unique:users,clsu_id',
             Rule::unique('pending_registrations', 'clsu_id')->ignore(
                 PendingRegistration::query()
@@ -87,7 +91,18 @@ new #[Layout('components.layouts.auth')] class extends Component
             return;
         }
 
-        $digits = substr((string) preg_replace('/\D+/', '', $this->clsu_id), 0, 6);
+        $digits = (string) preg_replace('/\D+/', '', $this->clsu_id);
+
+        if ($this->account_type === 'staff') {
+            $digits = substr($digits, 0, 10);
+            $this->clsu_id = strlen($digits) > 8
+                ? substr($digits, 0, 8).'-'.substr($digits, 8)
+                : $digits;
+
+            return;
+        }
+
+        $digits = substr($digits, 0, 6);
         $this->clsu_id = strlen($digits) > 2
             ? substr($digits, 0, 2).'-'.substr($digits, 2)
             : $digits;
@@ -120,10 +135,12 @@ new #[Layout('components.layouts.auth')] class extends Component
                 'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             ], [
                 'account_type.required' => 'Select whether you are staff, a CLSU student, or an external user.',
-                'email.clsu_email' => 'Staff and CLSU students must use an @clsu2.edu.ph email address.',
+                'email.clsu_email' => 'Staff and CLSU students must use an @clsu.edu.ph or @clsu2.edu.ph email address.',
                 'email.external_email' => 'External users must use a non-CLSU email address.',
                 'clsu_id.required' => 'Enter your unique CLSU ID.',
-                'clsu_id.regex' => 'Enter a valid CLSU ID in the format 22-1773.',
+                'clsu_id.regex' => $this->account_type === 'staff'
+                    ? 'Enter a valid staff ID in the format 09876543-16.'
+                    : 'Enter a valid student ID in the format 22-1234.',
                 'clsu_id.unique' => 'This CLSU ID is already associated with an account or pending registration.',
             ]);
 
@@ -187,7 +204,9 @@ new #[Layout('components.layouts.auth')] class extends Component
         ], [
             'account_type.required' => 'Select whether you are staff, a CLSU student, or an external user.',
             'clsu_id.required' => 'Enter your unique CLSU ID.',
-            'clsu_id.regex' => 'Enter a valid CLSU ID in the format 22-1773.',
+            'clsu_id.regex' => $this->account_type === 'staff'
+                ? 'Enter a valid staff ID in the format 00000000-00.'
+                : 'Enter a valid student ID in the format 00-0000.',
             'clsu_id.unique' => 'This CLSU ID is already associated with an account or pending registration.',
             'contact_number.regex' => 'Enter a valid PH mobile number: 09XXXXXXXXX or +639XXXXXXXXX.',
             'privacy_consent.accepted' => 'You must consent to the Data Privacy Notice to register.',
@@ -230,7 +249,7 @@ new #[Layout('components.layouts.auth')] class extends Component
     {
         if ($this->isInstitutionalAccount() && ! $this->usesClsuEmail()) {
             throw ValidationException::withMessages([
-                'email' => 'Staff and CLSU students must use an @clsu2.edu.ph email address.',
+                'email' => 'Staff and CLSU students must use an @clsu.edu.ph or @clsu2.edu.ph email address.',
             ]);
         }
 
@@ -330,13 +349,18 @@ new #[Layout('components.layouts.auth')] class extends Component
             </div>
 
             <div class="grid gap-2">
-                <x-ui::input wire:model.live.debounce.400ms="email" id="email" label="{{ __('Email address') }}" type="email" name="email" required maxlength="255" autocomplete="email" placeholder="name@clsu2.edu.ph" />
+                <x-ui::input wire:model.live.debounce.400ms="email" id="email" label="{{ __('Email address') }}" type="email" name="email" required maxlength="255" autocomplete="email" placeholder="name@clsu.edu.ph" />
             </div>
 
             @if ($this->isInstitutionalAccount())
                 <div class="grid gap-2" wire:key="clsu-id-field">
-                    <x-ui::input wire:model="clsu_id" x-on:input="$event.target.value = $event.target.value.replace(/\D/g, '').slice(0, 6).replace(/^(\d{2})(\d)/, '$1-$2')" id="clsu_id" label="{{ __('CLSU ID') }}" type="text" name="clsu_id" required maxlength="7" inputmode="numeric" pattern="[0-9]{2}-[0-9]{4}" title="Enter six digits; the hyphen is added automatically." placeholder="25-1234" />
-                    <p class="text-xs font-semibold text-emerald-900/60 dark:text-zinc-400">Enter the six digits of your CLSU ID. The hyphen is added automatically.</p>
+                    @if ($account_type === 'staff')
+                        <x-ui::input wire:model="clsu_id" x-on:input="$event.target.value = $event.target.value.replace(/\D/g, '').slice(0, 10).replace(/^(\d{8})(\d)/, '$1-$2')" id="clsu_id" label="{{ __('Staff ID') }}" type="text" name="clsu_id" required maxlength="11" inputmode="numeric" pattern="[0-9]{8}-[0-9]{2}" title="Use the staff ID format 09876543-16." placeholder="09876543-16" />
+                        <p class="text-xs font-semibold text-emerald-900/60 dark:text-zinc-400">Staff ID: eight digits, a hyphen, then two digits.</p>
+                    @else
+                        <x-ui::input wire:model="clsu_id" x-on:input="$event.target.value = $event.target.value.replace(/\D/g, '').slice(0, 6).replace(/^(\d{2})(\d)/, '$1-$2')" id="clsu_id" label="{{ __('Student ID') }}" type="text" name="clsu_id" required maxlength="7" inputmode="numeric" pattern="[0-9]{2}-[0-9]{4}" title="Use the student ID format 22-1234." placeholder="22-1234" />
+                        <p class="text-xs font-semibold text-emerald-900/60 dark:text-zinc-400">Student ID: two digits, a hyphen, then four digits.</p>
+                    @endif
                 </div>
             @endif
 
