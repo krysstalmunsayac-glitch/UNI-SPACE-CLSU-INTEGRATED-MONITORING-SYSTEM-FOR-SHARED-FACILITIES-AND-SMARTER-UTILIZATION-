@@ -122,23 +122,6 @@
                 </div>
             </section>
 
-            <section class="mt-6">
-                <h3 class="mb-3 text-[11px] font-black uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">Reservation questionnaire</h3>
-                <dl class="grid gap-3 sm:grid-cols-2">
-                    @foreach ([
-                        'Reservation frequency' => $Reservation_Frequency,
-                        'Facility importance' => $Facility_Importance,
-                        'Requirements fit' => $Requirements_Fit,
-                        'Reserve again' => $Reserve_Again_Intent,
-                    ] as $label => $answer)
-                        <div class="rounded-lg bg-zinc-50 px-4 py-3 ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
-                            <dt class="text-xs font-semibold text-zinc-500 dark:text-zinc-400">{{ $label }}</dt>
-                            <dd class="mt-1 text-sm font-bold">{{ $answer ?: '—' }}</dd>
-                        </div>
-                    @endforeach
-                </dl>
-            </section>
-
             @if (! empty($View_Daily_Schedules))
                 <section class="mt-6">
                     <h3 class="mb-3 text-[11px] font-black uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">Daily schedule</h3>

@@ -178,7 +178,7 @@
                                             icon="building-office"
                                             wire:click="openAssignments({{ $user->id }})"
                                         >
-                                            Assign Facilities
+                                            Assign Facility
                                         </x-ui::menu.item>
                                     @endif
 

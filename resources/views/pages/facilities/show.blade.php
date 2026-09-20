@@ -19,13 +19,36 @@
     <main class="min-h-screen bg-zinc-100 pb-20 pt-10 text-zinc-950 sm:pt-14">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <a href="{{ route('home') }}#facilities" class="inline-flex items-center gap-2 text-sm font-bold text-emerald-700 hover:text-emerald-900">
-                <span aria-hidden="true">←</span> Back to facilities
+                <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="m15 18-6-6 6-6" />
+                </svg>
+                Back to facilities
             </a>
 
             <div class="mt-6 grid gap-8 lg:grid-cols-[1.15fr_.85fr] lg:items-start">
                 <section
                     class="overflow-hidden rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6"
-                    x-data="{ activePhoto: 0 }"
+                    x-data="{
+                        activePhoto: 0,
+                        expanded: false,
+                        openPhoto() {
+                            this.expanded = true;
+                            document.body.classList.add('overflow-hidden');
+                        },
+                        closePhoto() {
+                            this.expanded = false;
+                            document.body.classList.remove('overflow-hidden');
+                        },
+                        previousPhoto() {
+                            this.activePhoto = (this.activePhoto - 1 + {{ $photos->count() }}) % {{ $photos->count() }};
+                        },
+                        nextPhoto() {
+                            this.activePhoto = (this.activePhoto + 1) % {{ $photos->count() }};
+                        }
+                    }"
+                    x-on:keydown.escape.window="closePhoto()"
+                    x-on:keydown.left.window="if (expanded) previousPhoto()"
+                    x-on:keydown.right.window="if (expanded) nextPhoto()"
                     aria-labelledby="facility-gallery-title"
                 >
                     <div class="flex items-end justify-between gap-4">
@@ -37,7 +60,12 @@
                     </div>
 
                     @if ($photos->isNotEmpty())
-                        <div class="mt-5 aspect-[16/10] overflow-hidden rounded-2xl bg-zinc-200">
+                        <button
+                            type="button"
+                            class="group relative mt-5 block aspect-[16/10] w-full cursor-zoom-in overflow-hidden rounded-2xl bg-zinc-200 text-left focus:outline-none focus-visible:ring-4 focus-visible:ring-emerald-600/40"
+                            x-on:click="openPhoto()"
+                            aria-label="Expand selected facility photo"
+                        >
                             @foreach ($photos as $index => $photo)
                                 <img
                                     x-show="activePhoto === {{ $index }}"
@@ -47,7 +75,14 @@
                                     @if ($loop->first) fetchpriority="high" @else loading="lazy" @endif
                                 >
                             @endforeach
-                        </div>
+                            <span class="absolute bottom-4 right-4 inline-flex items-center gap-2 rounded-full bg-black/70 px-4 py-2 text-sm font-bold text-white opacity-0 shadow-lg backdrop-blur-sm transition group-hover:opacity-100 group-focus-visible:opacity-100">
+                                <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <circle cx="11" cy="11" r="7" />
+                                    <path d="m20 20-4-4M11 8v6M8 11h6" />
+                                </svg>
+                                Expand photo
+                            </span>
+                        </button>
 
                         @if ($photos->count() > 1)
                             <div class="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-4">
@@ -58,6 +93,55 @@
                                 @endforeach
                             </div>
                         @endif
+
+                        <template x-teleport="body">
+                            <div
+                                x-cloak
+                                x-show="expanded"
+                                x-transition.opacity
+                                class="fixed inset-x-0 bottom-0 top-16 z-40 flex items-center justify-center bg-emerald-950/95 px-16 py-8 sm:top-20 sm:px-24 lg:px-32"
+                                role="dialog"
+                                aria-modal="true"
+                                aria-label="Expanded facility photo"
+                                x-on:click.self="closePhoto()"
+                            >
+                                <button
+                                    type="button"
+                                    class="absolute right-4 top-4 z-10 inline-flex size-12 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-white sm:right-6 sm:top-6"
+                                    x-on:click="closePhoto()"
+                                    aria-label="Close expanded photo"
+                                >
+                                    <svg class="size-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+                                        <path d="M6 6l12 12M18 6 6 18" />
+                                    </svg>
+                                </button>
+
+                                @if ($photos->count() > 1)
+                                    <button type="button" class="fixed left-4 top-1/2 z-10 inline-flex size-12 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white/70 bg-black/25 text-white transition hover:border-amber-300 hover:bg-black/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 sm:left-6" x-on:click="previousPhoto()" aria-label="Show previous photo">
+                                        <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+                                    </button>
+
+                                    <button type="button" class="fixed right-4 top-1/2 z-10 inline-flex size-12 -translate-y-1/2 items-center justify-center rounded-full bg-black/35 text-white transition hover:bg-black/55 focus:outline-none focus-visible:ring-2 focus-visible:ring-white sm:right-6" x-on:click="nextPhoto()" aria-label="Show next photo">
+                                        <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+                                    </button>
+                                @endif
+
+                                @foreach ($photos as $index => $photo)
+                                    <img
+                                        x-show="activePhoto === {{ $index }}"
+                                        src="{{ $photo }}"
+                                        alt="{{ $facility->Facility_Name }} photo {{ $index + 1 }} enlarged"
+                                        class="max-h-[calc(100vh-10rem)] max-w-full rounded-2xl object-contain shadow-2xl"
+                                    >
+                                @endforeach
+
+                                @if ($photos->count() > 1)
+                                    <div class="absolute bottom-5 left-1/2 -translate-x-1/2 rounded-full bg-black/40 px-5 py-2 text-sm font-black text-white" aria-live="polite">
+                                        <span x-text="activePhoto + 1"></span> / {{ $photos->count() }}
+                                    </div>
+                                @endif
+                            </div>
+                        </template>
                     @else
                         <div class="mt-5 flex aspect-[16/10] items-center justify-center rounded-2xl bg-slate-200 text-center font-bold text-slate-500">
                             No facility images available
@@ -67,7 +151,7 @@
 
                 <article class="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
                     <div class="flex flex-wrap gap-2">
-                        <span class="inline-flex rounded-full bg-zinc-200 px-3 py-1 text-xs font-black uppercase tracking-wide text-zinc-700">{{ ucfirst($facility->facility_type ?: 'Facility') }}</span>
+                        <span class="inline-flex rounded-full bg-zinc-200 px-3 py-1 text-xs font-black uppercase tracking-wide text-zinc-700">{{ str($facility->facility_type ?: 'Facility')->headline() }}</span>
                         <span @class([
                             'inline-flex rounded-full px-3 py-1 text-xs font-black uppercase tracking-wide text-white',
                             'bg-emerald-700' => $isAvailable,
@@ -103,15 +187,14 @@
 
                     <dl class="mt-7 grid gap-3 sm:grid-cols-2">
                         <div class="rounded-2xl bg-emerald-50 p-4"><dt class="text-xs font-black uppercase tracking-wide text-emerald-700">Capacity</dt><dd class="mt-2 font-bold">{{ $facility->Capacity ? number_format($facility->Capacity).' people' : 'Not specified' }}</dd></div>
-                        <div class="rounded-2xl bg-emerald-50 p-4"><dt class="text-xs font-black uppercase tracking-wide text-emerald-700">Location</dt><dd class="mt-2 font-bold">{{ $facility->Location ?: 'Not specified' }}</dd></div>
-                        <div class="rounded-2xl bg-emerald-50 p-4 sm:col-span-2"><dt class="text-xs font-black uppercase tracking-wide text-emerald-700">Managing office</dt><dd class="mt-2 font-bold">{{ $facility->Office ?: 'Not specified' }}</dd></div>
+                        <div class="rounded-2xl bg-emerald-50 p-4"><dt class="text-xs font-black uppercase tracking-wide text-emerald-700">Managing office</dt><dd class="mt-2 font-bold">{{ $facility->Office ?: 'Not specified' }}</dd></div>
                     </dl>
 
                     <div class="mt-7 border-t border-zinc-200 pt-6">
-                        <h2 class="text-sm font-black uppercase tracking-wide text-emerald-700">Amenities</h2>
+                        <h2 class="text-sm font-black uppercase tracking-wide text-emerald-700">Amenity</h2>
                         <div class="mt-3 flex flex-wrap gap-2">
                             @forelse ($facility->amenities as $amenity)
-                                <span class="rounded-full border border-emerald-200 px-3 py-1.5 text-sm font-bold text-emerald-800">{{ $amenity->name }} — {{ number_format($amenity->inventory_quantity) }} units</span>
+                                <span class="rounded-full border border-emerald-200 px-3 py-1.5 text-sm font-bold text-emerald-800">{{ $amenity->name }} — {{ $amenity->quantityLabel() }}</span>
                             @empty
                                 <p class="text-sm text-zinc-500">No amenities listed.</p>
                             @endforelse

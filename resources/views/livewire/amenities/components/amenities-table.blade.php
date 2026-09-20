@@ -60,6 +60,7 @@
                         <x-ui::table.cell>
                             <div class="font-medium">{{ $amenity->name }}</div>
                             <div class="text-xs text-zinc-500">AMN-{{ str_pad((string) $amenity->AID, 5, '0', STR_PAD_LEFT) }}</div>
+                            <div class="mt-1 text-xs font-medium text-zinc-500">{{ $amenity->isPermanent() ? 'Permanent / built-in' : 'Countable' }}</div>
                         </x-ui::table.cell>
 
                         <x-ui::table.cell>
@@ -74,19 +75,22 @@
 
                         <x-ui::table.cell class="min-w-32 whitespace-nowrap">
                             <span class="group/tooltip relative inline-flex" tabindex="0">
-                                <x-ui::badge color="blue">
-                                    {{ number_format($amenity->inventory_quantity) }} units
+                                <x-ui::badge :color="$amenity->isPermanent() ? 'green' : 'blue'">
+                                    {{ $amenity->quantityLabel() }}
                                 </x-ui::badge>
                                 <span
                                     role="tooltip"
                                     class="pointer-events-none absolute bottom-full left-1/2 z-40 mb-2 hidden w-64 -translate-x-1/2 rounded-lg bg-zinc-950 px-3 py-2 text-xs font-normal leading-5 text-white shadow-xl group-hover/tooltip:block group-focus/tooltip:block dark:bg-white dark:text-zinc-900"
                                 >
-                                    Total inventory available during any overlapping reservation period.
+                                    {{ $amenity->isPermanent() ? 'This amenity is permanently available at the assigned facility.' : 'Total inventory available during any overlapping reservation period.' }}
                                 </span>
                             </span>
                         </x-ui::table.cell>
 
                         <x-ui::table.cell>
+                            @if ($amenity->isPermanent())
+                                <span class="text-sm font-medium text-zinc-500">Not applicable</span>
+                            @else
                             @php
                                 $currentUsage = (int) $amenity->current_usage_quantity;
                                 $atLimit = $currentUsage >= $amenity->inventory_quantity;
@@ -102,6 +106,7 @@
                                     Total units across pending or approved requests (all dates).
                                 </span>
                             </span>
+                            @endif
                         </x-ui::table.cell>
 
                         <x-ui::table.cell class="min-w-32 whitespace-nowrap">

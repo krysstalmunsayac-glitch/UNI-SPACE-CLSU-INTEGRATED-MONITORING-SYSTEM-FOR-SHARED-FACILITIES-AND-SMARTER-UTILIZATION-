@@ -2,7 +2,7 @@
 
 namespace App\Notifications;
 
-use App\Models\Requests;
+use App\Models\FacilityRequest;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -11,7 +11,7 @@ class RequestFeedbackRequested extends Notification
 {
     use Queueable;
 
-    public function __construct(protected Requests $request) {}
+    public function __construct(protected FacilityRequest $request) {}
 
     public function via(object $notifiable): array
     {
@@ -27,7 +27,7 @@ class RequestFeedbackRequested extends Notification
             ->greeting('Hello '.($notifiable->name ?? 'there').',')
             ->line('Your event has ended. You may optionally share feedback about the facility and your experience.')
             ->line('Facility: '.($this->request->facility?->Facility_Name ?? 'N/A'))
-            ->action('Rate your experience', route('facility-feedback.create', $this->request))
+            ->action('Rate your experience', route('requests.feedback.create', $this->request))
             ->line('Thank you for helping us improve our shared facilities.');
     }
 
@@ -40,7 +40,7 @@ class RequestFeedbackRequested extends Notification
             'facility' => $this->request->facility?->Facility_Name,
             'message' => 'Your event has ended. You may optionally rate the facility and share feedback.',
             'status' => 'Ended',
-            'action_url' => route('facility-feedback.create', $this->request),
+            'action_url' => route('requests.feedback.create', $this->request),
         ];
     }
 }

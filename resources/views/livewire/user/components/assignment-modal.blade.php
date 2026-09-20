@@ -6,7 +6,7 @@
         <div class="space-y-6">
             <div>
                 <x-ui::heading size="lg">
-                    Assign Facilities
+                    Assign Facility
                 </x-ui::heading>
 
                 <x-ui::subheading>

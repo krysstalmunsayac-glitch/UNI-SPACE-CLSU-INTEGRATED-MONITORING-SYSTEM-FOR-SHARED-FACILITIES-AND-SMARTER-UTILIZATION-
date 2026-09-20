@@ -21,8 +21,8 @@ class RoleDashboard
         $role = Auth::user()->user_type;
 
         return match ($role) {
-            'super_admin' => redirect()->route('dashboard.superadmin'),
-            'admin' => redirect()->route('dashboard.officeadmin'),
+            'super_admin' => redirect()->route('dashboard.super-admin'),
+            'admin' => redirect()->route('dashboard.office-admin'),
             default => $next($request),
         };
     }

@@ -2,7 +2,7 @@
 
 namespace App\Notifications;
 
-use App\Models\Requests;
+use App\Models\FacilityRequest;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\AnonymousNotifiable;
@@ -12,7 +12,7 @@ class RequestAwaitingPayment extends Notification
 {
     use Queueable;
 
-    public function __construct(protected Requests $request) {}
+    public function __construct(protected FacilityRequest $request) {}
 
     public function via(object $notifiable): array
     {

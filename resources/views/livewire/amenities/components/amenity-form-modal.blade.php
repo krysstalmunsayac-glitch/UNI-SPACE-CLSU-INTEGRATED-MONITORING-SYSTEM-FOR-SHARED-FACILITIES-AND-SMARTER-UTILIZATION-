@@ -9,7 +9,17 @@
 
             <x-ui::textarea wire:model="Description" label="Description" placeholder="Enter amenity description" rows="3" maxlength="1000" />
 
-            <div>
+            <x-ui::select wire:model.live="inventory_type" label="Amenity type">
+                <x-ui::select.option value="permanent">Permanent / built-in</x-ui::select.option>
+                <x-ui::select.option value="countable">Countable / has units</x-ui::select.option>
+            </x-ui::select>
+
+            <p class="-mt-4 text-xs text-zinc-500 dark:text-zinc-400">
+                Permanent amenities such as restrooms, open spaces, and air conditioning are shown as included and do not use stock counts.
+            </p>
+
+            @if ($inventory_type === 'countable')
+            <div wire:key="countable-amenity-quantity">
                 <x-ui::input
                     wire:model="inventory_quantity"
                     type="number"
@@ -21,9 +31,10 @@
                     required
                 />
             </div>
+            @endif
 
             <div>
-                <x-ui::checkbox.group label="Facilities">
+                <x-ui::checkbox.group label="Facility">
                     <div class="max-h-56 space-y-2 overflow-y-auto rounded-xl border border-zinc-200 bg-white p-3 dark:border-zinc-700 dark:bg-zinc-900">
                         @forelse($this->facilityOptions as $facility)
                             <x-ui::checkbox

@@ -29,11 +29,11 @@ class AuditLog extends Model
 
     public function requestRecord(): BelongsTo
     {
-        return $this->belongsTo(Requests::class, 'auditable_id', 'RID')->withTrashed();
+        return $this->belongsTo(FacilityRequest::class, 'auditable_id', 'RID')->withTrashed();
     }
 
     public static function recordRequest(
-        Requests $requestRecord,
+        FacilityRequest $requestRecord,
         string $action,
         string $description,
         ?array $oldValues = null,
@@ -44,7 +44,7 @@ class AuditLog extends Model
         return static::query()->create([
             'actor_id' => $useAuthenticatedActor ? auth()->id() : $actorId,
             'action' => $action,
-            'auditable_type' => Requests::class,
+            'auditable_type' => FacilityRequest::class,
             'auditable_id' => $requestRecord->RID,
             'description' => $description,
             'old_values' => $oldValues ?: null,

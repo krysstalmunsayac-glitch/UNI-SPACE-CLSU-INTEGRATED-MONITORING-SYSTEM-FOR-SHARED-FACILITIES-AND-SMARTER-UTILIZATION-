@@ -87,9 +87,11 @@
                     type="tel"
                     placeholder="09XXXXXXXXX"
                     minlength="11"
-                    maxlength="13"
-                    pattern="(?:09[0-9]{9}|\+639[0-9]{9})"
-                    title="Use 09XXXXXXXXX or +639XXXXXXXXX."
+                    maxlength="11"
+                    inputmode="numeric"
+                    pattern="09[0-9]{9}"
+                    title="Enter an 11-digit mobile number starting with 09."
+                    oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11)"
                 />
 
             </div>

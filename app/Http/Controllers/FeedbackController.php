@@ -2,14 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Feedbacks;
-use App\Models\Requests;
+use App\Models\Feedback;
+use App\Models\FacilityRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
-class FeedbacksController extends Controller
+class FeedbackController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -24,7 +25,7 @@ class FeedbacksController extends Controller
      */
     public function create(Request $request, int $facilityRequest): View|RedirectResponse
     {
-        $facilityRequest = Requests::withTrashed()->findOrFail($facilityRequest);
+        $facilityRequest = FacilityRequest::withTrashed()->findOrFail($facilityRequest);
 
         abort_unless(
             $facilityRequest->User_ID === $request->user()->id
@@ -48,7 +49,7 @@ class FeedbacksController extends Controller
      */
     public function store(Request $request, int $facilityRequest): RedirectResponse
     {
-        $facilityRequest = Requests::withTrashed()->findOrFail($facilityRequest);
+        $facilityRequest = FacilityRequest::withTrashed()->findOrFail($facilityRequest);
 
         abort_unless(
             $facilityRequest->User_ID === $request->user()->id
@@ -59,19 +60,27 @@ class FeedbacksController extends Controller
 
         $validated = $request->validate([
             'Rating' => ['required', 'integer', 'between:1,5'],
+            'Reservation_Frequency' => ['required', Rule::in(['First time', 'Occasionally (1–3 times per year)', 'Regularly (monthly)', 'Frequently (weekly)'])],
+            'Purpose_Importance' => ['required', Rule::in(['Very Important', 'Important', 'Neutral', 'Slightly Important', 'Not Important'])],
+            'Requirements_Met' => ['required', Rule::in(['Yes, completely', 'Mostly', 'Partially', 'No'])],
+            'Reserve_Again' => ['required', Rule::in(['Definitely Yes', 'Probably Yes', 'Not Sure', 'Probably No', 'Definitely No'])],
             'Comment' => ['nullable', 'string', 'max:1000'],
         ]);
 
         DB::transaction(function () use ($facilityRequest, $request, $validated): void {
-            $lockedRequest = Requests::withTrashed()->lockForUpdate()->findOrFail($facilityRequest->RID);
+            $lockedRequest = FacilityRequest::withTrashed()->lockForUpdate()->findOrFail($facilityRequest->RID);
 
             abort_if($lockedRequest->feedback()->exists(), 409, 'Feedback has already been submitted for this request.');
 
-            Feedbacks::create([
+            Feedback::create([
                 'User_ID' => $request->user()->id,
                 'Request_ID' => $lockedRequest->RID,
                 'Facility_ID' => $lockedRequest->Facility_ID,
                 'Rating' => $validated['Rating'],
+                'Reservation_Frequency' => $validated['Reservation_Frequency'],
+                'Purpose_Importance' => $validated['Purpose_Importance'],
+                'Requirements_Met' => $validated['Requirements_Met'],
+                'Reserve_Again' => $validated['Reserve_Again'],
                 'Comment' => filled($validated['Comment'] ?? null) ? trim($validated['Comment']) : null,
             ]);
         }, 3);
@@ -88,7 +97,7 @@ class FeedbacksController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Feedbacks $feedbacks)
+    public function show(Feedback $feedbacks)
     {
         //
     }
@@ -96,7 +105,7 @@ class FeedbacksController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Feedbacks $feedbacks)
+    public function edit(Feedback $feedbacks)
     {
         //
     }
@@ -104,7 +113,7 @@ class FeedbacksController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Feedbacks $feedbacks)
+    public function update(Request $request, Feedback $feedbacks)
     {
         //
     }
@@ -112,7 +121,7 @@ class FeedbacksController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Feedbacks $feedbacks)
+    public function destroy(Feedback $feedbacks)
     {
         //
     }

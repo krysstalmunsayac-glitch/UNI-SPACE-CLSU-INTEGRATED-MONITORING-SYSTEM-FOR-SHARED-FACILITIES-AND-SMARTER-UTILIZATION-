@@ -4,10 +4,10 @@ namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
-use App\Models\Events;
-use App\Models\Facilities;
-use App\Models\Feedbacks;
-use App\Models\Requests;
+use App\Models\Event;
+use App\Models\Facility;
+use App\Models\Feedback;
+use App\Models\FacilityRequest;
 use App\Models\Schedule;
 use App\Models\User;
 use App\Services\AdminReportExporter;
@@ -26,11 +26,11 @@ class DashboardController extends Controller
     {
         [$dateFrom, $dateTo] = $this->analyticsDateRange($httpRequest);
         $user = $httpRequest->user();
-        $requestScope = Requests::withTrashed()
+        $requestScope = FacilityRequest::withTrashed()
             ->when($user->isAdmin(), fn (Builder $query) => $query
                 ->whereHas('facility.assignedAdmins', fn (Builder $adminQuery) => $adminQuery
                     ->where('users.id', $user->id)));
-        $facilities = Facilities::query()
+        $facilities = Facility::query()
             ->when($user->isAdmin(), fn (Builder $query) => $query->assignedToAdmin($user))
             ->orderBy('Facility_Name')
             ->get();
@@ -46,7 +46,7 @@ class DashboardController extends Controller
             ...$analytics,
             'amenityDemand' => $amenityDemand,
             'kpis' => [
-                'Facilities' => $facilities->count(),
+                'Facility' => $facilities->count(),
                 'Pending Requests' => $requestMetrics['dashboardStatusCounts']['Pending'] ?? 0,
                 'Time Utilization' => ($analytics['overallFacilityUtilizationRate'] ?? 0).'%',
                 'Approval Rate' => isset($requestMetrics['approvalRate']) ? $requestMetrics['approvalRate'].'%' : 'N/A',
@@ -62,10 +62,8 @@ class DashboardController extends Controller
 
     public function index(HttpRequest $httpRequest): View
     {
-        Requests::markPastRequestsAsEnded();
-
         $focusedFacilityId = $httpRequest->integer('map_facility');
-        if ($focusedFacilityId && ! Requests::withTrashed()
+        if ($focusedFacilityId && ! FacilityRequest::withTrashed()
             ->where('User_ID', Auth::id())
             ->where('Facility_ID', $focusedFacilityId)
             ->exists()) {
@@ -73,10 +71,10 @@ class DashboardController extends Controller
         }
 
         $requestMetrics = $this->requestDashboardMetrics(
-            Requests::withTrashed()->where('User_ID', Auth::id())
+            FacilityRequest::withTrashed()->where('User_ID', Auth::id())
         );
 
-        $facilities = Facilities::query()
+        $facilities = Facility::query()
             ->with(['images', 'amenities' => fn ($query) => $query
                 ->where('amenities.Status', 'Available')
                 ->orderBy('amenities.name')])
@@ -85,6 +83,8 @@ class DashboardController extends Controller
 
         $categoryLabels = [
             'auditorium' => 'Auditoriums',
+            'amphitheater' => 'Amphitheaters',
+            'little_theater' => 'Little theaters',
             'classroom' => 'Classrooms',
             'conference' => 'Conference spaces',
             'laboratory' => 'Laboratories',
@@ -93,10 +93,10 @@ class DashboardController extends Controller
         ];
 
         $facilityCategories = $facilities
-            ->filter(fn (Facilities $facility) => filled($facility->facility_type))
-            ->groupBy(fn (Facilities $facility) => strtolower($facility->facility_type))
+            ->filter(fn (Facility $facility) => filled($facility->facility_type))
+            ->groupBy(fn (Facility $facility) => strtolower($facility->facility_type))
             ->map(function ($group, string $type) use ($categoryLabels): array {
-                $featured = $group->first(fn (Facilities $facility) => $facility->images->isNotEmpty() || filled($facility->Image_URL));
+                $featured = $group->first(fn (Facility $facility) => $facility->images->isNotEmpty() || filled($facility->Image_URL));
 
                 return [
                     'type' => $type,
@@ -113,14 +113,14 @@ class DashboardController extends Controller
             'facilities' => $facilities,
             'facilityCategories' => $facilityCategories,
             'showsUnavailableFacilities' => true,
-            'mapFacilities' => Facilities::query()
+            'mapFacilities' => Facility::query()
                 ->orderBy('Facility_Name')
                 ->get([
                     'FID', 'Facility_Name', 'Location', 'Status', 'facility_type',
                     'Capacity', 'Latitude', 'Longitude',
                 ]),
             'focusedFacilityId' => $focusedFacilityId,
-            'events' => Events::query()->orderBy('Event_Title')->get(),
+            'events' => Event::query()->orderBy('Event_Title')->get(),
             'schedules' => $this->publicScheduleEvents(),
             ...$requestMetrics,
         ]);
@@ -129,7 +129,7 @@ class DashboardController extends Controller
     public function superAdmin(HttpRequest $httpRequest): View
     {
         [$dateFrom, $dateTo] = $this->analyticsDateRange($httpRequest);
-        $analyticsScope = Requests::withTrashed();
+        $analyticsScope = FacilityRequest::withTrashed();
         $analyticsQuery = (clone $analyticsScope)
             ->whereBetween('Created_at', [$dateFrom, $dateTo]);
         $monthlyLabels = [];
@@ -139,13 +139,13 @@ class DashboardController extends Controller
         for ($i = 5; $i >= 0; $i--) {
             $month = now()->subMonths($i);
             $monthlyLabels[] = $month->format('M Y');
-            $monthlyRequestTotals[] = Requests::query()->whereYear('Created_at', $month->year)->whereMonth('Created_at', $month->month)->count();
+            $monthlyRequestTotals[] = FacilityRequest::query()->whereYear('Created_at', $month->year)->whereMonth('Created_at', $month->month)->count();
             $monthlyUserTotals[] = User::query()->whereYear('created_at', $month->year)->whereMonth('created_at', $month->month)->count();
         }
 
         $requestMetrics = $this->requestDashboardMetrics($analyticsQuery, $dateFrom, $dateTo);
         $responseRateMetrics = $this->responseRateMetrics($analyticsQuery);
-        $facilities = Facilities::query()->orderBy('Facility_Name')->get();
+        $facilities = Facility::query()->orderBy('Facility_Name')->get();
         $operationalAnalytics = $this->operationalAnalytics($analyticsScope, $facilities, $dateFrom, $dateTo);
 
         return view('dashboards.super-admin', [
@@ -172,11 +172,11 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
         [$dateFrom, $dateTo] = $this->analyticsDateRange($httpRequest);
-        $requestScope = Requests::withTrashed()
+        $requestScope = FacilityRequest::withTrashed()
             ->whereHas('facility.assignedAdmins', fn ($query) => $query->where('users.id', $user?->id));
         $requestMetricsQuery = (clone $requestScope)
             ->whereBetween('Created_at', [$dateFrom, $dateTo]);
-        $facilityQuery = Facilities::query()->whereHas('assignedAdmins', fn ($query) => $query->where('users.id', $user?->id));
+        $facilityQuery = Facility::query()->whereHas('assignedAdmins', fn ($query) => $query->where('users.id', $user?->id));
         $facilities = (clone $facilityQuery)->orderBy('Facility_Name')->get();
 
         $requestMetrics = $this->requestDashboardMetrics($requestMetricsQuery, $dateFrom, $dateTo);
@@ -252,7 +252,7 @@ class DashboardController extends Controller
             ->whereNotIn('Status', ['Rejected', 'Cancelled'])
             ->whereBetween($trendDateColumn, [$trendStart->copy()->startOfDay(), $trendEnd->copy()->endOfDay()])
             ->get()
-            ->groupBy(fn (Requests $request) => $request->facility?->Facility_Name ?? 'Unknown facility')
+            ->groupBy(fn (FacilityRequest $request) => $request->facility?->Facility_Name ?? 'Unknown facility')
             ->map(function ($requests, string $facilityName) use ($capacityDates, $trendDateColumn, $dailyLabels): array {
                 $totals = array_fill(0, count($dailyLabels), 0);
 
@@ -276,7 +276,7 @@ class DashboardController extends Controller
             ->with('facility')
             ->whereBetween($trendDateColumn, [$trendStart->copy()->startOfDay(), $trendEnd->copy()->endOfDay()])
             ->get()
-            ->groupBy(fn (Requests $request) => $request->facility?->Facility_Name ?? 'Unknown facility')
+            ->groupBy(fn (FacilityRequest $request) => $request->facility?->Facility_Name ?? 'Unknown facility')
             ->map(function ($requests, string $facilityName) use ($capacityDates, $trendDateColumn, $dailyLabels): array {
                 $totals = array_fill(0, count($dailyLabels), 0);
 
@@ -305,7 +305,7 @@ class DashboardController extends Controller
         $mostUsedFacility = null;
 
         if ($mostUsedFacilityRecord) {
-            $facility = Facilities::withTrashed()->find($mostUsedFacilityRecord->Facility_ID);
+            $facility = Facility::withTrashed()->find($mostUsedFacilityRecord->Facility_ID);
 
             $mostUsedFacility = [
                 'name' => $facility?->Facility_Name ?? 'Unknown facility',
@@ -321,12 +321,12 @@ class DashboardController extends Controller
             ->groupBy('Facility_ID')
             ->pluck('total', 'Facility_ID');
 
-        $facilityTypeUsage = Facilities::withTrashed()
+        $facilityTypeUsage = Facility::withTrashed()
             ->whereIn('FID', $facilityUsageCounts->keys())
             ->get(['FID', 'facility_type'])
-            ->groupBy(fn (Facilities $facility) => $facility->facility_type ?: 'Other')
+            ->groupBy(fn (Facility $facility) => $facility->facility_type ?: 'Other')
             ->map(fn ($facilities) => $facilities->sum(
-                fn (Facilities $facility) => (int) ($facilityUsageCounts[$facility->FID] ?? 0)
+                fn (Facility $facility) => (int) ($facilityUsageCounts[$facility->FID] ?? 0)
             ))
             ->sortDesc()
             ->all();
@@ -335,8 +335,8 @@ class DashboardController extends Controller
             ->with('event')
             ->whereNotNull('Event_ID')
             ->get()
-            ->filter(fn (Requests $request) => filled($request->event?->Type_Event))
-            ->groupBy(fn (Requests $request) => trim($request->event->Type_Event))
+            ->filter(fn (FacilityRequest $request) => filled($request->event?->Type_Event))
+            ->groupBy(fn (FacilityRequest $request) => trim($request->event->Type_Event))
             ->map->count()
             ->sortDesc()
             ->all();
@@ -348,7 +348,7 @@ class DashboardController extends Controller
         $amenityUsage = (clone $baseQuery)
             ->with('amenities')
             ->get()
-            ->flatMap(fn (Requests $request) => $request->amenities)
+            ->flatMap(fn (FacilityRequest $request) => $request->amenities)
             ->groupBy(fn ($amenity) => $amenity->name)
             ->map->count()
             ->sortDesc()
@@ -374,7 +374,7 @@ class DashboardController extends Controller
             ]);
 
         $decisionLogs = AuditLog::query()
-            ->where('auditable_type', Requests::class)
+            ->where('auditable_type', FacilityRequest::class)
             ->whereIn('auditable_id', $scopedRequests->pluck('RID'))
             ->whereIn('action', ['request_approved', 'request_rejected'])
             ->oldest('created_at')
@@ -382,8 +382,8 @@ class DashboardController extends Controller
             ->groupBy('auditable_id')
             ->map->first();
         $reviewDurations = $scopedRequests
-            ->filter(fn (Requests $request) => $decisionLogs->has($request->RID) && $request->Created_at)
-            ->map(fn (Requests $request) => Carbon::parse($request->Created_at)
+            ->filter(fn (FacilityRequest $request) => $decisionLogs->has($request->RID) && $request->Created_at)
+            ->map(fn (FacilityRequest $request) => Carbon::parse($request->Created_at)
                 ->diffInMinutes(Carbon::parse($decisionLogs->get($request->RID)->created_at)) / 60);
         $averageReviewHours = $reviewDurations->isNotEmpty() ? round($reviewDurations->average(), 1) : null;
 
@@ -391,12 +391,12 @@ class DashboardController extends Controller
         $peakBookingDays = $dayOrder->map(fn (string $day) => [
             'day' => $day,
             'count' => $scopedRequests->filter(
-                fn (Requests $request) => $request->Proposed_Date?->format('l') === $day
+                fn (FacilityRequest $request) => $request->Proposed_Date?->format('l') === $day
             )->count(),
         ])->values()->all();
         $peakBookingHours = $scopedRequests
-            ->filter(fn (Requests $request) => $request->Proposed_Start_Time)
-            ->groupBy(fn (Requests $request) => $request->Proposed_Start_Time->format('g:00 A'))
+            ->filter(fn (FacilityRequest $request) => $request->Proposed_Start_Time)
+            ->groupBy(fn (FacilityRequest $request) => $request->Proposed_Start_Time->format('g:00 A'))
             ->map->count()
             ->sortDesc();
         $peakBookingHour = $peakBookingHours->isNotEmpty()
@@ -404,13 +404,13 @@ class DashboardController extends Controller
             : null;
 
         $facilityBookingHours = $scopedRequests
-            ->filter(fn (Requests $request) => in_array($request->Status, ['Approved', 'Ended'], true)
+            ->filter(fn (FacilityRequest $request) => in_array($request->Status, ['Approved', 'Ended'], true)
                 && $request->facility
                 && $request->Proposed_Start_Time
                 && $request->Proposed_End_Time)
-            ->groupBy(fn (Requests $request) => $request->facility->Facility_Name)
+            ->groupBy(fn (FacilityRequest $request) => $request->facility->Facility_Name)
             ->map(function ($requests): float {
-                return round($requests->sum(function (Requests $request): float {
+                return round($requests->sum(function (FacilityRequest $request): float {
                     $dailyHours = max(0, $request->Proposed_Start_Time->diffInMinutes($request->Proposed_End_Time) / 60);
                     $days = $request->Proposed_Date->diffInDays($request->Proposed_End_Date ?? $request->Proposed_Date) + 1;
 
@@ -430,7 +430,7 @@ class DashboardController extends Controller
             ->selectRaw('Facility_ID, Status, COUNT(*) as total')
             ->groupBy('Facility_ID', 'Status')
             ->get();
-        $statusFacilities = Facilities::withTrashed()
+        $statusFacilities = Facility::withTrashed()
             ->whereIn('FID', $facilityStatusRecords->pluck('Facility_ID')->unique())
             ->get(['FID', 'Facility_Name'])
             ->keyBy('FID');
@@ -502,7 +502,7 @@ class DashboardController extends Controller
 
     /**
      * Build operational analytics from booked schedules and scoped requests.
-     * Facilities currently have no operating-hours fields, so availability is
+     * Facility currently have no operating-hours fields, so availability is
      * measured against the dashboard's documented 8 AM–6 PM window.
      */
     private function operationalAnalytics(
@@ -523,7 +523,7 @@ class DashboardController extends Controller
             ->whereIn('Request_ID', $approvedRequestIds)
             ->whereBetween('Date', [$dateFrom->toDateString(), $dateTo->toDateString()])
             ->get(['Request_ID', 'Date', 'Start_Time', 'End_Time']);
-        $scheduleRequests = Requests::withTrashed()
+        $scheduleRequests = FacilityRequest::withTrashed()
             ->whereIn('RID', $bookedSchedules->pluck('Request_ID')->unique())
             ->get(['RID', 'Facility_ID'])
             ->keyBy('RID');
@@ -534,7 +534,7 @@ class DashboardController extends Controller
                 fn (Schedule $schedule) => max(0, $schedule->Start_Time->diffInMinutes($schedule->End_Time) / 60)
             ), 1));
 
-        $facilityUtilizationRates = $facilities->map(function (Facilities $facility) use ($bookedHoursByFacility, $availableHoursPerFacility): array {
+        $facilityUtilizationRates = $facilities->map(function (Facility $facility) use ($bookedHoursByFacility, $availableHoursPerFacility): array {
             $bookedHours = (float) ($bookedHoursByFacility[$facility->FID] ?? 0);
 
             return [
@@ -575,7 +575,7 @@ class DashboardController extends Controller
             'labels' => $months->map->format('M Y')->all(),
             'series' => collect(['Pending', 'Approved', 'Rejected', 'Cancelled'])->mapWithKeys(
                 fn (string $status) => [$status => $months->map(fn (Carbon $month) => $outcomeRecords
-                    ->filter(fn (Requests $request) => $request->Status === $status
+                    ->filter(fn (FacilityRequest $request) => $request->Status === $status
                         && $request->Created_at?->isSameMonth($month))
                     ->count())->all()]
             )->all(),
@@ -597,7 +597,7 @@ class DashboardController extends Controller
             ->whereBetween('Created_at', [$typeTrendStart, $dateTo])
             ->get(['RID', 'Facility_ID', 'Created_at']);
         $facilityTypes = $facilityTypeRecords
-            ->map(fn (Requests $request) => filled($request->facility?->facility_type)
+            ->map(fn (FacilityRequest $request) => filled($request->facility?->facility_type)
                 ? ucfirst($request->facility->facility_type)
                 : 'Other')
             ->unique()
@@ -609,7 +609,7 @@ class DashboardController extends Controller
                 ->all(),
             'series' => $facilityTypes->mapWithKeys(fn (string $type) => [
                 $type => $typeTrendBuckets->map(fn (Carbon $bucket) => $facilityTypeRecords
-                    ->filter(fn (Requests $request) => (
+                    ->filter(fn (FacilityRequest $request) => (
                         filled($request->facility?->facility_type)
                             ? ucfirst($request->facility->facility_type)
                             : 'Other'
@@ -625,17 +625,17 @@ class DashboardController extends Controller
             ->whereBetween('Created_at', [$dateFrom, $dateTo])
             ->get(['RID', 'Facility_ID', 'Status', 'Capacity']);
         $capacityUtilization = $rangeRequests
-            ->filter(fn (Requests $request) => $request->facility?->Capacity > 0 && $request->Capacity !== null)
+            ->filter(fn (FacilityRequest $request) => $request->facility?->Capacity > 0 && $request->Capacity !== null)
             ->groupBy('Facility_ID')
             ->map(function ($requests, $facilityId) use ($facilityLookup): array {
                 $facility = $facilityLookup->get($facilityId);
-                $rate = $requests->average(fn (Requests $request) => min(100, $request->Capacity / $request->facility->Capacity * 100));
+                $rate = $requests->average(fn (FacilityRequest $request) => min(100, $request->Capacity / $request->facility->Capacity * 100));
 
                 return ['facility' => $facility?->Facility_Name ?? 'Unknown facility', 'rate' => round($rate, 1)];
             })->sortByDesc('rate')->values()->all();
         $facilityRequestGroups = $rangeRequests
             ->whereNotNull('Facility_ID')
-            ->filter(fn (Requests $request) => $facilityLookup->has($request->Facility_ID))
+            ->filter(fn (FacilityRequest $request) => $facilityLookup->has($request->Facility_ID))
             ->groupBy('Facility_ID');
         $cancellationRates = $facilityRequestGroups->map(function ($requests, $facilityId) use ($facilityLookup): array {
             $total = $requests->count();
@@ -660,14 +660,14 @@ class DashboardController extends Controller
                 'decided' => $decided,
             ];
         })->filter(fn (array $row) => $row['decided'] > 0)->sortByDesc('approved')->values()->all();
-        $facilityRatings = Feedbacks::query()
+        $facilityRatings = Feedback::query()
             ->whereIn('Facility_ID', $facilities->pluck('FID'))
             ->whereNotNull('Rating')
             ->whereBetween('Created_at', [$dateFrom, $dateTo])
             ->selectRaw('Facility_ID, AVG(Rating) as average_rating, COUNT(*) as rating_count')
             ->groupBy('Facility_ID')
             ->get()
-            ->map(fn (Feedbacks $feedback): array => [
+            ->map(fn (Feedback $feedback): array => [
                 'facility' => $facilityLookup->get($feedback->Facility_ID)?->Facility_Name ?? 'Unknown facility',
                 'rating' => round((float) $feedback->average_rating, 1),
                 'count' => (int) $feedback->rating_count,
@@ -759,8 +759,8 @@ class DashboardController extends Controller
         $user = Auth::user();
 
         return match (true) {
-            $user?->isSuperAdmin() => redirect()->route('Facility.SuperAdmin'),
-            $user?->isAdmin() => redirect()->route('Facility.OfficeAdmin'),
+            $user?->isSuperAdmin() => redirect()->route('facilities.super-admin.index'),
+            $user?->isAdmin() => redirect()->route('facilities.office-admin.index'),
             default => abort(403),
         };
     }

@@ -2,10 +2,10 @@
 
 namespace App\Providers;
 
-use App\Models\Amenities;
-use App\Models\Events;
-use App\Models\Facilities;
-use App\Models\Requests;
+use App\Models\Amenity;
+use App\Models\Event;
+use App\Models\Facility;
+use App\Models\FacilityRequest;
 use App\Models\Schedule;
 use App\Models\User;
 use App\Observers\AdminContentChangeObserver;
@@ -64,10 +64,10 @@ class AppServiceProvider extends ServiceProvider
             };
         });
 
-        Amenities::observe(AdminContentChangeObserver::class);
-        Events::observe(AdminContentChangeObserver::class);
-        Facilities::observe(AdminContentChangeObserver::class);
-        Requests::observe(AdminContentChangeObserver::class);
+        Amenity::observe(AdminContentChangeObserver::class);
+        Event::observe(AdminContentChangeObserver::class);
+        Facility::observe(AdminContentChangeObserver::class);
+        FacilityRequest::observe(AdminContentChangeObserver::class);
         Schedule::observe(AdminContentChangeObserver::class);
         User::observe(AdminContentChangeObserver::class);
     }

@@ -7,9 +7,9 @@
 <body class="min-h-screen bg-white font-sans text-[#1e6031] antialiased dark:bg-zinc-950 dark:text-zinc-100">
     @php
         $navLink = 'border-b-2 border-transparent py-5 transition hover:border-emerald-700 hover:text-emerald-700 dark:hover:border-emerald-300 dark:hover:text-emerald-300';
-        $navActive = 'border-emerald-700 text-emerald-700 dark:border-emerald-300 dark:text-emerald-300';
+        $navActive = 'border-white text-white';
         $mobileNavLink = 'transition hover:text-emerald-700 dark:hover:text-emerald-300';
-        $mobileNavActive = 'text-emerald-700 dark:text-emerald-300';
+        $mobileNavActive = 'bg-white/10 text-white';
         $isEndUser = auth()->check() && auth()->user()->hasrole('user');
         $profileRoute = $isEndUser ? route('profile.external') : route('settings.profile');
         $homeRoute = $isEndUser ? route('dashboard') : route('home');
@@ -18,6 +18,35 @@
     @endphp
 
     <style>
+        .site-header {
+            background: #006b2b !important;
+            border-color: rgba(0, 54, 24, .55) !important;
+            box-shadow: 0 3px 14px rgba(0, 45, 22, .18);
+        }
+
+        .site-header .navigation-typeface,
+        .site-header .navigation-typeface a {
+            color: #fff !important;
+        }
+
+        .site-header .navigation-typeface > a:hover,
+        .site-header .navigation-typeface > a:focus-visible {
+            border-color: #fff !important;
+            color: #fff !important;
+        }
+
+        .site-header .header-primary-action {
+            border: 1px solid rgba(255, 255, 255, .3) !important;
+            background: #067a36 !important;
+            color: #fff !important;
+            box-shadow: 0 4px 12px rgba(0, 48, 23, .18);
+        }
+
+        .site-header .header-primary-action:hover {
+            background: #05662e !important;
+            transform: translateY(-1px);
+        }
+
         .site-header[data-transparent="true"] .navigation-typeface,
         .site-header[data-transparent="true"] .navigation-typeface a {
             color: #fff !important;
@@ -33,6 +62,12 @@
             color: #fff !important;
         }
 
+        .site-header .header-outline-action,
+        .site-header .header-mobile-toggle {
+            border-color: rgba(255, 255, 255, .8) !important;
+            color: #fff !important;
+        }
+
         .site-header[data-transparent="true"] .header-brand {
             filter: drop-shadow(0 1px 3px rgba(0, 0, 0, .55));
         }
@@ -44,6 +79,17 @@
             padding: .45rem .7rem !important;
             color: #065f46 !important;
             box-shadow: 0 2px 10px rgba(0, 0, 0, .1) !important;
+        }
+
+        #mobile-navigation {
+            border-color: rgba(255, 255, 255, .2) !important;
+            background: #006b2b !important;
+        }
+
+        #mobile-navigation a:hover,
+        #mobile-navigation a:focus-visible {
+            background: rgba(255, 255, 255, .12) !important;
+            color: #fff !important;
         }
 
         .header-profile-control * {
@@ -83,16 +129,16 @@
         })"
         x-on:keydown.escape.window="mobileMenuOpen = false"
         x-bind:data-transparent="immersive && !scrolled && !mobileMenuOpen ? 'true' : 'false'"
-        x-bind:class="immersive ? ((scrolled || mobileMenuOpen) ? 'border-b border-emerald-900/10 bg-white/95 shadow-sm backdrop-blur dark:border-white/10 dark:bg-zinc-950/95' : 'border-transparent bg-transparent') : ''"
+        x-bind:class="immersive ? ((scrolled || mobileMenuOpen) ? 'border-b border-emerald-950/20 shadow-sm' : 'border-transparent') : ''"
         @class([
             'site-header top-0 z-[2000] transition-colors duration-300',
             'fixed inset-x-0' => $isImmersiveHome,
-            'sticky border-b border-emerald-900/10 bg-white/95 backdrop-blur dark:border-white/10 dark:bg-zinc-950/95' => ! $isImmersiveHome,
+            'sticky border-b border-emerald-950/20' => ! $isImmersiveHome,
         ])
     >
         <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:h-20 sm:px-6 lg:px-8">
             <a href="{{ $homeRoute }}#home" class="flex h-16 shrink-0 items-center justify-center sm:h-20" aria-label="SIEL SPACE home">
-                <img src="{{ asset('images/silesyu-space-logo-v2.png') }}" alt="SIEL SPACE" class="header-brand h-10 w-auto object-contain sm:h-14">
+                <x-siel-space-brand class="header-brand" />
             </a>
 
             <nav class="navigation-typeface hidden items-center gap-6 text-sm font-semibold text-emerald-950 dark:text-zinc-100 lg:flex">
@@ -100,7 +146,7 @@
                     @if ($isEndUser)
                         <a href="{{ $homeRoute }}#home" class="{{ $navLink }}" x-on:click="setActive('home')" x-bind:class="activeSection === 'home' ? @js($navActive) : ''">Home</a>
                         <a href="{{ $aboutRoute }}#about" class="{{ $navLink }}" x-on:click="setActive('about')" x-bind:class="activeSection === 'about' ? @js($navActive) : ''">About</a>
-                        <a href="{{ $homeRoute }}#facilities" class="{{ $navLink }}" x-on:click="setActive('facilities')" x-bind:class="activeSection === 'facilities' ? @js($navActive) : ''">Facilities</a>
+                        <a href="{{ $homeRoute }}#facilities" class="{{ $navLink }}" x-on:click="setActive('facilities')" x-bind:class="activeSection === 'facilities' ? @js($navActive) : ''">Facility</a>
                         <a href="{{ $homeRoute }}#calendar" class="{{ $navLink }}" x-on:click="setActive('calendar')" x-bind:class="activeSection === 'calendar' ? @js($navActive) : ''">Calendar</a>
                         <a href="{{ $homeRoute }}#map" class="{{ $navLink }}" x-on:click="setActive('map')" x-bind:class="activeSection === 'map' ? @js($navActive) : ''">Map</a>
                         <a href="{{ $homeRoute }}#help" class="{{ $navLink }}" x-on:click="setActive('help')" x-bind:class="activeSection === 'help' ? @js($navActive) : ''">Help</a>
@@ -111,7 +157,7 @@
                 @else
                     <a href="{{ route('home') }}#home" class="{{ $navLink }}" x-on:click="setActive('home')" x-bind:class="activeSection === 'home' ? @js($navActive) : ''">Home</a>
                     <a href="{{ route('home') }}#about" class="{{ $navLink }}" x-on:click="setActive('about')" x-bind:class="activeSection === 'about' ? @js($navActive) : ''">About</a>
-                    <a href="{{ route('home') }}#facilities" class="{{ $navLink }}" x-on:click="setActive('facilities')" x-bind:class="activeSection === 'facilities' ? @js($navActive) : ''">Facilities</a>
+                    <a href="{{ route('home') }}#facilities" class="{{ $navLink }}" x-on:click="setActive('facilities')" x-bind:class="activeSection === 'facilities' ? @js($navActive) : ''">Facility</a>
                     <a href="{{ route('home') }}#calendar" class="{{ $navLink }}" x-on:click="setActive('calendar')" x-bind:class="activeSection === 'calendar' ? @js($navActive) : ''">Calendar</a>
                     <a href="{{ route('home') }}#map" class="{{ $navLink }}" x-on:click="setActive('map')" x-bind:class="activeSection === 'map' ? @js($navActive) : ''">Map</a>
                     <a href="{{ route('home') }}#help" class="{{ $navLink }}" x-on:click="setActive('help')" x-bind:class="activeSection === 'help' ? @js($navActive) : ''">Help</a>
@@ -123,13 +169,13 @@
                     <a href="{{ route('login') }}" class="header-outline-action hidden rounded-xl border border-emerald-700 px-5 py-2 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-700 hover:text-white dark:border-emerald-300 dark:text-emerald-200 dark:hover:bg-emerald-300 dark:hover:text-emerald-950 lg:inline-flex">
                         Sign In
                     </a>
-                    <a href="{{ route('register') }}" class="hidden rounded-xl bg-emerald-700 px-5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-800 dark:bg-emerald-400 dark:text-emerald-950 dark:hover:bg-emerald-300 lg:inline-flex">
+                    <a href="{{ route('register') }}" class="header-primary-action hidden rounded-xl px-5 py-2 text-sm font-semibold transition lg:inline-flex">
                         Sign Up
                     </a>
                 @else
                     <div class="hidden items-center gap-3 lg:flex">
                         <x-notification-button />
-                        <a href="{{ $isEndUser ? $homeRoute.'#requests' : route('dashboard') }}" class="rounded-xl bg-emerald-700 px-5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-800 dark:bg-emerald-400 dark:text-emerald-950">
+                        <a href="{{ $isEndUser ? $homeRoute.'#requests' : route('dashboard') }}" class="header-primary-action rounded-xl px-5 py-2 text-sm font-semibold transition">
                             {{ $isEndUser ? 'My Requests' : 'Dashboard' }}
                         </a>
                         <x-ui::dropdown position="bottom" align="end">
@@ -210,7 +256,7 @@
                 @if ($isEndUser)
                     <a href="{{ $homeRoute }}#home" x-on:click="mobileMenuOpen = false; setActive('home')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'home' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">Home</a>
                     <a href="{{ $aboutRoute }}#about" x-on:click="mobileMenuOpen = false; setActive('about')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'about' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">About</a>
-                    <a href="{{ $homeRoute }}#facilities" x-on:click="mobileMenuOpen = false; setActive('facilities')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'facilities' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">Facilities</a>
+                    <a href="{{ $homeRoute }}#facilities" x-on:click="mobileMenuOpen = false; setActive('facilities')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'facilities' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">Facility</a>
                     <a href="{{ $homeRoute }}#calendar" x-on:click="mobileMenuOpen = false; setActive('calendar')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'calendar' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">Calendar</a>
                     <a href="{{ $homeRoute }}#map" x-on:click="mobileMenuOpen = false; setActive('map')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'map' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">Map</a>
                     <a href="{{ $homeRoute }}#help" x-on:click="mobileMenuOpen = false; setActive('help')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'help' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">Help</a>
@@ -270,7 +316,7 @@
             @else
                 <a href="{{ route('home') }}#home" x-on:click="mobileMenuOpen = false; setActive('home')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'home' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">Home</a>
                 <a href="{{ route('home') }}#about" x-on:click="mobileMenuOpen = false; setActive('about')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'about' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">About</a>
-                <a href="{{ route('home') }}#facilities" x-on:click="mobileMenuOpen = false; setActive('facilities')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'facilities' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">Facilities</a>
+                <a href="{{ route('home') }}#facilities" x-on:click="mobileMenuOpen = false; setActive('facilities')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'facilities' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">Facility</a>
                 <a href="{{ route('home') }}#calendar" x-on:click="mobileMenuOpen = false; setActive('calendar')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'calendar' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">Calendar</a>
                 <a href="{{ route('home') }}#map" x-on:click="mobileMenuOpen = false; setActive('map')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'map' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">Map</a>
                 <a href="{{ route('home') }}#help" x-on:click="mobileMenuOpen = false; setActive('help')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'help' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">Help</a>
@@ -293,7 +339,7 @@
             <div class="flex flex-wrap items-center gap-4">
                 <a href="{{ route('home') }}#home" class="hover:text-emerald-700 dark:hover:text-emerald-300">Home</a>
                 <a href="{{ route('home') }}#about" class="hover:text-emerald-700 dark:hover:text-emerald-300">About</a>
-                <a href="{{ route('home') }}#facilities" class="hover:text-emerald-700 dark:hover:text-emerald-300">Facilities</a>
+                <a href="{{ route('home') }}#facilities" class="hover:text-emerald-700 dark:hover:text-emerald-300">Facility</a>
                 <a href="{{ route('home') }}#calendar" class="hover:text-emerald-700 dark:hover:text-emerald-300">Calendar</a>
             </div>
         </div>

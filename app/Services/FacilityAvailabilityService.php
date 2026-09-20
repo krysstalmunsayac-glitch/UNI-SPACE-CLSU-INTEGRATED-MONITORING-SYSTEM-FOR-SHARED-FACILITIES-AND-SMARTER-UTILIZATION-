@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
-use App\Models\Facilities;
+use App\Models\Facility;
 use App\Models\FacilityBlackout;
-use App\Models\Requests;
+use App\Models\FacilityRequest;
 use App\Notifications\FacilityUnavailable;
 use Carbon\CarbonPeriod;
 use Illuminate\Support\Collection;
@@ -31,7 +31,7 @@ class FacilityAvailabilityService
      */
     public function reactivateExpired(): int
     {
-        return Facilities::query()
+        return Facility::query()
             ->where('Status', 'Unavailable')
             ->whereNotNull('Available_At')
             ->where('Available_At', '<=', now())
@@ -48,7 +48,7 @@ class FacilityAvailabilityService
      *
      * @return int Number of active requests cancelled
      */
-    public function toggle(Facilities $facility, ?string $availableAt = null): int
+    public function toggle(Facility $facility, ?string $availableAt = null): int
     {
         if ($facility->Status === 'Unavailable') {
             $facility->update([
@@ -67,7 +67,7 @@ class FacilityAvailabilityService
                 'Deactivated_At' => now(),
             ]);
 
-            $requests = Requests::query()
+            $requests = FacilityRequest::query()
                 ->with([
                     'user:id,name,email',
                     'facility:FID,Facility_Name',
@@ -166,13 +166,13 @@ class FacilityAvailabilityService
             return collect();
         }
         $dates = array_column($schedules, 'date');
-        $requests = Requests::query()->where('Facility_ID', $facilityId)->whereIn('Status', $statuses)
+        $requests = FacilityRequest::query()->where('Facility_ID', $facilityId)->whereIn('Status', $statuses)
             ->whereDate('Proposed_Date', '<=', max($dates))->whereDate(DB::raw('COALESCE(Proposed_End_Date, Proposed_Date)'), '>=', min($dates))
             ->when($ignoreRequestId, fn ($q) => $q->where('RID', '!=', $ignoreRequestId))
             ->when($lock, fn ($q) => $q->lockForUpdate())->get();
 
         return collect($schedules)->flatMap(function ($candidate) use ($requests) {
-            return $requests->map(function (Requests $request) use ($candidate) {
+            return $requests->map(function (FacilityRequest $request) use ($candidate) {
                 $existing = $request->scheduleForDate($candidate['date']);
                 if (! $existing) {
                     return null;

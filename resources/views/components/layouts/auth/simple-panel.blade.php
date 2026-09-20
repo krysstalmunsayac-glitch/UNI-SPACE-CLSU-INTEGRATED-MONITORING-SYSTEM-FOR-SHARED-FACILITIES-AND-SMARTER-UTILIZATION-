@@ -1,13 +1,12 @@
 <section class="relative hidden min-h-[640px] overflow-hidden bg-emerald-700 px-10 py-10 text-center text-white dark:bg-emerald-900 lg:flex">
     <div class="absolute inset-0 bg-emerald-800"></div>
     <div class="relative z-10 flex min-h-full w-full flex-col items-center justify-center">
+        <a href="{{ route('home') }}" wire:navigate class="absolute top-0 flex w-fit max-w-full items-center justify-center" aria-label="SIEL SPACE home">
+            <x-siel-space-brand />
+        </a>
+
         <div class="max-w-sm">
-            @if (request()->routeIs('login', 'register'))
-                <h1 class="text-3xl font-black tracking-tight">{{ $panelTitle }}</h1>
-            @else
-                <h2 class="text-3xl font-black tracking-tight">{{ $panelTitle }}</h2>
-            @endif
-            <p class="mx-auto mt-5 max-w-xs text-sm font-semibold leading-6 text-emerald-50/85">{{ $panelText }}</p>
+            <p class="mx-auto max-w-xs text-sm font-semibold leading-6 text-emerald-50/85">{{ $panelText }}</p>
             <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
                 <span class="text-sm font-semibold text-emerald-50/90">
                     {{ $panelButton === 'Sign Up' ? "Don't have an account?" : 'Already have an account?' }}

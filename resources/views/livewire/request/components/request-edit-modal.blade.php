@@ -39,7 +39,7 @@
             @endif
 
             <x-ui::select wire:model="Status" label="Status">
-                @foreach (array_unique([$Status, ...\App\Models\Requests::allowedTransitionsFrom($Status)]) as $statusOption)
+                @foreach (array_unique([$Status, ...\App\Models\FacilityRequest::allowedTransitionsFrom($Status)]) as $statusOption)
                     <x-ui::select.option value="{{ $statusOption }}">{{ $statusOption }}</x-ui::select.option>
                 @endforeach
             </x-ui::select>

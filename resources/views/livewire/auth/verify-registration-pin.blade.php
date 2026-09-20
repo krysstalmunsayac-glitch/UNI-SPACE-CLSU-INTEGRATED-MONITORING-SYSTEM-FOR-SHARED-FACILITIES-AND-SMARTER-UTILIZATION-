@@ -3,8 +3,8 @@
 use App\Models\PendingRegistration;
 use App\Models\User;
 use App\Notifications\VerifyPendingRegistration;
-use Illuminate\Auth\Events\Registered;
-use Illuminate\Auth\Events\Verified;
+use Illuminate\Auth\Event\Registered;
+use Illuminate\Auth\Event\Verified;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -117,6 +117,7 @@ new #[Layout('components.layouts.auth')] class extends Component
         }
 
         if (! $result) {
+            session()->forget('pending_registration_token');
             $this->redirect(route('login', absolute: false), navigate: true);
 
             return;
@@ -127,6 +128,7 @@ new #[Layout('components.layouts.auth')] class extends Component
         RateLimiter::clear($rateLimitKey);
         Auth::login($result);
         Session::regenerate();
+        session()->forget('pending_registration_token');
 
         session()->flash('status', 'Your email was verified and your account is ready.');
         $this->redirect(route('dashboard', absolute: false), navigate: true);
@@ -170,7 +172,7 @@ new #[Layout('components.layouts.auth')] class extends Component
 
         RateLimiter::hit($rateLimitKey, 600);
         Notification::route('mail', $pending->email)
-            ->notify(new VerifyPendingRegistration($pin));
+            ->notify(new VerifyPendingRegistration($pin, $this->token));
 
         $this->pin = '';
         $this->resetValidation();
@@ -247,7 +249,7 @@ new #[Layout('components.layouts.auth')] class extends Component
         @error('resend') <p class="mt-2 text-xs font-semibold text-red-600">{{ $message }}</p> @enderror
     </div>
 
-    <a href="{{ route('register') }}" class="text-center text-sm font-bold text-zinc-500 transition hover:text-emerald-700 dark:text-zinc-400 dark:hover:text-emerald-300">
+    <a href="{{ route('register', ['new' => 1]) }}" class="text-center text-sm font-bold text-zinc-500 transition hover:text-emerald-700 dark:text-zinc-400 dark:hover:text-emerald-300">
         Use a different email address
     </a>
 </div>

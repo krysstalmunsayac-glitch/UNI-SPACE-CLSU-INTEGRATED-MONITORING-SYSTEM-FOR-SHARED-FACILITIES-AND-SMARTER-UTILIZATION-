@@ -1,8 +1,8 @@
 <?php
 
 use App\Models\User;
-use Illuminate\Auth\Events\PasswordReset;
-use Illuminate\Auth\Events\Verified;
+use Illuminate\Auth\Event\PasswordReset;
+use Illuminate\Auth\Event\Verified;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;

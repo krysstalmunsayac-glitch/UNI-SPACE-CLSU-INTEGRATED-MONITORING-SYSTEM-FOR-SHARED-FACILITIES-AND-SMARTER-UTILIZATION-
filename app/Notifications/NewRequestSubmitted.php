@@ -2,7 +2,7 @@
 
 namespace App\Notifications;
 
-use App\Models\Requests;
+use App\Models\FacilityRequest;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -11,7 +11,7 @@ class NewRequestSubmitted extends Notification
 {
     use Queueable;
 
-    public function __construct(protected Requests $request) {}
+    public function __construct(protected FacilityRequest $request) {}
 
     public function via(object $notifiable): array
     {
@@ -36,7 +36,7 @@ class NewRequestSubmitted extends Notification
                 'expectedCapacity' => $this->request->Capacity ?? 'N/A',
                 'purpose' => $this->request->Purpose,
                 'status' => $this->request->Status,
-                'actionUrl' => route('Request'),
+                'actionUrl' => route('requests.index'),
             ]);
     }
 

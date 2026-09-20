@@ -5,7 +5,7 @@
                 <x-ui::subheading>Restore archived facilities or delete them permanently.</x-ui::subheading>
             </div>
             <div class="w-full lg:w-auto lg:min-w-[28rem]">
-                <x-ui::input wire:model.live.debounce.400ms="searchInput" placeholder="Search facility, location, or office..." class="w-full" />
+                <x-ui::input wire:model.live.debounce.400ms="searchInput" placeholder="Search facility or office..." class="w-full" />
             </div>
         </div>
 
@@ -13,7 +13,6 @@
             <x-ui::table :paginate="$this->archivedFacilities">
                 <x-ui::table.columns>
                     <x-ui::table.column>Facility</x-ui::table.column>
-                    <x-ui::table.column>Location</x-ui::table.column>
                     <x-ui::table.column>Office</x-ui::table.column>
                     <x-ui::table.column>Status</x-ui::table.column>
                     <x-ui::table.column>Archived</x-ui::table.column>
@@ -38,7 +37,6 @@
                                 </div>
                             </x-ui::table.cell>
 
-                            <x-ui::table.cell>{{ $facility->Location ?? '—' }}</x-ui::table.cell>
                             <x-ui::table.cell>{{ $facility->Office ?? '—' }}</x-ui::table.cell>
 
                             <x-ui::table.cell>

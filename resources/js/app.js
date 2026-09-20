@@ -153,9 +153,9 @@ window.confirmLogout = async () => {
     }
 
     const result = await Swal.fire({
-        title: 'Are you sure?',
+        title: 'Confirm logout',
         text: 'Do you want to log out of your account?',
-        icon: 'question',
+        icon: 'success',
         iconColor: '#006b2b',
         position: 'center',
         showCancelButton: true,

@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\Facilities;
+use App\Models\Facility;
 use App\Models\User;
 
 it('shows unavailable facilities to external users without a booking action', function () {
@@ -9,7 +9,7 @@ it('shows unavailable facilities to external users without a booking action', fu
         'account_type' => 'external',
         'is_active' => true,
     ]);
-    Facilities::query()->create([
+    Facility::query()->create([
         'Facility_Name' => 'Temporarily Closed Hall',
         'Status' => 'Unavailable',
     ]);
@@ -21,7 +21,7 @@ it('shows unavailable facilities to external users without a booking action', fu
         ->assertSee('Unavailable')
         ->assertSee('images/siel-space-slide-01.jpg', false)
         ->assertDontSee('images/siel-space-slide-03.jpg', false)
-        ->assertDontSee('href="'.route('requests.create', Facilities::query()->first()).'"', false);
+        ->assertDontSee('href="'.route('requests.create', Facility::query()->first()).'"', false);
 });
 
 it('shows the responsible office instead of the location on the request page', function () {
@@ -30,7 +30,7 @@ it('shows the responsible office instead of the location on the request page', f
         'account_type' => 'external',
         'is_active' => true,
     ]);
-    $facility = Facilities::query()->create([
+    $facility = Facility::query()->create([
         'Facility_Name' => 'Alumni Social Hall',
         'Office' => 'CLSU Alumni Association Inc.',
         'Location' => 'Central Luzon State University, Science City of Muñoz, Nueva Ecija',

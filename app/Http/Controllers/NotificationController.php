@@ -26,7 +26,7 @@ class NotificationController extends Controller
                 route('dashboard', array_filter(['request' => $requestId]))
                 .($requestId ? '#request-'.$requestId : '#requests')
             ),
-            'admin', 'super_admin' => redirect()->route('Request', array_filter(['request' => $requestId])),
+            'admin', 'super_admin' => redirect()->route('requests.index', array_filter(['request' => $requestId])),
             default => redirect()->route('dashboard'),
         };
     }
@@ -41,7 +41,7 @@ class NotificationController extends Controller
 
         return match ($user->user_type) {
             'user' => redirect()->to(route('dashboard').'#requests'),
-            'admin', 'super_admin' => redirect()->route('Request'),
+            'admin', 'super_admin' => redirect()->route('requests.index'),
             default => redirect()->route('dashboard'),
         };
     }

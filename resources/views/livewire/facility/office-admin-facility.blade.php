@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\Facilities;
+use App\Models\Facility;
 use App\Services\FacilityAvailabilityService;
 use App\Support\Ui;
 use Illuminate\Support\Facades\Storage;
@@ -56,7 +56,7 @@ new #[Layout('components.layouts.app')] class extends Component
     #[Validate('nullable|string|max:10000')]
     public ?string $rates = null;
 
-    #[Validate('required|in:sports,conference,auditorium,classroom,laboratory,other')]
+    #[Validate('required|in:sports,conference,auditorium,amphitheater,little_theater,classroom,laboratory,other')]
     public ?string $facility_type = null;
 
     #[Validate('required|string|min:2|max:150')]
@@ -68,7 +68,7 @@ new #[Layout('components.layouts.app')] class extends Component
     #[Validate('nullable|string|max:10000')]
     public ?string $protocols_and_guidelines = null;
 
-    #[Validate('required|string|min:2|max:255')]
+    #[Validate('nullable|string|max:255')]
     public ?string $Location = null;
 
     #[Validate('required|integer|min:1|max:100000')]
@@ -302,7 +302,7 @@ new #[Layout('components.layouts.app')] class extends Component
     #[Computed]
     public function requestableFacilities()
     {
-        return Facilities::query()
+        return Facility::query()
             ->whereHas('assignedAdmins', function ($adminQuery) {
                 $adminQuery->where('users.id', auth()->id());
             })
@@ -345,7 +345,7 @@ new #[Layout('components.layouts.app')] class extends Component
     {
         app(FacilityAvailabilityService::class)->reactivateExpired();
 
-        $query = Facilities::query()
+        $query = Facility::query()
             ->with(['images' => fn ($query) => $query->oldest('id')->limit(1)])
             ->whereHas('assignedAdmins', function ($adminQuery) {
                 $adminQuery->where('users.id', auth()->id());
@@ -360,7 +360,6 @@ new #[Layout('components.layouts.app')] class extends Component
                 $query->where(function ($searchQuery) use ($term) {
                     $searchQuery
                         ->where('Facility_Name', 'like', $term)
-                        ->orWhere('Location', 'like', $term)
                         ->orWhere('Office', 'like', $term)
                         ->orWhere('facility_type', 'like', $term)
                         ->orWhere('rates', 'like', $term)
@@ -383,9 +382,9 @@ new #[Layout('components.layouts.app')] class extends Component
         return $facilities;
     }
 
-    private function getScopedFacility(int $facilityId): Facilities
+    private function getScopedFacility(int $facilityId): Facility
     {
-        return Facilities::query()
+        return Facility::query()
             ->whereHas('assignedAdmins', function ($adminQuery) {
                 $adminQuery->where('users.id', auth()->id());
             })

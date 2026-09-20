@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\Requests;
+use App\Models\FacilityRequest;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Url;
@@ -46,7 +46,7 @@ new class extends Component {
 
     public function with(): array
     {
-        $requests = Requests::withTrashed()
+        $requests = FacilityRequest::withTrashed()
             ->where('User_ID', Auth::id())
             ->where(function (Builder $query) {
                 $query->whereNull('deleted_at')
@@ -69,7 +69,7 @@ new class extends Component {
 
         return [
             'requests' => $requests,
-            'totalUserRequests' => Requests::withTrashed()
+            'totalUserRequests' => FacilityRequest::withTrashed()
                 ->where('User_ID', Auth::id())
                 ->where(function (Builder $query) {
                     $query->whereNull('deleted_at')
@@ -272,7 +272,7 @@ new class extends Component {
                                         </span>
                                     @elseif ($isEnded && $request->Facility_ID)
                                         <a
-                                            href="{{ route('facility-feedback.create', $request) }}"
+                                            href="{{ route('requests.feedback.create', $request) }}"
                                             class="inline-flex shrink-0 items-center justify-center rounded-xl bg-emerald-700 px-4 py-2.5 text-xs font-black text-white transition hover:bg-emerald-800"
                                         >
                                             Give optional feedback
@@ -420,7 +420,7 @@ new class extends Component {
                                                             Available {{ $eventStart->format('M j, Y \a\t g:i A') }}
                                                         </p>
                                                     @endunless
-                                                    <form action="{{ route('waiting.list.end', $request) }}" method="POST">
+                                                    <form action="{{ route('requests.waiting.end', $request) }}" method="POST">
                                                         @csrf
                                                         <input type="hidden" name="_request_id" value="{{ $request->RID }}">
                                                         <button
@@ -440,7 +440,7 @@ new class extends Component {
                                                 </div>
                                             </div>
 
-                                            <form action="{{ route('waiting.list.cancel', $request) }}" method="POST" class="flex flex-col rounded-xl border border-rose-200 bg-white p-5 shadow-sm dark:border-rose-500/30 dark:bg-zinc-950" x-data="{ cancellationReason: @js($hasOldInput ? old('Cancellation_Reason', '') : '') }">
+                                            <form action="{{ route('requests.waiting.cancel', $request) }}" method="POST" class="flex flex-col rounded-xl border border-rose-200 bg-white p-5 shadow-sm dark:border-rose-500/30 dark:bg-zinc-950" x-data="{ cancellationReason: @js($hasOldInput ? old('Cancellation_Reason', '') : '') }">
                                                 @csrf
                                                 <input type="hidden" name="_request_id" value="{{ $request->RID }}">
                                                 <div class="flex items-start gap-3">
@@ -512,7 +512,7 @@ new class extends Component {
                                     </section>
                                 @endif
                             @else
-                            <form action="{{ route('waiting.list.update', $request) }}" method="POST" enctype="multipart/form-data" class="mt-6 grid gap-4 lg:grid-cols-2">
+                            <form action="{{ route('requests.waiting.update', $request) }}" method="POST" enctype="multipart/form-data" class="mt-6 grid gap-4 lg:grid-cols-2">
                                 @csrf
                                 <input type="hidden" name="_request_id" value="{{ $request->RID }}">
                                 <div>
@@ -651,7 +651,7 @@ new class extends Component {
                             @endif
 
                             @if ($canCancel && ! $isApproved)
-                                <form id="cancel-request-{{ $request->RID }}" action="{{ route('waiting.list.cancel', $request) }}" method="POST" class="hidden">
+                                <form id="cancel-request-{{ $request->RID }}" action="{{ route('requests.waiting.cancel', $request) }}" method="POST" class="hidden">
                                     @csrf
                                     <input type="hidden" name="_request_id" value="{{ $request->RID }}">
                                 </form>

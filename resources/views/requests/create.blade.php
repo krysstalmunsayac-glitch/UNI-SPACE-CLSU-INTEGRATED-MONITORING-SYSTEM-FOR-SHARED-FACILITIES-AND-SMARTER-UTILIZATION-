@@ -45,7 +45,7 @@
             <div
                 class="grid items-start gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(28rem,1.1fr)]"
                 x-data="{
-                    step: {{ $errors->hasAny(['Amenity_ID', 'Amenity_ID.*', 'Purpose_Categories', 'Purpose_Categories.*', 'Other_Purpose', 'Reservation_Frequency', 'Facility_Importance', 'Requirements_Fit', 'Reserve_Again_Intent', 'Capacity', 'attachment']) ? 3 : ($errors->hasAny(['Proposed_Date', 'Proposed_End_Date', 'Daily_Schedules', 'Daily_Schedules.*']) ? 2 : 1) }},
+                    step: {{ $errors->hasAny(['Amenity_ID', 'Amenity_ID.*', 'Amenity_Quantity', 'Amenity_Quantity.*', 'Purpose_Categories', 'Purpose_Categories.*', 'Other_Purpose', 'Capacity', 'attachment']) ? 3 : ($errors->hasAny(['Proposed_Date', 'Proposed_End_Date', 'Daily_Schedules', 'Daily_Schedules.*']) ? 2 : 1) }},
                     submitting: false,
                     selectedAmenities: @js(array_map('strval', old('Amenity_ID', []))),
                     dailySchedules: @js(old('Daily_Schedules', [])),
@@ -56,6 +56,7 @@
                     availability: {},
                     availabilityLoading: false,
                     availabilityError: '',
+                    scheduleValidationError: '',
                     bookingToday: @js(today()->toDateString()),
                     bookingCurrentTime: @js(now()->format('H:i')),
                     customizeDailyTimes: @js(collect(old('Daily_Schedules', []))->map(fn ($schedule) => ($schedule['start'] ?? '').'|'.($schedule['end'] ?? ''))->unique()->count() > 1),
@@ -112,6 +113,9 @@
                             start: this.sharedStartTime,
                             end: this.sharedEndTime,
                         }));
+                        if (this.dailySchedules.length && this.dailySchedules.every(schedule => schedule.start && schedule.end)) {
+                            this.scheduleValidationError = '';
+                        }
                     },
                     minimumEndTime(startTime) {
                         if (!startTime) return null;
@@ -133,6 +137,7 @@
                     chooseDayStart(schedule, time) {
                         schedule.start = time;
                         schedule.end = this.addMinutes(time, 60);
+                        if (this.dailySchedules.every(item => item.start && item.end)) this.scheduleValidationError = '';
                     },
                     async loadAvailability() {
                         const from = this.$refs.startDate?.value;
@@ -398,7 +403,7 @@
                                                 @error('Guest_Email') <span class="text-sm text-red-600">{{ $message }}</span> @enderror
                                             </div>
                                             <div>
-                                                <x-ui::input label="Contact number or details" name="Guest_Contact" value="{{ old('Guest_Contact') }}" maxlength="100" placeholder="Optional" />
+                                                <x-ui::input label="Contact number" name="Guest_Contact" value="{{ old('Guest_Contact') }}" type="tel" minlength="11" maxlength="11" inputmode="numeric" pattern="09[0-9]{9}" title="Enter an 11-digit mobile number starting with 09." placeholder="Optional (09XXXXXXXXX)" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11)" />
                                                 @error('Guest_Contact') <span class="text-sm text-red-600">{{ $message }}</span> @enderror
                                             </div>
                                         </div>
@@ -407,7 +412,7 @@
 
                                 <div>
                                     <x-ui::input
-                                        label="What is the name of your event?"
+                                        label="Event name"
                                         name="Event_Title"
                                         value="{{ old('Event_Title') }}"
                                         required
@@ -415,18 +420,6 @@
                                         maxlength="255"
                                     />
                                     @error('Event_Title') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
-                                </div>
-
-                                <div>
-                                    <x-ui::textarea
-                                        label="What will happen during the event?"
-                                        name="Description"
-                                        rows="4"
-                                        required
-                                        minlength="5"
-                                        maxlength="2000"
-                                    >{{ old('Description') }}</x-ui::textarea>
-                                    @error('Description') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                                 </div>
 
                                 <div class="grid gap-4 sm:grid-cols-2">
@@ -438,7 +431,6 @@
                                             <x-ui::select.option value="Seminar" :selected="old('Type_Event') == 'Seminar'">Seminar</x-ui::select.option>
                                             <x-ui::select.option value="Workshop" :selected="old('Type_Event') == 'Workshop'">Workshop</x-ui::select.option>
                                             <x-ui::select.option value="Conference" :selected="old('Type_Event') == 'Conference'">Conference</x-ui::select.option>
-                                            <x-ui::select.option value="Birthday or Celebration" :selected="old('Type_Event') == 'Birthday or Celebration'">Birthday or celebration</x-ui::select.option>
                                             <x-ui::select.option value="Other" :selected="old('Type_Event') == 'Other'">Other</x-ui::select.option>
                                         </x-ui::select>
                                         @error('Type_Event') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
@@ -454,17 +446,32 @@
                                         @error('Event_Scope') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                                     </div>
 
-                                    <div x-cloak x-show="eventType === 'Other'" x-transition>
+                                    <div x-cloak x-show="eventType === 'Other'" x-transition class="sm:col-span-2">
                                         <x-ui::input
                                             label="Specify event type"
                                             name="Other_Event_Type"
                                             value="{{ old('Other_Event_Type') }}"
                                             placeholder="e.g. Recognition ceremony"
                                             maxlength="100"
+                                            pattern="[A-Za-zÀ-ÖØ-öø-ÿÑñ\s]+"
+                                            title="Use letters and spaces only; numbers and special characters are not allowed."
+                                            x-on:input="$event.target.value = $event.target.value.replace(/[^A-Za-zÀ-ÖØ-öø-ÿÑñ\s]/g, '')"
                                             x-bind:required="eventType === 'Other'"
                                         />
                                         @error('Other_Event_Type') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                                     </div>
+                                </div>
+
+                                <div>
+                                    <x-ui::textarea
+                                        label="Event description"
+                                        name="Description"
+                                        rows="4"
+                                        required
+                                        minlength="5"
+                                        maxlength="2000"
+                                    >{{ old('Description') }}</x-ui::textarea>
+                                    @error('Description') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                                 </div>
 
                                 <div class="flex justify-end pt-2">
@@ -494,7 +501,7 @@
                                     <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Select the event date and the time you want to use the facility.</p>
                                 </div>
                                 <div x-show="step === 3">
-                                    <x-ui::heading size="lg">Amenities & request details</x-ui::heading>
+                                    <x-ui::heading size="lg">Amenity & request details</x-ui::heading>
                                     <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Choose any extras you need, then complete the final details before sending your request.</p>
                                 </div>
 
@@ -506,6 +513,11 @@
                                                 <li>{{ $message }}</li>
                                             @endforeach
                                         </ul>
+                                        @error('Proposed_Date')
+                                            @unless ($guestBooking)
+                                                <a href="{{ route('dashboard') }}#requests" class="mt-3 inline-flex font-bold underline underline-offset-2">Review or cancel the existing request</a>
+                                            @endunless
+                                        @enderror
                                     </div>
                                 @endif
 
@@ -513,7 +525,7 @@
                                     <div class="mb-3 flex flex-wrap items-end justify-between gap-2">
                                         <div>
                                             <h3 class="text-sm font-bold text-emerald-950 dark:text-white">Optional amenities</h3>
-                                            <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Select only the items you need. You can adjust the quantity after selecting one.</p>
+                                            <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Select the amenities you need. Set a quantity only for countable items.</p>
                                         </div>
                                         <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-200" x-text="`${selectedAmenities.length} selected`"></span>
                                     </div>
@@ -535,12 +547,13 @@
                                                     <span class="min-w-0 flex-1">
                                                         <span class="block font-bold text-emerald-950 dark:text-white">{{ $amenity->name }}</span>
                                                         <span class="mt-1 block text-xs text-zinc-500 dark:text-zinc-400">
-                                                            {{ number_format($amenity->inventory_quantity) }} {{ Str::plural('unit', $amenity->inventory_quantity) }} available
+                                                            {{ $amenity->isPermanent() ? 'Included with the facility' : $amenity->quantityLabel().' available' }}
                                                         </span>
                                                     </span>
                                                     <span x-show="selectedAmenities.includes('{{ $amenity->AID }}')" class="text-emerald-600" aria-hidden="true">✓</span>
                                                 </label>
 
+                                                @if ($amenity->usesInventory())
                                                 <div x-cloak x-show="selectedAmenities.includes('{{ $amenity->AID }}')" x-transition class="mt-4 border-t border-emerald-200 pt-3 dark:border-emerald-800">
                                                     <label for="amenity-quantity-{{ $amenity->AID }}" class="mb-1.5 block text-xs font-bold text-emerald-900 dark:text-emerald-200">How many do you need?</label>
                                                     <div class="flex items-center gap-2">
@@ -554,12 +567,17 @@
                                                             x-bind:disabled="!selectedAmenities.includes('{{ $amenity->AID }}')"
                                                             class="h-10 w-24 rounded-lg border border-emerald-200 bg-white px-3 text-sm font-semibold text-emerald-950 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10 dark:border-emerald-800 dark:bg-zinc-950 dark:text-white"
                                                         >
-                                                        <span class="text-xs text-zinc-500">Maximum {{ number_format($amenity->inventory_quantity) }}</span>
+                                                        <span class="text-xs text-zinc-500">Maximum {{ $amenity->quantityLabel() }}</span>
                                                     </div>
                                                     @error('Amenity_Quantity.'.$amenity->AID)
                                                         <span class="mt-2 block text-sm text-red-600">{{ $message }}</span>
                                                     @enderror
                                                 </div>
+                                                @else
+                                                <div x-cloak x-show="selectedAmenities.includes('{{ $amenity->AID }}')" x-transition class="mt-4 border-t border-emerald-200 pt-3 text-xs font-semibold text-emerald-700 dark:border-emerald-800 dark:text-emerald-300">
+                                                    Included — no quantity required.
+                                                </div>
+                                                @endif
                                             </div>
                                         @empty
                                             <div class="rounded-xl border border-dashed border-zinc-300 p-5 text-center text-sm text-zinc-500 dark:border-zinc-700 sm:col-span-2">
@@ -607,7 +625,7 @@
                                         <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Use the same date for a one-day event.</p>
                                     </div>
 
-                                    <div class="space-y-3 sm:col-span-2">
+                                    <div x-ref="eventTimeSection" class="space-y-3 sm:col-span-2">
                                         <div class="flex flex-wrap items-start justify-between gap-3">
                                             <div>
                                                 <h3 class="text-sm font-bold text-emerald-950 dark:text-white">Event time</h3>
@@ -622,6 +640,10 @@
                                             ></button>
                                         </div>
 
+                                        <div x-cloak x-show="scheduleValidationError" x-transition role="alert" class="rounded-xl border border-red-300 bg-red-50 p-4 text-sm font-semibold text-red-700 dark:border-red-500/40 dark:bg-red-950/30 dark:text-red-200">
+                                            <span x-text="scheduleValidationError"></span>
+                                        </div>
+
                                         <div x-show="!customizeDailyTimes" class="grid gap-3 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 dark:border-emerald-900/50 dark:bg-emerald-950/20 sm:grid-cols-[1.2fr_1fr_1fr] sm:items-end">
                                             <div>
                                                 <span class="block text-xs font-bold uppercase tracking-wide text-emerald-800 dark:text-emerald-300" x-text="dailySchedules.length === 1 ? 'Booking day' : 'Booking period'"></span>
@@ -629,13 +651,15 @@
                                             </div>
                                             <div class="block">
                                                 <span class="mb-2 block text-sm font-medium text-emerald-900 dark:text-zinc-300">Start time</span>
-                                                <x-ui::time-dropdown selection="sharedStartTime" label="Start time"><select size="6" x-ref="options" x-cloak x-show="expanded" aria-label="Start time" x-on:click="if ($event.target.tagName === 'OPTION' &amp;&amp; !$event.target.disabled) { expanded = false; $refs.trigger.focus() }" x-on:keydown.enter.prevent="expanded = false; $refs.trigger.focus()" style="position: absolute; bottom: 100%; left: 0; z-index: 50; margin-bottom: 0.25rem; height: calc(12rem + 2px); padding: 0; overflow-y: auto;" x-model="sharedStartTime" x-on:change="chooseSharedStart($event.target.value)" x-bind:required="!customizeDailyTimes" class="h-11 w-full rounded-xl border border-emerald-900/10 bg-white px-3 text-sm text-emerald-950 shadow-sm focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-950 dark:text-white">
+                                                <x-ui::time-dropdown selection="sharedStartTime" label="Start time"><select aria-label="Start time" x-model="sharedStartTime" x-on:change="chooseSharedStart($event.target.value)" x-bind:required="!customizeDailyTimes" class="h-11 w-full rounded-xl border border-emerald-900/10 bg-white px-3 text-sm text-emerald-950 shadow-sm focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-950 dark:text-white">
+                                                    <option value="">Select time</option>
                                                     <template x-for="slot in slots" :key="slot"><option style="height: 2rem; padding: 0.375rem 0.75rem;" :value="slot" :disabled="sharedStartDisabled(slot)" x-text="`${formatTime(slot)}${slotLabel(dailySchedules.map(schedule => slotStatus(schedule.date, slot, addMinutes(slot, 60))).find(status => ['approved', 'past', 'unavailable'].includes(status)) ?? 'available')}`"></option></template>
                                                 </select></x-ui::time-dropdown>
                                             </div>
                                             <div class="block">
                                                 <span class="mb-2 block text-sm font-medium text-emerald-900 dark:text-zinc-300">End time <span class="font-normal text-zinc-500">(1 hour minimum)</span></span>
-                                                <x-ui::time-dropdown selection="sharedEndTime" label="End time"><select size="6" x-ref="options" x-cloak x-show="expanded" aria-label="End time" x-on:click="if ($event.target.tagName === 'OPTION' &amp;&amp; !$event.target.disabled) { expanded = false; $refs.trigger.focus() }" x-on:keydown.enter.prevent="expanded = false; $refs.trigger.focus()" style="position: absolute; bottom: 100%; left: 0; z-index: 50; margin-bottom: 0.25rem; height: calc(12rem + 2px); padding: 0; overflow-y: auto;" x-model="sharedEndTime" x-on:change="applySharedTime()" x-bind:required="!customizeDailyTimes" class="h-11 w-full rounded-xl border border-emerald-900/10 bg-white px-3 text-sm text-emerald-950 shadow-sm focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-950 dark:text-white">
+                                                <x-ui::time-dropdown selection="sharedEndTime" label="End time"><select aria-label="End time" x-model="sharedEndTime" x-on:change="applySharedTime()" x-bind:required="!customizeDailyTimes" class="h-11 w-full rounded-xl border border-emerald-900/10 bg-white px-3 text-sm text-emerald-950 shadow-sm focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-950 dark:text-white">
+                                                    <option value="">Select time</option>
                                                     <template x-for="slot in endSlots.filter(slot => slot >= minimumEndTime(sharedStartTime))" :key="slot"><option style="height: 2rem; padding: 0.375rem 0.75rem;" :value="slot" :disabled="sharedEndDisabled(slot)" x-text="`${formatTime(slot)}${slotLabel(dailySchedules.map(schedule => slotStatus(schedule.date, sharedStartTime, slot)).find(status => ['approved', 'past', 'unavailable'].includes(status)) ?? 'available')}`"></option></template>
                                                 </select></x-ui::time-dropdown>
                                             </div>
@@ -681,11 +705,11 @@
                                                     </div>
                                                     <div class="block">
                                                         <span class="mb-2 block text-sm font-medium text-emerald-900 dark:text-zinc-300">Start time</span>
-                                                        <x-ui::time-dropdown selection="schedule.start" label="Start time"><select size="6" x-ref="options" x-cloak x-show="expanded" aria-label="Start time" x-on:click="if ($event.target.tagName === 'OPTION' &amp;&amp; !$event.target.disabled) { expanded = false; $refs.trigger.focus() }" x-on:keydown.enter.prevent="expanded = false; $refs.trigger.focus()" style="position: absolute; bottom: 100%; left: 0; z-index: 50; margin-bottom: 0.25rem; height: calc(12rem + 2px); padding: 0; overflow-y: auto;" x-bind:name="customizeDailyTimes ? `Daily_Schedules[${index}][start]` : null" x-model="schedule.start" x-on:change="chooseDayStart(schedule, $event.target.value)" x-bind:required="customizeDailyTimes" class="h-11 w-full rounded-xl border border-emerald-900/10 bg-white px-3 text-sm text-emerald-950 shadow-sm dark:border-white/10 dark:bg-zinc-950 dark:text-white"><template x-for="slot in slots" :key="slot"><option style="height: 2rem; padding: 0.375rem 0.75rem;" :value="slot" :disabled="['approved', 'unavailable', 'past'].includes(slotStatus(schedule.date, slot, addMinutes(slot, 60)))" x-text="`${formatTime(slot)}${slotLabel(slotStatus(schedule.date, slot, addMinutes(slot, 60)))}`"></option></template></select></x-ui::time-dropdown>
+                                                        <x-ui::time-dropdown selection="schedule.start" label="Start time"><select aria-label="Start time" x-bind:name="customizeDailyTimes ? `Daily_Schedules[${index}][start]` : null" x-model="schedule.start" x-on:change="chooseDayStart(schedule, $event.target.value)" x-bind:required="customizeDailyTimes" class="h-11 w-full rounded-xl border border-emerald-900/10 bg-white px-3 text-sm text-emerald-950 shadow-sm dark:border-white/10 dark:bg-zinc-950 dark:text-white"><option value="">Select time</option><template x-for="slot in slots" :key="slot"><option :value="slot" :disabled="['approved', 'unavailable', 'past'].includes(slotStatus(schedule.date, slot, addMinutes(slot, 60)))" x-text="`${formatTime(slot)}${slotLabel(slotStatus(schedule.date, slot, addMinutes(slot, 60)))}`"></option></template></select></x-ui::time-dropdown>
                                                     </div>
                                                     <div class="block">
                                                         <span class="mb-2 block text-sm font-medium text-emerald-900 dark:text-zinc-300">End time <span class="font-normal text-zinc-500">(1 hour minimum)</span></span>
-                                                        <x-ui::time-dropdown selection="schedule.end" label="End time"><select size="6" x-ref="options" x-cloak x-show="expanded" aria-label="End time" x-on:click="if ($event.target.tagName === 'OPTION' &amp;&amp; !$event.target.disabled) { expanded = false; $refs.trigger.focus() }" x-on:keydown.enter.prevent="expanded = false; $refs.trigger.focus()" style="position: absolute; bottom: 100%; left: 0; z-index: 50; margin-bottom: 0.25rem; height: calc(12rem + 2px); padding: 0; overflow-y: auto;" x-bind:name="customizeDailyTimes ? `Daily_Schedules[${index}][end]` : null" x-model="schedule.end" x-bind:required="customizeDailyTimes" class="h-11 w-full rounded-xl border border-emerald-900/10 bg-white px-3 text-sm text-emerald-950 shadow-sm dark:border-white/10 dark:bg-zinc-950 dark:text-white"><template x-for="slot in endSlots.filter(slot => slot >= minimumEndTime(schedule.start))" :key="slot"><option style="height: 2rem; padding: 0.375rem 0.75rem;" :value="slot" :disabled="['approved', 'unavailable', 'past'].includes(slotStatus(schedule.date, schedule.start, slot))" x-text="`${formatTime(slot)}${slotLabel(slotStatus(schedule.date, schedule.start, slot))}`"></option></template></select></x-ui::time-dropdown>
+                                                        <x-ui::time-dropdown selection="schedule.end" label="End time"><select aria-label="End time" x-bind:name="customizeDailyTimes ? `Daily_Schedules[${index}][end]` : null" x-model="schedule.end" x-bind:required="customizeDailyTimes" class="h-11 w-full rounded-xl border border-emerald-900/10 bg-white px-3 text-sm text-emerald-950 shadow-sm dark:border-white/10 dark:bg-zinc-950 dark:text-white"><option value="">Select time</option><template x-for="slot in endSlots.filter(slot => slot >= minimumEndTime(schedule.start))" :key="slot"><option :value="slot" :disabled="['approved', 'unavailable', 'past'].includes(slotStatus(schedule.date, schedule.start, slot))" x-text="`${formatTime(slot)}${slotLabel(slotStatus(schedule.date, schedule.start, slot))}`"></option></template></select></x-ui::time-dropdown>
                                                     </div>
                                                 </div>
                                             </div>
@@ -704,7 +728,7 @@
                                     @include('requests.partials.purpose-questionnaire')
 
                                     <div class="sm:col-span-2">
-                                        <x-ui::input label="Expected attendees" name="Capacity" type="number" min="1" max="{{ $facility->Capacity ?? 100000 }}" value="{{ old('Capacity') }}" />
+                                        <x-ui::input label="Expected Number of Attendees" name="Capacity" type="number" min="1" max="{{ $facility->Capacity ?? 100000 }}" value="{{ old('Capacity') }}" required />
                                         @error('Capacity') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                                     </div>
 
@@ -735,13 +759,20 @@
                                         type="button"
                                         class="inline-flex min-h-10 w-full items-center justify-center rounded-xl bg-emerald-700 px-5 text-sm font-semibold text-white transition hover:bg-emerald-800 sm:w-auto"
                                         x-on:click="
-                                            const invalidField = Array.from($refs.scheduleDetails.querySelectorAll('input, select'))
+                                            const invalidField = Array.from($refs.scheduleDetails.querySelectorAll(`input[type='date']`))
                                                 .find(field => !field.checkValidity());
                                             if (invalidField) {
                                                 invalidField.reportValidity();
+                                            } else if (dailySchedules.some(schedule => !schedule.start || !schedule.end)) {
+                                                scheduleValidationError = dailySchedules.length > 1
+                                                    ? 'Select a start and end time for every event day before continuing.'
+                                                    : 'Select a start time and an end time before continuing.';
+                                                $nextTick(() => $refs.eventTimeSection?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
                                             } else if (hasBlockingConflict()) {
-                                                availabilityError = 'Choose an available date and time before continuing.';
+                                                scheduleValidationError = 'The selected schedule is unavailable. Choose an available date and time before continuing.';
+                                                $nextTick(() => $refs.eventTimeSection?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
                                             } else {
+                                                scheduleValidationError = '';
                                                 step = 3;
                                                 window.scrollTo({ top: 0, behavior: 'smooth' });
                                             }
@@ -762,7 +793,7 @@
                                         <span x-show="!submitting">{{ $guestBooking ? 'Submit guest request' : 'Send request' }}</span>
                                         <span x-cloak x-show="submitting">Submitting…</span>
                                     </button>
-                                    <a x-show="step === 3" href="{{ $guestBooking ? (auth()->user()->isSuperAdmin() ? route('Facility.SuperAdmin') : route('Facility.OfficeAdmin')) : route('home') }}" class="inline-flex items-center justify-center rounded-xl border border-emerald-900/10 px-4 py-2 text-sm font-medium text-emerald-900 transition hover:border-emerald-700 hover:bg-emerald-50 dark:border-white/10 dark:text-zinc-200 dark:hover:bg-zinc-800">{{ $guestBooking ? 'Back to facilities' : 'Back to home' }}</a>
+                                    <a x-show="step === 3" href="{{ $guestBooking ? (auth()->user()->isSuperAdmin() ? route('facilities.super-admin.index') : route('facilities.office-admin.index')) : route('home') }}" class="inline-flex items-center justify-center rounded-xl border border-emerald-900/10 px-4 py-2 text-sm font-medium text-emerald-900 transition hover:border-emerald-700 hover:bg-emerald-50 dark:border-white/10 dark:text-zinc-200 dark:hover:bg-zinc-800">{{ $guestBooking ? 'Back to facilities' : 'Back to home' }}</a>
                                 </div>
                             </div>
                         </form>

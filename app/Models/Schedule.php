@@ -34,6 +34,6 @@ class Schedule extends Model
 
     public function request(): BelongsTo
     {
-        return $this->belongsTo(Requests::class, 'Request_ID', 'RID')->withTrashed();
+        return $this->belongsTo(FacilityRequest::class, 'Request_ID', 'RID')->withTrashed();
     }
 }

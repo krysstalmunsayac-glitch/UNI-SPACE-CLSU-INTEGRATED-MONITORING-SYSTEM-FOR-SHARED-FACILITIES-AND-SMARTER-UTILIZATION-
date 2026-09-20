@@ -1,8 +1,8 @@
 <?php
 
 use App\Models\AuditLog;
-use App\Models\Facilities;
-use App\Models\Requests;
+use App\Models\Facility;
+use App\Models\FacilityRequest;
 use App\Models\Schedule;
 use App\Models\User;
 use App\Notifications\ScheduleUpdated;
@@ -21,7 +21,7 @@ it('records administrator schedule changes and notifies the end user', function 
         'account_type' => 'student',
         'is_active' => true,
     ]);
-    $facility = Facilities::query()->create([
+    $facility = Facility::query()->create([
         'Facility_Name' => 'Schedule Change Hall',
         'Status' => 'Available',
     ]);
@@ -32,7 +32,7 @@ it('records administrator schedule changes and notifies the end user', function 
 
     $oldDate = today()->addDays(7)->toDateString();
     $newDate = today()->addDays(8)->toDateString();
-    $facilityRequest = Requests::query()->create([
+    $facilityRequest = FacilityRequest::query()->create([
         'User_ID' => $endUser->id,
         'Facility_ID' => $facility->FID,
         'Proposed_Date' => $oldDate,

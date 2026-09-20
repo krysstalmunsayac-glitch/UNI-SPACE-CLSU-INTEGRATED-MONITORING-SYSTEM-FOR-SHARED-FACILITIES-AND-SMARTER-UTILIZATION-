@@ -146,7 +146,7 @@
                             </div>
                         </div>
 
-                        <form action="{{ route('waiting.list.update', $request) }}" method="POST" class="mt-6 space-y-4">
+                        <form action="{{ route('requests.waiting.update', $request) }}" method="POST" class="mt-6 space-y-4">
                             @csrf
                             <div class="grid gap-4 lg:grid-cols-2">
                                 <div>
@@ -196,8 +196,8 @@
                                     <input id="Purpose_{{ $request->RID }}" name="Purpose" value="{{ old('Purpose', $request->Purpose) }}" class="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-sm shadow-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900" />
                                 </div>
                                 <div>
-                                    <label class="mb-2 block text-sm font-medium text-emerald-900 dark:text-zinc-300" for="Capacity_{{ $request->RID }}">Expected attendees</label>
-                                    <input id="Capacity_{{ $request->RID }}" name="Capacity" type="number" min="1" value="{{ old('Capacity', $request->Capacity) }}" class="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-sm shadow-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900" />
+                                    <label class="mb-2 block text-sm font-medium text-emerald-900 dark:text-zinc-300" for="Capacity_{{ $request->RID }}">Expected Number of Attendees</label>
+                                    <input id="Capacity_{{ $request->RID }}" name="Capacity" type="number" min="1" max="{{ $request->facility?->Capacity ?? 100000 }}" value="{{ old('Capacity', $request->Capacity) }}" required class="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-sm shadow-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900" />
                                     @error('Capacity') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                                 </div>
                             </div>

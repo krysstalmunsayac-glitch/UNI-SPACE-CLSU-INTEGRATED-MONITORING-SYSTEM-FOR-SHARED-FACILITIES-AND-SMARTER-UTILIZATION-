@@ -14,7 +14,7 @@
                     <x-ui::table.columns>
                         <x-ui::table.column>Name</x-ui::table.column>
                         <x-ui::table.column>Description</x-ui::table.column>
-                        <x-ui::table.column>Facilities</x-ui::table.column>
+                        <x-ui::table.column>Facility</x-ui::table.column>
                         <x-ui::table.column>Usage limit</x-ui::table.column>
                         <x-ui::table.column>Archived</x-ui::table.column>
                         <x-ui::table.column>Actions</x-ui::table.column>
@@ -34,7 +34,7 @@
                                     {{ $amenity->facilities->pluck('Facility_Name')->join(', ') ?: 'Unassigned' }}
                                 </x-ui::table.cell>
                                 <x-ui::table.cell>
-                                    {{ number_format($amenity->inventory_quantity) }} units
+                                    {{ $amenity->quantityLabel() }}
                                 </x-ui::table.cell>
                                 <x-ui::table.cell>
                                     {{ $amenity->deleted_at?->format('M d, Y') ?? '—' }}

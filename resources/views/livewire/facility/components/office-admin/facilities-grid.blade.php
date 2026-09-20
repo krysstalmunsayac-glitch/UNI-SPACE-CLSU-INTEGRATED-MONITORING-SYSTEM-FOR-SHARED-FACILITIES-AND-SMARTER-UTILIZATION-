@@ -127,17 +127,12 @@
                     <div class="grid grid-cols-1 gap-2 text-sm">
                         <div class="flex items-center gap-2 text-slate-600 dark:text-slate-300">
                             <x-ui::icon.tag class="size-4 text-slate-400" />
-                            <span>{{ $facility->facility_type ? ucfirst($facility->facility_type) : 'Type not specified' }}</span>
+                            <span>{{ $facility->facility_type ? str($facility->facility_type)->headline() : 'Type not specified' }}</span>
                         </div>
 
                         <div class="flex items-center gap-2 text-slate-600 dark:text-slate-300">
                             <x-ui::icon.users class="size-4 text-slate-400" />
                             <span>{{ $facility->Capacity !== null ? $facility->Capacity.' capacity' : '—' }}</span>
-                        </div>
-
-                        <div class="flex items-center gap-2 text-slate-600 dark:text-slate-300">
-                            <x-ui::icon.map-pin class="size-4 text-slate-400" />
-                            <span>{{ $facility->Location ?? '—' }}</span>
                         </div>
 
                         <div class="flex items-center gap-2 text-slate-600 dark:text-slate-300">

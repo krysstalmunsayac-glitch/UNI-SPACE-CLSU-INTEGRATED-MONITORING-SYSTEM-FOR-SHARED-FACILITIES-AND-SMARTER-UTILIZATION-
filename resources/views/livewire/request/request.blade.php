@@ -1,8 +1,8 @@
 <?php
 
-use App\Models\Amenities;
-use App\Models\Facilities;
-use App\Models\Requests;
+use App\Models\Amenity;
+use App\Models\Facility;
+use App\Models\FacilityRequest;
 use App\Models\Schedule;
 use App\Models\User;
 use App\Notifications\RequestNeedsRevision;
@@ -39,7 +39,7 @@ new #[Layout('components.layouts.app')] class extends Component
 
     public function mount(): void
     {
-        Requests::markPastRequestsAsEnded();
+        FacilityRequest::markPastRequestsAsEnded();
         $this->archiveOnly = auth()->user()->isSuperAdmin() && request()->boolean('archive');
         $this->showArchivedModal = $this->archiveOnly;
 
@@ -149,14 +149,6 @@ new #[Layout('components.layouts.app')] class extends Component
 
     public ?string $Other_Purpose = null;
 
-    public ?string $Reservation_Frequency = null;
-
-    public ?string $Facility_Importance = null;
-
-    public ?string $Requirements_Fit = null;
-
-    public ?string $Reserve_Again_Intent = null;
-
     public ?string $attachmentPath = null;
 
     public array $View_Daily_Schedules = [];
@@ -242,10 +234,6 @@ new #[Layout('components.layouts.app')] class extends Component
         $this->Requested_Amenities = [];
         $this->Purpose_Categories = [];
         $this->Other_Purpose = null;
-        $this->Reservation_Frequency = null;
-        $this->Facility_Importance = null;
-        $this->Requirements_Fit = null;
-        $this->Reserve_Again_Intent = null;
         $this->attachmentPath = null;
         $this->View_Daily_Schedules = [];
         $this->Cancellation_Reason = null;
@@ -277,7 +265,7 @@ new #[Layout('components.layouts.app')] class extends Component
     {
         abort_unless(auth()->user()->isSuperAdmin(), 403);
 
-        $query = Requests::query()->onlyTrashed();
+        $query = FacilityRequest::query()->onlyTrashed();
 
         if (auth()->user()->isAdmin()) {
             $query->whereHas('facility.assignedAdmins', fn ($query) => $query->where('users.id', auth()->id()));
@@ -291,7 +279,7 @@ new #[Layout('components.layouts.app')] class extends Component
         $this->showViewModal = true;
     }
 
-    private function fillRequestDetails(Requests $request): void
+    private function fillRequestDetails(FacilityRequest $request): void
     {
 
         $this->viewingId = $request->RID;
@@ -330,16 +318,11 @@ new #[Layout('components.layouts.app')] class extends Component
         $this->Request_Created_At = $request->Created_at?->format('M j, Y g:i A');
         $this->Request_Updated_At = $request->Updated_at?->format('M j, Y g:i A');
         $this->Requested_Amenities = $request->amenities
-            ->map(fn (Amenities $amenity) => $amenity->name.' — '.number_format((int) $amenity->pivot->quantity).' units')
+            ->map(fn (Amenity $amenity) => $amenity->name.' — '.number_format((int) $amenity->pivot->quantity).' units')
             ->values()
             ->all() ?? [];
         $this->Purpose_Categories = $request->Purpose_Categories ?? [];
         $this->Other_Purpose = $request->Other_Purpose;
-        $this->Reservation_Frequency = $request->Reservation_Frequency;
-        $this->Facility_Importance = $request->Facility_Importance;
-        $this->Requirements_Fit = $request->Requirements_Fit;
-        $this->Reserve_Again_Intent = $request->Reserve_Again_Intent;
-
     }
 
     public function edit(int $requestId): void
@@ -390,10 +373,10 @@ new #[Layout('components.layouts.app')] class extends Component
 
         $result = DB::transaction(function () use ($request, $dailySchedules): ?array {
             if ($request->Facility_ID) {
-                Facilities::query()->whereKey($request->Facility_ID)->lockForUpdate()->firstOrFail();
+                Facility::query()->whereKey($request->Facility_ID)->lockForUpdate()->firstOrFail();
             }
 
-            $request = Requests::query()->whereKey($request->RID)->lockForUpdate()->firstOrFail();
+            $request = FacilityRequest::query()->whereKey($request->RID)->lockForUpdate()->firstOrFail();
 
             if (! $request->canTransitionTo('Approved')) {
                 return null;
@@ -413,7 +396,7 @@ new #[Layout('components.layouts.app')] class extends Component
 
             $rejectedRequests = $request->Facility_ID
                 ? $availability->conflicts($request->Facility_ID, $dailySchedules, $request->RID, true, ['Pending'])
-                    ->pluck('request_id')->unique()->map(fn ($id) => Requests::query()->find($id))->filter()->values()
+                    ->pluck('request_id')->unique()->map(fn ($id) => FacilityRequest::query()->find($id))->filter()->values()
                 : collect();
 
             $request->update([
@@ -746,7 +729,7 @@ new #[Layout('components.layouts.app')] class extends Component
         if (
             $this->Status === 'Approved'
             && $facilityId
-            && Requests::activeFacilityConflicts(
+            && FacilityRequest::activeFacilityConflicts(
                 $facilityId,
                 $this->Proposed_Date,
                 $this->Proposed_End_Date,
@@ -816,7 +799,7 @@ new #[Layout('components.layouts.app')] class extends Component
      * Create the matching Schedule row when a request is approved.
      * Mirrors the duplicate/overlap guards used on the Schedule page itself.
      */
-    protected function createScheduleFromRequest(Requests $request): void
+    protected function createScheduleFromRequest(FacilityRequest $request): void
     {
         $facilityId = $request->facility?->FID;
         $request->schedules()->delete();
@@ -853,7 +836,7 @@ new #[Layout('components.layouts.app')] class extends Component
         Ui::toast(text: 'Schedule automatically created from the approved request!', variant: 'success');
     }
 
-    protected function handleCancelledRequest(Requests $request): void
+    protected function handleCancelledRequest(FacilityRequest $request): void
     {
         $request->schedules()->delete();
 
@@ -887,7 +870,7 @@ new #[Layout('components.layouts.app')] class extends Component
     {
         abort_unless(auth()->user()->isSuperAdmin(), 403);
 
-        Requests::onlyTrashed()->findOrFail($requestId)->restore();
+        FacilityRequest::onlyTrashed()->findOrFail($requestId)->restore();
         Ui::toast(text: 'Request restored successfully!', variant: 'success');
         $this->dispatch('swal', [
             'title' => 'Request restored',
@@ -901,7 +884,7 @@ new #[Layout('components.layouts.app')] class extends Component
     {
         abort_unless(auth()->user()->isSuperAdmin(), 403);
 
-        Requests::onlyTrashed()->findOrFail($requestId)->forceDelete();
+        FacilityRequest::onlyTrashed()->findOrFail($requestId)->forceDelete();
         Ui::toast(text: 'Request permanently deleted.', variant: 'success');
         $this->dispatch('swal', [
             'title' => 'Request permanently deleted',
@@ -911,9 +894,9 @@ new #[Layout('components.layouts.app')] class extends Component
         $this->dispatch('$refresh');
     }
 
-    private function getScopedRequest(int $requestId): Requests
+    private function getScopedRequest(int $requestId): FacilityRequest
     {
-        $query = Requests::query();
+        $query = FacilityRequest::query();
 
         if (auth()->user()->isAdmin()) {
             $query->whereHas('facility.assignedAdmins', fn ($query) => $query->where('users.id', auth()->id())
@@ -928,7 +911,7 @@ new #[Layout('components.layouts.app')] class extends Component
     {
         abort_unless(auth()->user()->isSuperAdmin(), 403);
 
-        $query = Requests::query()->onlyTrashed();
+        $query = FacilityRequest::query()->onlyTrashed();
 
         if (auth()->user()->isAdmin()) {
             $query->whereHas('facility.assignedAdmins', fn ($query) => $query->where('users.id', auth()->id())
@@ -965,7 +948,7 @@ new #[Layout('components.layouts.app')] class extends Component
     #[Computed]
     public function requests()
     {
-        return Requests::query()
+        return FacilityRequest::query()
             ->with([
                 'user:id,name,email',
                 'creator:id,name',
@@ -1010,7 +993,7 @@ new #[Layout('components.layouts.app')] class extends Component
     #[Computed]
     public function requestStats(): array
     {
-        $query = Requests::query()
+        $query = FacilityRequest::query()
             ->when(auth()->user()->isAdmin(), fn ($query) => $query->whereHas(
                 'facility.assignedAdmins',
                 fn ($facilityQuery) => $facilityQuery->where('users.id', auth()->id()),

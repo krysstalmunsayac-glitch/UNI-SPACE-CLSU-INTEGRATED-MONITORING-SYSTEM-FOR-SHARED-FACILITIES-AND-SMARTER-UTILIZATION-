@@ -112,7 +112,7 @@
         </section>
         <section class="{{ $card }}">
             <h3 class="text-lg font-bold">Cancellation Rate by Facility</h3>
-            <p class="mt-1 text-sm text-slate-500 dark:text-zinc-400">Facilities with cancellations, shown as a percentage of their requests.</p>
+            <p class="mt-1 text-sm text-slate-500 dark:text-zinc-400">Facility with cancellations, shown as a percentage of their requests.</p>
             @if ($cancellationRates !== [])
                 <div class="mt-5" style="height: {{ max(288, count($cancellationRates) * 44) }}px;"><canvas id="{{ $dashboardChartPrefix }}CancellationRateChart"></canvas></div>
             @else

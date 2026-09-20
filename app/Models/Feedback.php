@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Feedbacks extends Model
+class Feedback extends Model
 {
     use SoftDeletes;
 
@@ -23,6 +23,10 @@ class Feedbacks extends Model
         'Request_ID',
         'Facility_ID',
         'Rating',
+        'Reservation_Frequency',
+        'Purpose_Importance',
+        'Requirements_Met',
+        'Reserve_Again',
         'Comment',
     ];
 
@@ -37,11 +41,11 @@ class Feedbacks extends Model
 
     public function facility(): BelongsTo
     {
-        return $this->belongsTo(Facilities::class, 'Facility_ID', 'FID')->withTrashed();
+        return $this->belongsTo(Facility::class, 'Facility_ID', 'FID')->withTrashed();
     }
 
     public function request(): BelongsTo
     {
-        return $this->belongsTo(Requests::class, 'Request_ID', 'RID')->withTrashed();
+        return $this->belongsTo(FacilityRequest::class, 'Request_ID', 'RID')->withTrashed();
     }
 }

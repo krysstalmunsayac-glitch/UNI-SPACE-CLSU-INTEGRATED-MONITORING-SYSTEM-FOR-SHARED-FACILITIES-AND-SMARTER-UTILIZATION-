@@ -92,3 +92,43 @@ it('allows a non-CLSU email for external user registration', function () {
         ->assertHasNoErrors()
         ->assertRedirect();
 });
+
+it('remembers the pending verification page when the user leaves it', function () {
+    Notification::fake();
+
+    validRegistration('external', '', 'resume@example.com')
+        ->call('register')
+        ->assertHasNoErrors();
+
+    $pending = PendingRegistration::query()->where('email', 'resume@example.com')->firstOrFail();
+
+    expect(session('pending_registration_token'))->toBe($pending->token);
+
+    Volt::test('auth.register')
+        ->assertRedirect(route('registration.pin', $pending->token, absolute: false));
+});
+
+it('keeps a pending registration when only its PIN has expired', function () {
+    Notification::fake();
+
+    validRegistration('external', '', 'expired@example.com')
+        ->call('register');
+
+    $pending = PendingRegistration::query()->where('email', 'expired@example.com')->firstOrFail();
+    $pending->update(['pin_expires_at' => now()->subMinute()]);
+
+    session()->forget('pending_registration_token');
+
+    Volt::test('auth.register');
+
+    expect($pending->fresh())->not->toBeNull();
+});
+
+it('allows the user to abandon a pending registration explicitly', function () {
+    session()->put('pending_registration_token', 'pending-token');
+
+    $this->get(route('register', ['new' => 1]))
+        ->assertOk();
+
+    expect(session('pending_registration_token'))->toBeNull();
+});

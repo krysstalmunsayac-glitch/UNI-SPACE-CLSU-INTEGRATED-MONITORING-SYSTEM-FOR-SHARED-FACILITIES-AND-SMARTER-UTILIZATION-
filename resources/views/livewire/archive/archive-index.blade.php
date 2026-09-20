@@ -1,8 +1,8 @@
 <?php
 
-use App\Models\Events;
-use App\Models\Facilities;
-use App\Models\Requests;
+use App\Models\Event;
+use App\Models\Facility;
+use App\Models\FacilityRequest;
 use App\Models\Schedule;
 use App\Models\User;
 use Livewire\Attributes\Computed;
@@ -37,7 +37,7 @@ new #[Layout('components.layouts.app')] class extends Component {
     #[Computed]
     public function archivedRequests()
     {
-        $query = Requests::query()->onlyTrashed();
+        $query = FacilityRequest::query()->onlyTrashed();
 
         if (auth()->user()?->isAdmin()) {
             $query->whereHas('facility.assignedAdmins', fn ($facilityQuery) =>
@@ -68,7 +68,7 @@ new #[Layout('components.layouts.app')] class extends Component {
     #[Computed]
     public function archiveYears()
     {
-        $query = Requests::query()->onlyTrashed()
+        $query = FacilityRequest::query()->onlyTrashed()
             ->whereNotNull('deleted_at')
             ->orderByDesc('deleted_at');
 
@@ -79,7 +79,7 @@ new #[Layout('components.layouts.app')] class extends Component {
         }
 
         return $query->get(['deleted_at'])
-            ->map(fn (Requests $request) => $request->deleted_at?->year)
+            ->map(fn (FacilityRequest $request) => $request->deleted_at?->year)
             ->filter()
             ->unique()
             ->values();
@@ -126,7 +126,7 @@ new #[Layout('components.layouts.app')] class extends Component {
     public function archivedEvents()
     {
         abort_unless(auth()->user()?->isSuperAdmin(), 403);
-        $query = Events::query()->onlyTrashed();
+        $query = Event::query()->onlyTrashed();
 
         return $query->orderByDesc('deleted_at')
             ->paginate(8, pageName: 'archivedEventsPage');
@@ -157,7 +157,7 @@ new #[Layout('components.layouts.app')] class extends Component {
     public function restoreEvent(int $id): void
     {
         abort_unless(auth()->user()?->isSuperAdmin(), 403);
-        Events::onlyTrashed()->findOrFail($id)->restore();
+        Event::onlyTrashed()->findOrFail($id)->restore();
         $this->dispatch('$refresh');
     }
 
@@ -183,13 +183,13 @@ new #[Layout('components.layouts.app')] class extends Component {
     public function forceDeleteEvent(int $id): void
     {
         abort_unless(auth()->user()?->isSuperAdmin(), 403);
-        Events::onlyTrashed()->findOrFail($id)->forceDelete();
+        Event::onlyTrashed()->findOrFail($id)->forceDelete();
         $this->dispatch('$refresh');
     }
 
-    private function archivedRequest(int $id): Requests
+    private function archivedRequest(int $id): FacilityRequest
     {
-        return Requests::onlyTrashed()
+        return FacilityRequest::onlyTrashed()
             ->when(auth()->user()?->isAdmin(), fn ($query) => $query->whereHas(
                 'facility.assignedAdmins',
                 fn ($facilityQuery) => $facilityQuery->where('users.id', auth()->id()),
@@ -292,7 +292,7 @@ new #[Layout('components.layouts.app')] class extends Component {
         </div>
         @if (auth()->user()->isSuperAdmin())
         <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Archived Events</h2>
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Archived Event</h2>
             <div class="mt-4 space-y-3">
                 @forelse ($this->archivedEvents as $event)
                     <div wire:key="archive-event-{{ $event->EID }}" class="rounded-lg border border-gray-200 p-3 dark:border-gray-800">

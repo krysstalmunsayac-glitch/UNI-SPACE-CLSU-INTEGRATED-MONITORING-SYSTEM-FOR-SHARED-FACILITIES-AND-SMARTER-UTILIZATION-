@@ -96,7 +96,7 @@
                     })[character]);
                     const formatFacilityType = value => {
                         const type = String(value || 'Facility').trim();
-                        return type.charAt(0).toUpperCase() + type.slice(1).toLowerCase();
+                        return type.replaceAll('_', ' ').replace(/\b\w/g, character => character.toUpperCase());
                     };
                     const fallbackCoordinates = facility => {
                         const hash = [...String(facility.FID ?? facility.Facility_Name)].reduce((total, character) => ((total * 31) + character.charCodeAt(0)) >>> 0, 0);

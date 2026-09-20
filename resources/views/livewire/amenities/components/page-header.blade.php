@@ -4,7 +4,7 @@
                 <x-ui::icon.rectangle-stack class="size-6" />
             </span>
             <div>
-                <h1 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">Amenity Management</h1>
+                <h1 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">Amenities Management</h1>
                 <p class="text-gray-600 dark:text-gray-400">Create, update, and manage amenities for your facilities.</p>
             </div>
         </div>

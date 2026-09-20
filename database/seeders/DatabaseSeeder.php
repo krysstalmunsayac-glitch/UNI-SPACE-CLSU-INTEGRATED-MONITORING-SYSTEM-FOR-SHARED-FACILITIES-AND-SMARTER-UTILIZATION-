@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
-use App\Models\Amenities;
-use App\Models\Events;
-use App\Models\Facilities;
-use App\Models\Requests;
+use App\Models\Amenity;
+use App\Models\Event;
+use App\Models\Facility;
+use App\Models\FacilityRequest;
 use App\Models\Schedule;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -48,9 +48,9 @@ class DatabaseSeeder extends Seeder
         // This is the sole source of seeded facilities and amenities.
         $this->call(ClsuFacilitySeeder::class);
 
-        $amenityIds = Amenities::query()->orderBy('AID')->pluck('AID')->all();
+        $amenityIds = Amenity::query()->orderBy('AID')->pluck('AID')->all();
 
-        $seedEvent = Events::updateOrCreate(
+        $seedEvent = Event::updateOrCreate(
             ['Event_Title' => 'University Founding Anniversary'],
             [
                 'Description' => 'Annual celebration of the university\'s founding.',
@@ -63,7 +63,7 @@ class DatabaseSeeder extends Seeder
             ->orderBy('id')
             ->get();
 
-        $requestFacilities = Facilities::query()
+        $requestFacilities = Facility::query()
             ->orderBy('FID')
             ->get();
 
@@ -79,7 +79,7 @@ class DatabaseSeeder extends Seeder
                 ? now()->subDays($index + 2)
                 : now()->addDays($index + 2);
 
-            $dummyRequest = Requests::updateOrCreate(
+            $dummyRequest = FacilityRequest::updateOrCreate(
                 ['User_ID' => $user->id, 'Purpose' => $purpose],
                 [
                     'Event_ID' => $seedEvent->EID,
@@ -96,10 +96,6 @@ class DatabaseSeeder extends Seeder
                         ? 'Dummy rejection used for interface testing.'
                         : null,
                     'Purpose_Categories' => ['Academic activity'],
-                    'Reservation_Frequency' => 'First time',
-                    'Facility_Importance' => 'Important',
-                    'Requirements_Fit' => 'Meets requirements',
-                    'Reserve_Again_Intent' => 'Yes',
                     'Capacity' => min(25 + $index, (int) $facility->Capacity),
                 ]
             );

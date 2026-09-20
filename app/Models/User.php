@@ -14,7 +14,7 @@ use Illuminate\Support\Str;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
-    public const PH_CONTACT_REGEX = '/^(?:09\d{9}|\+639\d{9})$/';
+    public const PH_CONTACT_REGEX = '/^09\d{9}$/';
 
     public const STUDENT_ID_REGEX = '/^\d{2}-\d{4}$/';
 
@@ -122,11 +122,11 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * Requests submitted by this user.
+     * Facility requests submitted by this user.
      */
     public function requests(): HasMany
     {
-        return $this->hasMany(Requests::class, 'User_ID');
+        return $this->hasMany(FacilityRequest::class, 'User_ID');
     }
 
     /**
@@ -134,7 +134,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function createdGuestRequests(): HasMany
     {
-        return $this->hasMany(Requests::class, 'Created_By');
+        return $this->hasMany(FacilityRequest::class, 'Created_By');
     }
 
     /**
@@ -142,17 +142,17 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function feedbacks(): HasMany
     {
-        return $this->hasMany(Feedbacks::class, 'User_ID');
+        return $this->hasMany(Feedback::class, 'User_ID');
     }
 
     public function createdAmenities(): HasMany
     {
-        return $this->hasMany(Amenities::class, 'created_by');
+        return $this->hasMany(Amenity::class, 'created_by');
     }
 
     public function facilities(): BelongsToMany
     {
-        return $this->belongsToMany(Facilities::class, 'facility_user', 'user_id', 'facility_id')
+        return $this->belongsToMany(Facility::class, 'facility_user', 'user_id', 'facility_id')
             ->withTimestamps();
     }
 

@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\FacilitiesController;
+use App\Http\Controllers\FacilityRequestController;
 use App\Http\Middleware\PreventBackHistory;
 use Illuminate\Support\Facades\Route;
 
@@ -12,7 +12,7 @@ Route::middleware([
 ])->group(function () {
     Route::prefix('requests')
         ->name('requests.')
-        ->controller(FacilitiesController::class)
+        ->controller(FacilityRequestController::class)
         ->group(function () {
             Route::get('create/{facility}', 'showRequest')
                 ->name('create');
@@ -31,19 +31,19 @@ Route::middleware([
                 ->name('event.store');
         });
 
-    Route::controller(FacilitiesController::class)
-        ->prefix('waiting-list')
+    Route::controller(FacilityRequestController::class)
+        ->prefix('requests/waiting-list')
         ->group(function () {
             Route::get('/', 'waitingList')
-                ->name('waiting.list');
+                ->name('requests.waiting.index');
 
             Route::post('{requestModel}', 'updateWaitingList')
-                ->name('waiting.list.update');
+                ->name('requests.waiting.update');
 
             Route::post('{requestModel}/cancel', 'cancelWaitingList')
-                ->name('waiting.list.cancel');
+                ->name('requests.waiting.cancel');
 
             Route::post('{requestModel}/end', 'endWaitingList')
-                ->name('waiting.list.end');
+                ->name('requests.waiting.end');
         });
 });

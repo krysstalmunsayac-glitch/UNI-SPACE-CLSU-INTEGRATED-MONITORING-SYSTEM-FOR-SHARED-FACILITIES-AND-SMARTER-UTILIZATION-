@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 
-class Amenities extends Model
+class Amenity extends Model
 {
     use SoftDeletes;
 
@@ -28,7 +28,29 @@ class Amenities extends Model
         'Status',
         'reservation_limit',
         'inventory_quantity',
+        'inventory_type',
     ];
+
+    public function isPermanent(): bool
+    {
+        return $this->inventory_type === 'permanent';
+    }
+
+    public function usesInventory(): bool
+    {
+        return ! $this->isPermanent();
+    }
+
+    public function quantityLabel(?int $quantity = null): string
+    {
+        if ($this->isPermanent()) {
+            return 'Included';
+        }
+
+        $quantity ??= $this->inventory_quantity;
+
+        return number_format($quantity).' '.($quantity === 1 ? 'unit' : 'units');
+    }
 
     protected $casts = [
         'reservation_limit' => 'integer',
@@ -38,7 +60,7 @@ class Amenities extends Model
     public function facilities(): BelongsToMany
     {
         return $this->belongsToMany(
-            Facilities::class,
+            Facility::class,
             'facility_amenity',
             'Amenity_ID',
             'Facility_ID'
@@ -53,7 +75,7 @@ class Amenities extends Model
     public function requests(): BelongsToMany
     {
         return $this->belongsToMany(
-            Requests::class,
+            FacilityRequest::class,
             'request_facility_amenities',
             'Amenity_ID',
             'Request_ID',
@@ -69,7 +91,7 @@ class Amenities extends Model
         string $endTime,
         ?int $ignoreRequestId = null,
     ): int {
-        return Requests::query()
+        return FacilityRequest::query()
             ->whereDate('Proposed_Date', '<=', $endDate)
             ->whereDate(DB::raw('COALESCE(Proposed_End_Date, Proposed_Date)'), '>=', $startDate)
             ->whereIn('Status', ['Pending', 'Awaiting Payment', 'Approved'])

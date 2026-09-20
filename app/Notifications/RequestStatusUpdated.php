@@ -2,7 +2,7 @@
 
 namespace App\Notifications;
 
-use App\Models\Requests;
+use App\Models\FacilityRequest;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -13,7 +13,7 @@ class RequestStatusUpdated extends Notification
     use Queueable;
 
     public function __construct(
-        protected Requests $request,
+        protected FacilityRequest $request,
         protected string $previousStatus = 'Pending',
     ) {}
 
@@ -42,7 +42,7 @@ class RequestStatusUpdated extends Notification
                 'cancellationReason' => $this->request->Status === 'Cancelled'
                     ? $this->request->Cancellation_Reason
                     : null,
-                'actionUrl' => route('waiting.list'),
+                'actionUrl' => route('requests.waiting.index'),
             ]);
     }
 

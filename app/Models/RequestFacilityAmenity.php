@@ -22,11 +22,11 @@ class RequestFacilityAmenity extends Model
 
     public function request(): BelongsTo
     {
-        return $this->belongsTo(Requests::class, 'Request_ID', 'RID');
+        return $this->belongsTo(FacilityRequest::class, 'Request_ID', 'RID');
     }
 
     public function amenity(): BelongsTo
     {
-        return $this->belongsTo(Amenities::class, 'Amenity_ID', 'AID');
+        return $this->belongsTo(Amenity::class, 'Amenity_ID', 'AID');
     }
 }

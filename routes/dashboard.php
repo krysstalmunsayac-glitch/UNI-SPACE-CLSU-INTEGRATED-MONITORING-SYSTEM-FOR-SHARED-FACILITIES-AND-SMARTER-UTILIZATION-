@@ -2,8 +2,8 @@
 
 use App\Http\Controllers\Admin\ReportExportController;
 use App\Http\Controllers\Dashboard\DashboardController;
-use App\Http\Controllers\FacilitiesController;
-use App\Http\Controllers\FeedbacksController;
+use App\Http\Controllers\FacilityRequestController;
+use App\Http\Controllers\FeedbackController;
 use App\Http\Middleware\PreventBackHistory;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
@@ -26,18 +26,18 @@ Route::middleware([
 
         Route::get('/dashboard/super-admin', 'superAdmin')
             ->middleware('role:super_admin')
-            ->name('dashboard.superadmin');
+            ->name('dashboard.super-admin');
 
         Route::get('/dashboard/office-admin', 'officeAdmin')
             ->middleware('role:office_admin')
-            ->name('dashboard.officeadmin');
+            ->name('dashboard.office-admin');
     });
 
     Route::middleware('user.pages')->group(function () {
-        Route::get('/dashboard/requests/{facilityRequest}/feedback', [FeedbacksController::class, 'create'])
-            ->name('facility-feedback.create');
-        Route::post('/dashboard/requests/{facilityRequest}/feedback', [FeedbacksController::class, 'store'])
-            ->name('facility-feedback.store');
+        Route::get('/dashboard/requests/{facilityRequest}/feedback', [FeedbackController::class, 'create'])
+            ->name('requests.feedback.create');
+        Route::post('/dashboard/requests/{facilityRequest}/feedback', [FeedbackController::class, 'store'])
+            ->name('requests.feedback.store');
     });
 
     /*
@@ -50,14 +50,14 @@ Route::middleware([
         Route::get('/dashboard/analytics.pdf', [DashboardController::class, 'analyticsPdf'])
             ->name('dashboard.analytics.pdf');
 
-        Volt::route('/user-management', 'user.user-management')
-            ->name('UserManagement');
+        Volt::route('/users', 'user.user-management')
+            ->name('users.index');
 
-        Volt::route('/facility/super-admin', 'facility.super-admin-facility')
-            ->name('Facility.SuperAdmin');
+        Volt::route('/facilities/super-admin', 'facility.super-admin-facility')
+            ->name('facilities.super-admin.index');
 
-        Volt::route('/report-management', 'report.report-management')
-            ->name('ReportManagement');
+        Volt::route('/reports', 'report.report-management')
+            ->name('reports.index');
 
         Route::prefix('exports')->name('exports.')->controller(ReportExportController::class)->group(function () {
             Route::get('/facilities.csv', 'facilitiesCsv')->name('facilities.csv');
@@ -86,8 +86,8 @@ Route::middleware([
     */
 
     Route::middleware('role:office_admin')->group(function () {
-        Volt::route('/facility/office-admin', 'facility.office-admin-facility')
-            ->name('Facility.OfficeAdmin');
+        Volt::route('/facilities/office-admin', 'facility.office-admin-facility')
+            ->name('facilities.office-admin.index');
     });
 
     /*
@@ -97,31 +97,31 @@ Route::middleware([
     */
 
     Route::middleware('role:super_admin,office_admin')->group(function () {
-        Route::prefix('facility/{facility}/guest-request')
+        Route::prefix('facilities/{facility}/guest-request')
             ->name('admin.requests.')
-            ->controller(FacilitiesController::class)
+            ->controller(FacilityRequestController::class)
             ->group(function () {
                 Route::get('/', 'showGuestRequest')->name('create');
                 Route::get('/availability', 'guestAvailability')->middleware('throttle:60,1')->name('availability');
                 Route::post('/', 'storeGuestRequest')->name('store');
             });
 
-        Route::get('/facility', [DashboardController::class, 'facilityRedirect'])
-            ->name('Facility');
+        Route::get('/facilities', [DashboardController::class, 'facilityRedirect'])
+            ->name('facilities.index');
 
         Volt::route('/amenities', 'amenities.amenities')
-            ->name('Amenities');
+            ->name('amenities.index');
 
-        Volt::route('/request', 'request.request')
-            ->name('Request');
+        Volt::route('/requests', 'request.request')
+            ->name('requests.index');
 
-        Volt::route('/schedule', 'schedule.schedule')
-            ->name('Schedule');
+        Volt::route('/schedules', 'schedule.schedule')
+            ->name('schedules.index');
 
         Volt::route('/feedback', 'feedback.feedback')
-            ->name('Feedback');
+            ->name('feedback.index');
 
-        Volt::route('/archived', 'archive.archive-index')
-            ->name('Archived');
+        Volt::route('/archives', 'archive.archive-index')
+            ->name('archives.index');
     });
 });

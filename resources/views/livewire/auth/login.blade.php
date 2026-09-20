@@ -1,7 +1,7 @@
 <?php
 
 use App\Models\User;
-use Illuminate\Auth\Events\Lockout;
+use Illuminate\Auth\Event\Lockout;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Session;
@@ -55,8 +55,8 @@ new #[Layout('components.layouts.auth')] class extends Component
         Session::forget('url.intended');
 
         $dashboard = match (Auth::user()->user_type) {
-            'super_admin' => route('dashboard.superadmin', absolute: false),
-            'admin' => route('dashboard.officeadmin', absolute: false),
+            'super_admin' => route('dashboard.super-admin', absolute: false),
+            'admin' => route('dashboard.office-admin', absolute: false),
             default => route('dashboard', absolute: false),
         };
 

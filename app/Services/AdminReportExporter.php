@@ -11,7 +11,7 @@ class AdminReportExporter
         return [
             'Facility ID', 'Facility Name', 'Type', 'Access Type', 'Price (PHP)',
             'Rates', 'Capacity', 'Location', 'Latitude', 'Longitude', 'Office',
-            'Description', 'Amenities', 'Protocols and Guidelines', 'Contact Details',
+            'Description', 'Amenity', 'Protocols and Guidelines', 'Contact Details',
             'Reference URL', 'Data Notes', 'Status',
         ];
     }
@@ -31,7 +31,7 @@ class AdminReportExporter
             $facility->Longitude ?? '',
             $facility->Office ?? '',
             $facility->Description ?? '',
-            $facility->amenities->map(fn ($amenity) => $amenity->name.' ('.$amenity->inventory_quantity.' units)')->join(', '),
+            $facility->amenities->map(fn ($amenity) => $amenity->name.' ('.$amenity->quantityLabel().')')->join(', '),
             $facility->protocols_and_guidelines ?: ($facility->Protocols ?? ''),
             $facility->Contact_Details ?? '',
             $facility->Reference_URL ?? '',
@@ -46,9 +46,8 @@ class AdminReportExporter
             'Request ID', 'Request Type', 'Requester', 'CLSU ID', 'Email', 'Contact Number',
             'Organization or Office', 'Created By', 'Facility', 'Event', 'Event Type',
             'First Day', 'Last Day', 'Start Time', 'End Time', 'Daily Schedule',
-            'Attendees', 'Amenities', 'Status', 'Purpose', 'Purpose Categories',
-            'Other Purpose', 'Reservation Frequency', 'Facility Importance',
-            'Requirements Fit', 'Reserve Again Intent', 'Review Requested At',
+            'Attendees', 'Amenity', 'Status', 'Purpose', 'Purpose Categories',
+            'Other Purpose', 'Review Requested At',
             'Review Notes', 'Rejection Reason', 'Cancellation Reason', 'Attachment',
             'Submitted At', 'Updated At',
         ];
@@ -79,10 +78,6 @@ class AdminReportExporter
             $request->Purpose ?? '',
             collect($request->Purpose_Categories ?? [])->join(', '),
             $request->Other_Purpose ?? '',
-            $request->Reservation_Frequency ?? '',
-            $request->Facility_Importance ?? '',
-            $request->Requirements_Fit ?? '',
-            $request->Reserve_Again_Intent ?? '',
             $this->dateTimeText($request->Review_Requested_At),
             $request->Review_Notes ?? '',
             $request->Rejection_Reason ?? '',
@@ -97,7 +92,7 @@ class AdminReportExporter
     {
         return [
             'User ID', 'CLSU ID', 'Name', 'Email', 'Role', 'Contact Number', 'Office',
-            'Address', 'Assigned Facilities', 'Account Status', 'Registration Status',
+            'Address', 'Assigned Facility', 'Account Status', 'Registration Status',
             'Email Verified At', 'Invitation Sent At', 'Invitation Expires At',
             'Invitation Revoked At', 'Joined At', 'Updated At',
         ];
@@ -129,8 +124,8 @@ class AdminReportExporter
     public function amenityHeaders(): array
     {
         return [
-            'Amenity ID', 'Name', 'Description', 'Status', 'Available Quantity',
-            'Facilities', 'Facility Count', 'Request Usage', 'Created By', 'Created At', 'Updated At',
+            'Amenity ID', 'Name', 'Description', 'Status', 'Amenity Type', 'Available Quantity',
+            'Facility', 'Facility Count', 'Request Usage', 'Created By', 'Created At', 'Updated At',
         ];
     }
 
@@ -141,7 +136,8 @@ class AdminReportExporter
             $amenity->name,
             $amenity->Description ?? '',
             $amenity->Status ?? '',
-            $amenity->inventory_quantity,
+            $amenity->isPermanent() ? 'Permanent / built-in' : 'Countable',
+            $amenity->quantityLabel(),
             $amenity->facilities->pluck('Facility_Name')->join(', '),
             $amenity->facilities->count(),
             $amenity->requests_count ?? $amenity->requests()->count(),
@@ -302,7 +298,7 @@ class AdminReportExporter
     public function facilitiesXlsx(Collection $facilities): string
     {
         return $this->xlsx(
-            'Facilities',
+            'Facility',
             $this->facilityHeaders(),
             $facilities->map(fn ($facility) => $this->facilityRow($facility))->all(),
             [12, 34, 18, 16, 16, 55, 12, 35, 16, 16, 30, 55, 45, 60, 40, 50, 50, 16],
@@ -332,10 +328,10 @@ class AdminReportExporter
     public function amenitiesXlsx(Collection $amenities): string
     {
         return $this->xlsx(
-            'Amenities',
+            'Amenity',
             $this->amenityHeaders(),
             $amenities->map(fn ($amenity) => $this->amenityRow($amenity))->all(),
-            [14, 28, 55, 16, 20, 55, 16, 16, 24, 22, 22],
+            [14, 28, 55, 16, 22, 20, 55, 16, 16, 24, 22, 22],
         );
     }
 
@@ -435,7 +431,7 @@ class AdminReportExporter
                     ? $facility->Latitude.', '.$facility->Longitude
                     : 'N/A',
                 'Description' => $facility->Description ?? 'N/A',
-                'Amenities' => $facility->amenities->map(fn ($amenity) => $amenity->name.' ('.$amenity->inventory_quantity.' units)')->join(', ') ?: 'None listed',
+                'Amenity' => $facility->amenities->map(fn ($amenity) => $amenity->name.' ('.$amenity->quantityLabel().')')->join(', ') ?: 'None listed',
                 'Protocols and guidelines' => $facility->protocols_and_guidelines ?: ($facility->Protocols ?? 'N/A'),
                 'Contact details' => $facility->Contact_Details ?? 'N/A',
                 'Reference URL' => $facility->Reference_URL ?? 'N/A',
@@ -747,7 +743,7 @@ class AdminReportExporter
 
             foreach ($row as $columnIndex => $value) {
                 $reference = $columnName($columnIndex).($rowIndex + 1);
-                $style = $rowIndex === 0 ? 1 : ($columnIndex === 3 && $sheetName === 'Facilities' ? 2 : 0);
+                $style = $rowIndex === 0 ? 1 : ($columnIndex === 3 && $sheetName === 'Facility' ? 2 : 0);
 
                 if ($rowIndex > 0 && (is_int($value) || is_float($value))) {
                     $cells[] = '<c r="'.$reference.'" s="'.$style.'" t="n"><v>'.$value.'</v></c>';

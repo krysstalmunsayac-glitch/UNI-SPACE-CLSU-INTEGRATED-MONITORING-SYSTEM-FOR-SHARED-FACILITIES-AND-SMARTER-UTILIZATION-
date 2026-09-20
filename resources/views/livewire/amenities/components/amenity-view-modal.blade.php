@@ -21,8 +21,12 @@
                     <dd class="mt-1 whitespace-pre-line text-zinc-700 dark:text-zinc-300">{{ $amenity->Description ?? 'No description provided.' }}</dd>
                 </div>
                 <div>
+                    <dt class="text-xs font-bold text-zinc-500">Amenity type</dt>
+                    <dd class="mt-1 text-zinc-700 dark:text-zinc-300">{{ $amenity->isPermanent() ? 'Permanent / built-in' : 'Countable' }}</dd>
+                </div>
+                <div>
                     <dt class="text-xs font-bold text-zinc-500">Available quantity</dt>
-                    <dd class="mt-1 text-zinc-700 dark:text-zinc-300">{{ number_format($amenity->inventory_quantity) }} units</dd>
+                    <dd class="mt-1 text-zinc-700 dark:text-zinc-300">{{ $amenity->quantityLabel() }}</dd>
                 </div>
                 <div>
                     <dt class="text-xs font-bold text-zinc-500">Created</dt>

@@ -12,7 +12,7 @@
                     </p>
                 </div>
 
-                <form action="{{ route('facility-feedback.store', $facilityRequest) }}" method="POST" class="space-y-6 p-6 sm:p-8">
+                <form action="{{ route('requests.feedback.store', $facilityRequest) }}" method="POST" class="space-y-6 p-6 sm:p-8">
                     @csrf
 
                     <fieldset>
@@ -27,6 +27,28 @@
                         </div>
                         @error('Rating') <p class="mt-2 text-sm font-semibold text-red-600">{{ $message }}</p> @enderror
                     </fieldset>
+
+                    @foreach ([
+                        'Reservation_Frequency' => ['How often do you reserve this facility for this purpose?', ['First time', 'Occasionally (1–3 times per year)', 'Regularly (monthly)', 'Frequently (weekly)']],
+                        'Purpose_Importance' => ['How important is the facility in helping you achieve your event purpose?', ['Very Important', 'Important', 'Neutral', 'Slightly Important', 'Not Important']],
+                        'Requirements_Met' => ['Based on the available information, does this facility meet your requirements?', ['Yes, completely', 'Mostly', 'Partially', 'No']],
+                        'Reserve_Again' => ['Would you reserve this facility again for the same purpose?', ['Definitely Yes', 'Probably Yes', 'Not Sure', 'Probably No', 'Definitely No']],
+                    ] as $field => [$question, $options])
+                        <fieldset>
+                            <legend class="text-sm font-black leading-6 text-emerald-950 dark:text-white">{{ $question }}</legend>
+                            <div class="mt-3 flex flex-wrap gap-2" role="radiogroup" aria-label="{{ $question }}">
+                                @foreach ($options as $option)
+                                    <label class="cursor-pointer">
+                                        <input type="radio" name="{{ $field }}" value="{{ $option }}" class="peer sr-only" required @checked(old($field) === $option)>
+                                        <span class="inline-flex min-h-11 items-center justify-center rounded-xl border border-emerald-200 bg-white px-4 py-2 text-center text-sm font-bold text-emerald-900 transition hover:bg-emerald-50 peer-checked:border-emerald-700 peer-checked:bg-emerald-700 peer-checked:text-white peer-focus:ring-2 peer-focus:ring-emerald-500 dark:border-emerald-800 dark:bg-zinc-950 dark:text-emerald-200 dark:peer-checked:bg-emerald-600">
+                                            {{ $option }}
+                                        </span>
+                                    </label>
+                                @endforeach
+                            </div>
+                            @error($field) <p class="mt-2 text-sm font-semibold text-red-600">{{ $message }}</p> @enderror
+                        </fieldset>
+                    @endforeach
 
                     <label class="block" for="feedback-comment">
                         <span class="text-sm font-black text-emerald-950 dark:text-white">Comments <span class="font-normal text-emerald-900/60 dark:text-zinc-400">(optional)</span></span>

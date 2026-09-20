@@ -129,7 +129,7 @@ new #[Layout('components.layouts.app')] class extends Component {
             <x-ui::dropdown position="bottom" align="end">
                 <x-ui::button variant="outline" class="w-32 justify-start gap-2">
                     <x-ui::icon.building-office class="size-4 shrink-0" />
-                    Facilities
+                    Facility
                 </x-ui::button>
                 <x-ui::menu>
                     <x-ui::menu.item icon="document-text" href="{{ route('exports.facilities.csv') }}">CSV</x-ui::menu.item>
@@ -165,7 +165,7 @@ new #[Layout('components.layouts.app')] class extends Component {
             <x-ui::dropdown position="bottom" align="end">
                 <x-ui::button variant="outline" class="w-32 justify-start gap-2">
                     <x-ui::icon.rectangle-stack class="size-4 shrink-0" />
-                    Amenities
+                    Amenity
                 </x-ui::button>
                 <x-ui::menu>
                     <x-ui::menu.item icon="document-text" href="{{ route('exports.amenities.csv') }}">CSV</x-ui::menu.item>

@@ -76,18 +76,18 @@
         <button
             type="button"
             x-on:click="previous()"
-            class="absolute left-5 top-1/2 z-20 hidden size-12 -translate-y-1/2 items-center justify-center border-0 bg-transparent text-4xl font-black text-white/80 transition hover:text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 sm:inline-flex lg:left-8"
+            class="absolute left-5 top-1/2 z-20 hidden size-12 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white/70 bg-black/25 text-white transition hover:border-yellow-400 hover:bg-black/45 focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400 sm:inline-flex lg:left-8"
             aria-label="Show previous hero image"
         >
-            ‹
+            <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
         </button>
         <button
             type="button"
             x-on:click="next()"
-            class="absolute right-5 top-1/2 z-20 hidden size-12 -translate-y-1/2 items-center justify-center border-0 bg-transparent text-4xl font-black text-white/80 transition hover:text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 sm:inline-flex lg:right-8"
+            class="absolute right-5 top-1/2 z-20 hidden size-12 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white/70 bg-black/25 text-white transition hover:border-yellow-400 hover:bg-black/45 focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400 sm:inline-flex lg:right-8"
             aria-label="Show next hero image"
         >
-            ›
+            <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
         </button>
         <div class="relative mx-auto flex min-h-[640px] w-full max-w-7xl items-center justify-center px-5 pb-24 pt-28 text-center sm:px-8 lg:h-[100svh] lg:min-h-0 lg:px-24 lg:pb-20 lg:pt-24">
             <div class="max-w-4xl">
@@ -164,8 +164,8 @@
             </div>
             <div class="mt-10 grid gap-4 rounded-2xl border border-zinc-200 bg-white p-5 lg:grid-cols-[1fr_190px_220px]">
                 <label class="block"><span class="mb-2 block text-xs font-black uppercase tracking-wide text-zinc-700">Search</span><input id="facility-search" type="search" placeholder="Search facilities..." class="h-14 w-full rounded-xl border border-zinc-300 bg-white px-4 text-zinc-950 outline-none focus:border-[#009639] focus:ring-2 focus:ring-[#009639]/15"></label>
-                <label class="block"><span class="mb-2 block text-xs font-black uppercase tracking-wide text-zinc-700">Capacity</span><select id="capacity-filter" class="h-14 w-full rounded-xl border border-zinc-300 bg-white px-4 font-semibold text-zinc-950 outline-none focus:border-[#009639] focus:ring-2 focus:ring-[#009639]/15"><option value="all">All capacities</option><option value="small">70-150</option><option value="medium">151-300</option><option value="large">301+</option><option value="custom">Other / Specific</option></select><input id="capacity-custom" type="number" min="1" max="2000" placeholder="Required capacity" class="mt-2 hidden h-12 w-full rounded-xl border border-zinc-300 bg-white px-4 text-zinc-950 outline-none focus:border-[#009639]"></label>
-                <label class="block"><span class="mb-2 block text-xs font-black uppercase tracking-wide text-zinc-700">Facility type</span><select id="type-filter" class="h-14 w-full rounded-xl border border-zinc-300 bg-white px-4 font-semibold text-zinc-950 outline-none focus:border-[#009639] focus:ring-2 focus:ring-[#009639]/15"><option value="all">All facility types</option>@foreach ($facilities->pluck('facility_type')->filter()->unique()->sort()->values() as $type)<option value="{{ strtolower($type) }}">{{ ucfirst($type) }}</option>@endforeach</select></label>
+                <label class="block"><span class="mb-2 block text-xs font-black uppercase tracking-wide text-zinc-700">Capacity</span><select id="capacity-filter" class="h-14 w-full rounded-xl border border-zinc-300 bg-white px-4 font-semibold text-zinc-950 outline-none focus:border-[#009639] focus:ring-2 focus:ring-[#009639]/15"><option value="all">All capacities</option><option value="small">1–150 people</option><option value="medium">151–300 people</option><option value="large">301+ people</option><option value="custom">Enter required capacity</option></select><input id="capacity-custom" type="number" min="1" max="2000" placeholder="Required capacity" class="mt-2 hidden h-12 w-full rounded-xl border border-zinc-300 bg-white px-4 text-zinc-950 outline-none focus:border-[#009639]"></label>
+                <label class="block"><span class="mb-2 block text-xs font-black uppercase tracking-wide text-zinc-700">Facility type</span><select id="type-filter" class="h-14 w-full rounded-xl border border-zinc-300 bg-white px-4 font-semibold text-zinc-950 outline-none focus:border-[#009639] focus:ring-2 focus:ring-[#009639]/15"><option value="all">All facility types</option>@foreach ($facilities->pluck('facility_type')->filter()->unique()->sort()->values() as $type)<option value="{{ strtolower($type) }}">{{ str($type)->headline() }}</option>@endforeach</select></label>
             </div>
             <p class="mt-5 text-sm font-bold text-zinc-600"><span id="facility-count">{{ min(6, $facilities->count()) }}</span> of {{ $facilities->count() }} facilities shown</p>
             <div id="facility-grid" class="mt-8 grid gap-7 md:grid-cols-2 xl:grid-cols-3">

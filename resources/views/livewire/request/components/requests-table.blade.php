@@ -145,7 +145,7 @@
                                             class="text-amber-700 dark:text-amber-300"
                                             wire:click="openReviewModal({{ $request->RID }})"
                                         >
-                                            Request changes
+                                            Needs Revision
                                         </x-ui::menu.item>
                                     @endif
                                     @if ($request->canTransitionTo('Approved'))

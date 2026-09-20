@@ -20,8 +20,8 @@ class RedirectAdminsFromUserPages
         }
 
         return match ($user->user_type) {
-            'super_admin' => redirect()->route('dashboard.superadmin'),
-            'admin' => redirect()->route('dashboard.officeadmin'),
+            'super_admin' => redirect()->route('dashboard.super-admin'),
+            'admin' => redirect()->route('dashboard.office-admin'),
             default => $next($request),
         };
     }

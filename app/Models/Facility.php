@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Facilities extends Model
+class Facility extends Model
 {
     use SoftDeletes;
 
@@ -73,7 +73,7 @@ class Facilities extends Model
     public function amenities(): BelongsToMany
     {
         return $this->belongsToMany(
-            Amenities::class,
+            Amenity::class,
             'facility_amenity',
             'Facility_ID',
             'Amenity_ID'
@@ -82,7 +82,7 @@ class Facilities extends Model
 
     protected static function booted(): void
     {
-        static::deleting(function (Facilities $facility): void {
+        static::deleting(function (Facility $facility): void {
             $facility->archiveRelatedRequests();
             if ($facility->isForceDeleting()) {
                 $facility->images()->delete();
@@ -95,7 +95,7 @@ class Facilities extends Model
      */
     public function archiveRelatedRequests(): void
     {
-        Requests::query()
+        FacilityRequest::query()
             ->where('Facility_ID', $this->FID)
             ->delete();
     }

@@ -68,7 +68,7 @@
         </div>
 
         <div class="rounded-lg border border-gray-100 bg-gray-50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900/70">
-            <p class="text-xs font-medium text-gray-500 dark:text-zinc-400">Facilities</p>
+            <p class="text-xs font-medium text-gray-500 dark:text-zinc-400">Facility</p>
             <p class="mt-1 text-2xl font-semibold text-gray-950 dark:text-white">{{ $stats['facilities'] }}</p>
         </div>
     </div>

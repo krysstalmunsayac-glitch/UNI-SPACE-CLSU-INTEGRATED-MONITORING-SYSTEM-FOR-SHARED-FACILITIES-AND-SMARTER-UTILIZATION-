@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Events extends Model
+class Event extends Model
 {
     use SoftDeletes;
 
@@ -27,6 +27,6 @@ class Events extends Model
 
     public function requests(): HasMany
     {
-        return $this->hasMany(Requests::class, 'Event_ID');
+        return $this->hasMany(FacilityRequest::class, 'Event_ID');
     }
 }

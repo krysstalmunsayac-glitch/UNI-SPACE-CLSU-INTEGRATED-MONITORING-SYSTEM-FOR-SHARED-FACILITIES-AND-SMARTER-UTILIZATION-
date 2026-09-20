@@ -39,6 +39,21 @@ new #[Layout('components.layouts.auth')] class extends Component
 
     public int $step = 1;
 
+    public function mount(): void
+    {
+        if (request()->boolean('new')) {
+            session()->forget('pending_registration_token');
+
+            return;
+        }
+
+        $token = session('pending_registration_token');
+
+        if ($token && PendingRegistration::query()->where('token', $token)->exists()) {
+            $this->redirect(route('registration.pin', $token, absolute: false), navigate: true);
+        }
+    }
+
     public function usesClsuEmail(): bool
     {
         return User::usesClsuEmail($this->email);
@@ -78,10 +93,10 @@ new #[Layout('components.layouts.auth')] class extends Component
         ];
     }
 
-    private function clearExpiredPendingRegistrations(): void
+    private function clearAbandonedPendingRegistrations(): void
     {
         PendingRegistration::query()
-            ->where('pin_expires_at', '<', now())
+            ->where('updated_at', '<', now()->subDay())
             ->delete();
     }
 
@@ -112,7 +127,7 @@ new #[Layout('components.layouts.auth')] class extends Component
 
     public function nextStep(): void
     {
-        $this->clearExpiredPendingRegistrations();
+        $this->clearAbandonedPendingRegistrations();
         $this->normalizeClsuId();
 
         if ($this->step === 1) {
@@ -156,7 +171,7 @@ new #[Layout('components.layouts.auth')] class extends Component
             'contact_number' => ['required', 'string', 'regex:'.User::PH_CONTACT_REGEX],
             'address' => ['required', 'string', 'min:5', 'max:500'],
         ], [
-            'contact_number.regex' => 'Enter a valid PH mobile number: 09XXXXXXXXX or +639XXXXXXXXX.',
+            'contact_number.regex' => 'Enter a valid 11-digit PH mobile number starting with 09.',
         ]);
 
         $this->step = 4;
@@ -172,7 +187,7 @@ new #[Layout('components.layouts.auth')] class extends Component
      */
     public function register(): void
     {
-        $this->clearExpiredPendingRegistrations();
+        $this->clearAbandonedPendingRegistrations();
         $this->normalizeClsuId();
 
         $throttleKey = 'register|'.request()->ip();
@@ -210,7 +225,7 @@ new #[Layout('components.layouts.auth')] class extends Component
                 ? 'Enter a valid staff ID in the format 00000000-00 or 00-0000.'
                 : 'Enter a valid student ID in the format 00-0000.',
             'clsu_id.unique' => 'This CLSU ID is already associated with an account or pending registration.',
-            'contact_number.regex' => 'Enter a valid PH mobile number: 09XXXXXXXXX or +639XXXXXXXXX.',
+            'contact_number.regex' => 'Enter a valid 11-digit PH mobile number starting with 09.',
             'privacy_consent.accepted' => 'You must consent to the Data Privacy Notice to register.',
         ]);
 
@@ -241,8 +256,10 @@ new #[Layout('components.layouts.auth')] class extends Component
             ],
         );
 
+        session()->put('pending_registration_token', $token);
+
         Notification::route('mail', $validated['email'])
-            ->notify(new VerifyPendingRegistration($pin));
+            ->notify(new VerifyPendingRegistration($pin, $token));
 
         $this->redirect(route('registration.pin', $token, absolute: false), navigate: true);
     }
@@ -376,7 +393,7 @@ new #[Layout('components.layouts.auth')] class extends Component
         @elseif ($step === 3)
 
             <div class="grid gap-2">
-                <x-ui::input wire:model="contact_number" id="contact_number" label="{{ __('Contact Number') }}" type="tel" name="contact_number" required minlength="11" maxlength="13" pattern="(?:09[0-9]{9}|\+639[0-9]{9})" title="Use 09XXXXXXXXX or +639XXXXXXXXX." autocomplete="tel" placeholder="09123456789" />
+                <x-ui::input wire:model="contact_number" id="contact_number" label="{{ __('Contact Number') }}" type="tel" name="contact_number" required minlength="11" maxlength="11" inputmode="numeric" pattern="09[0-9]{9}" title="Enter an 11-digit mobile number starting with 09." autocomplete="tel" placeholder="09123456789" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11)" />
             </div>
 
             <div

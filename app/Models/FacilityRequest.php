@@ -13,9 +13,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
-class Requests extends Model
+class FacilityRequest extends Model
 {
     use SoftDeletes;
+
+    public const MAX_REQUESTS_PER_EVENT_DATE = 3;
 
     public const CREATED_AT = 'Created_at';
 
@@ -52,10 +54,6 @@ class Requests extends Model
         'Purpose',
         'Purpose_Categories',
         'Other_Purpose',
-        'Reservation_Frequency',
-        'Facility_Importance',
-        'Requirements_Fit',
-        'Reserve_Again_Intent',
         'Capacity',
         'attachment_path',
     ];
@@ -103,7 +101,7 @@ class Requests extends Model
 
     protected static function booted(): void
     {
-        static::created(function (Requests $request): void {
+        static::created(function (FacilityRequest $request): void {
             AuditLog::recordRequest(
                 $request,
                 'request_submitted',
@@ -115,7 +113,7 @@ class Requests extends Model
             );
         });
 
-        static::updated(function (Requests $request): void {
+        static::updated(function (FacilityRequest $request): void {
             $changes = collect($request->getChanges())->except(['Updated_at'])->all();
 
             if ($changes === []) {
@@ -159,19 +157,19 @@ class Requests extends Model
             }
         });
 
-        static::deleted(fn (Requests $request) => AuditLog::recordRequest(
+        static::deleted(fn (FacilityRequest $request) => AuditLog::recordRequest(
             $request,
             'request_archived',
             "Archived request #{$request->RID}.",
         ));
 
-        static::restored(fn (Requests $request) => AuditLog::recordRequest(
+        static::restored(fn (FacilityRequest $request) => AuditLog::recordRequest(
             $request,
             'request_restored',
             "Restored request #{$request->RID}.",
         ));
 
-        static::forceDeleted(fn (Requests $request) => AuditLog::recordRequest(
+        static::forceDeleted(fn (FacilityRequest $request) => AuditLog::recordRequest(
             $request,
             'request_deleted',
             "Permanently deleted request #{$request->RID}.",
@@ -200,18 +198,18 @@ class Requests extends Model
 
     public function event(): BelongsTo
     {
-        return $this->belongsTo(Events::class, 'Event_ID')->withTrashed();
+        return $this->belongsTo(Event::class, 'Event_ID')->withTrashed();
     }
 
     public function facility(): BelongsTo
     {
-        return $this->belongsTo(Facilities::class, 'Facility_ID', 'FID')->withTrashed();
+        return $this->belongsTo(Facility::class, 'Facility_ID', 'FID')->withTrashed();
     }
 
     public function amenities(): BelongsToMany
     {
         return $this->belongsToMany(
-            Amenities::class,
+            Amenity::class,
             'request_facility_amenities',
             'Request_ID',
             'Amenity_ID'
@@ -232,7 +230,7 @@ class Requests extends Model
     {
         // A request may only ever have one feedback record. Include archived
         // feedback so the application agrees with the database unique index.
-        return $this->hasOne(Feedbacks::class, 'Request_ID', 'RID')->withTrashed();
+        return $this->hasOne(Feedback::class, 'Request_ID', 'RID')->withTrashed();
     }
 
     /**
@@ -395,7 +393,7 @@ class Requests extends Model
     /**
      * Determine whether a user already has a live reservation request for an event date.
      */
-    public static function userHasRequestOnDate(
+    public static function userReachedRequestLimitOnDate(
         int $userId,
         string $startDate,
         ?string $endDate = null,
@@ -412,9 +410,11 @@ class Requests extends Model
             ->when($ignoreRequestId, fn (Builder $query) => $query->where('RID', '!=', $ignoreRequestId))
             ->when($lockForUpdate, fn (Builder $query) => $query->lockForUpdate());
 
-        return $lockForUpdate
-            ? $query->select('RID')->first() !== null
-            : $query->exists();
+        $count = $lockForUpdate
+            ? $query->select('RID')->get()->count()
+            : $query->count();
+
+        return $count >= self::MAX_REQUESTS_PER_EVENT_DATE;
     }
 
     public static function activeFacilityConflicts(

@@ -53,7 +53,7 @@ new #[Layout('components.layouts.app')] class extends Component {
                 Rule::unique(User::class)->ignore($user->id)
             ],
         ], [
-            'contact_number.regex' => 'Enter a valid PH mobile number: 09XXXXXXXXX or +639XXXXXXXXX.',
+            'contact_number.regex' => 'Enter a valid 11-digit PH mobile number starting with 09.',
         ]);
 
         $photo = $validated['profile_photo'] ?? null;
@@ -142,7 +142,7 @@ new #[Layout('components.layouts.app')] class extends Component {
             </div>
 
             <x-ui::input wire:model="name" label="{{ __('Name') }}" type="text" name="name" required minlength="2" maxlength="100" autofocus autocomplete="name" />    
-            <x-ui::input wire:model="contact_number" label="Contact Number" type="tel" name="contact_number" minlength="11" maxlength="13" pattern="(?:09[0-9]{9}|\+639[0-9]{9})" title="Use 09XXXXXXXXX or +639XXXXXXXXX." placeholder="09123456789" autocomplete="tel" />
+            <x-ui::input wire:model="contact_number" label="Contact Number" type="tel" name="contact_number" minlength="11" maxlength="11" inputmode="numeric" pattern="09[0-9]{9}" title="Enter an 11-digit mobile number starting with 09." placeholder="09123456789" autocomplete="tel" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11)" />
             @if (auth()->user()->hasrole('user'))
                 <x-ui::textarea wire:model="address" label="Address" name="address" rows="3" />
             @else

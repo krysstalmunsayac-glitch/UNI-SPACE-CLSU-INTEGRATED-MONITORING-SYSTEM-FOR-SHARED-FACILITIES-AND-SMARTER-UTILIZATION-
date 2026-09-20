@@ -17,17 +17,17 @@
                 <div class="grid gap-5 border-b border-slate-100 p-6 lg:grid-cols-[1fr_auto] lg:items-end dark:border-zinc-800">
                     <div>
                         <p class="text-sm font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Office Admin Dashboard</p>
-                        <h1 class="mt-2 text-3xl font-bold tracking-tight">Assigned Facility Overview</h1>
+                        <h1 class="mt-2 text-3xl font-bold tracking-tight">Assigned Facilities Overview</h1>
                         <p class="mt-2 max-w-2xl text-sm text-slate-500 dark:text-zinc-400">
                             Track request flow, expected capacity, and facility activity for the spaces assigned to your office.
                         </p>
                     </div>
 
                     <div class="flex flex-wrap gap-2">
-                        <a href="{{ route('Request') }}" class="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800 dark:bg-emerald-400 dark:text-emerald-950">
+                        <a href="{{ route('requests.index') }}" class="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800 dark:bg-emerald-400 dark:text-emerald-950">
                             View Requests
                         </a>
-                        <a href="{{ route('Facility') }}" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-emerald-300 hover:text-emerald-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:border-emerald-500 dark:hover:text-emerald-300">
+                        <a href="{{ route('facilities.index') }}" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-emerald-300 hover:text-emerald-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:border-emerald-500 dark:hover:text-emerald-300">
                             My Facilities
                         </a>
                     </div>

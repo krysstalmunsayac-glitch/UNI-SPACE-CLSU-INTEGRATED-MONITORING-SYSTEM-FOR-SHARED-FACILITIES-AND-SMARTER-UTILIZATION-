@@ -58,6 +58,8 @@
                             <x-ui::select.option value="sports">Sports</x-ui::select.option>
                             <x-ui::select.option value="conference">Conference</x-ui::select.option>
                             <x-ui::select.option value="auditorium">Auditorium</x-ui::select.option>
+                            <x-ui::select.option value="amphitheater">Amphitheater</x-ui::select.option>
+                            <x-ui::select.option value="little_theater">Little Theater</x-ui::select.option>
                             <x-ui::select.option value="classroom">Classroom</x-ui::select.option>
                             <x-ui::select.option value="laboratory">Laboratory</x-ui::select.option>
                             <x-ui::select.option value="other">Other</x-ui::select.option>
@@ -72,9 +74,6 @@
                         <x-ui::input wire:model="Office" label="Managing office" placeholder="Enter office" required minlength="2" maxlength="150" />
                     </div>
 
-                    <div class="sm:col-span-2 xl:col-span-3">
-                        <x-ui::input wire:model="Location" label="Location" placeholder="Building, street, or campus area" required minlength="2" maxlength="255" />
-                    </div>
                 </div>
             </section>
 

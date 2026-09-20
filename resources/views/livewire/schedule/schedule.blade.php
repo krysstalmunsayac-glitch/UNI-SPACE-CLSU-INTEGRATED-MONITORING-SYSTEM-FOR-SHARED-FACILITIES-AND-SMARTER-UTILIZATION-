@@ -8,9 +8,9 @@ use Livewire\Attributes\Url;
 use Livewire\WithPagination;
 use App\Support\Ui;
 use App\Models\AuditLog;
-use App\Models\Facilities;
+use App\Models\Facility;
 use App\Models\Schedule;
-use App\Models\Requests;
+use App\Models\FacilityRequest;
 use App\Notifications\ScheduleUpdated;
 use App\Services\FacilityAvailabilityService;
 use App\Services\BookingPolicy;
@@ -76,7 +76,7 @@ new #[Layout('components.layouts.app')] class extends Component {
 
     public function mount(): void
     {
-        Requests::markPastRequestsAsEnded();
+        FacilityRequest::markPastRequestsAsEnded();
         $this->Date = Carbon::now()->toDateString();
         $this->noticeDays = app(BookingPolicy::class)->noticeDays();
     }
@@ -400,9 +400,9 @@ new #[Layout('components.layouts.app')] class extends Component {
         return $query->findOrFail($scheduleId);
     }
 
-    private function getScopedRequest(int $requestId): Requests
+    private function getScopedRequest(int $requestId): FacilityRequest
     {
-        $query = Requests::query()
+        $query = FacilityRequest::query()
             ->with('facility:FID,Facility_Name');
 
         if (auth()->user()->isAdmin()) {
@@ -443,7 +443,7 @@ new #[Layout('components.layouts.app')] class extends Component {
     #[Computed]
     public function facilitiesList()
     {
-        return Facilities::query()
+        return Facility::query()
             ->when(auth()->user()->isAdmin(), function ($query) {
                 $query->whereHas('assignedAdmins', function ($adminQuery) {
                     $adminQuery->where('users.id', auth()->id());
@@ -460,7 +460,7 @@ new #[Layout('components.layouts.app')] class extends Component {
             return collect();
         }
 
-        $query = Requests::with('facility:FID,Facility_Name')
+        $query = FacilityRequest::with('facility:FID,Facility_Name')
             ->select(['RID', 'Facility_ID', 'Purpose'])
             ->when(auth()->user()->isAdmin(), function ($query) {
                 $query->whereHas('facility', function ($facilityQuery) {

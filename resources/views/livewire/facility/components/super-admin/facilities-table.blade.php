@@ -115,7 +115,7 @@
 
                     <x-ui::table.cell>
                         <x-ui::badge size="sm" color="zinc">
-                            {{ $facility->facility_type ? ucfirst($facility->facility_type) : 'Not specified' }}
+                            {{ $facility->facility_type ? str($facility->facility_type)->headline() : 'Not specified' }}
                         </x-ui::badge>
                     </x-ui::table.cell>
                     <x-ui::table.cell>{{ $facility->Capacity ?? '—' }}</x-ui::table.cell>

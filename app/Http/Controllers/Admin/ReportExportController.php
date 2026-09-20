@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Amenities;
+use App\Models\Amenity;
 use App\Models\AuditLog;
-use App\Models\Facilities;
-use App\Models\Requests;
+use App\Models\Facility;
+use App\Models\FacilityRequest;
 use App\Models\User;
 use App\Services\AdminReportExporter;
 use Illuminate\Database\Eloquent\Builder;
@@ -195,7 +195,7 @@ class ReportExportController extends Controller
 
     private function amenityQuery(): Builder
     {
-        return Amenities::query()
+        return Amenity::query()
             ->with(['facilities:FID,Facility_Name', 'creator:id,name'])
             ->withCount('requests')
             ->orderBy('name');
@@ -203,14 +203,14 @@ class ReportExportController extends Controller
 
     private function facilityQuery(Request $request): Builder
     {
-        return Facilities::query()
-            ->with('amenities:AID,name,inventory_quantity')
+        return Facility::query()
+            ->with('amenities:AID,name,inventory_quantity,inventory_type')
             ->when($request->user()->isAdmin(), fn (Builder $query) => $query->assignedToAdmin($request->user()));
     }
 
     private function requestQuery(Request $request): Builder
     {
-        return Requests::query()
+        return FacilityRequest::query()
             ->with(['user', 'creator', 'facility', 'event', 'amenities:AID,name'])
             ->when($request->user()->isAdmin(), fn (Builder $query) => $query
                 ->whereHas('facility.assignedAdmins', fn (Builder $adminQuery) => $adminQuery

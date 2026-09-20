@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\PublicSite;
 
 use App\Http\Controllers\Controller;
-use App\Models\Facilities;
-use App\Models\Requests;
+use App\Models\Facility;
+use App\Models\FacilityRequest;
 use App\Models\Schedule;
 use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
@@ -14,8 +14,6 @@ class HomeController extends Controller
 {
     public function __invoke(): View
     {
-        Requests::markPastRequestsAsEnded();
-
         $schedules = collect();
 
         if (Schema::hasTable('schedules')) {
@@ -55,7 +53,7 @@ class HomeController extends Controller
                 });
         }
 
-        $facilities = Facilities::query()
+        $facilities = Facility::query()
             ->with(['images', 'amenities' => fn ($query) => $query
                 ->where('amenities.Status', 'Available')
                 ->orderBy('amenities.name')])
@@ -64,6 +62,8 @@ class HomeController extends Controller
 
         $categoryLabels = [
             'auditorium' => 'Auditoriums',
+            'amphitheater' => 'Amphitheaters',
+            'little_theater' => 'Little theaters',
             'classroom' => 'Classrooms',
             'conference' => 'Conference spaces',
             'laboratory' => 'Laboratories',
@@ -72,10 +72,10 @@ class HomeController extends Controller
         ];
 
         $facilityCategories = $facilities
-            ->filter(fn (Facilities $facility) => filled($facility->facility_type))
-            ->groupBy(fn (Facilities $facility) => strtolower($facility->facility_type))
+            ->filter(fn (Facility $facility) => filled($facility->facility_type))
+            ->groupBy(fn (Facility $facility) => strtolower($facility->facility_type))
             ->map(function ($group, string $type) use ($categoryLabels): array {
-                $featured = $group->first(fn (Facilities $facility) => $facility->images->isNotEmpty() || filled($facility->Image_URL));
+                $featured = $group->first(fn (Facility $facility) => $facility->images->isNotEmpty() || filled($facility->Image_URL));
 
                 return [
                     'type' => $type,
@@ -91,7 +91,7 @@ class HomeController extends Controller
         $homepageStats = [
             'available_facilities' => $facilities->where('Status', 'Available')->count(),
             'facility_types' => $facilities->pluck('facility_type')->filter()->map(fn ($type) => strtolower($type))->unique()->count(),
-            'requests_this_month' => Requests::query()
+            'requests_this_month' => FacilityRequest::query()
                 ->whereBetween('Created_at', [now()->startOfMonth(), now()->endOfMonth()])
                 ->count(),
             'upcoming_reservations' => $schedules

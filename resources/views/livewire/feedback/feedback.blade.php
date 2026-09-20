@@ -3,7 +3,7 @@ use Livewire\Volt\Component;
 use Livewire\Attributes\Layout;
 use Livewire\WithPagination;
 use App\Support\Ui;
-use App\Models\Feedbacks;
+use App\Models\Feedback;
 use Livewire\Attributes\Computed;
 
 new #[Layout('components.layouts.app')] class extends Component {
@@ -43,7 +43,7 @@ new #[Layout('components.layouts.app')] class extends Component {
 
     public function delete(int $feedbackId): void
     {
-        $feedback = Feedbacks::findOrFail($feedbackId);
+        $feedback = Feedback::findOrFail($feedbackId);
         $feedback->delete();
 
         Ui::toast(text: 'Feedback archived successfully!', variant: 'success');
@@ -60,7 +60,7 @@ new #[Layout('components.layouts.app')] class extends Component {
     #[Computed]
     public function feedbacks()
     {
-        $query = Feedbacks::query()->with([
+        $query = Feedback::query()->with([
             'user:id,name',
             'facility:FID,Facility_Name',
             'request:RID,Facility_ID',

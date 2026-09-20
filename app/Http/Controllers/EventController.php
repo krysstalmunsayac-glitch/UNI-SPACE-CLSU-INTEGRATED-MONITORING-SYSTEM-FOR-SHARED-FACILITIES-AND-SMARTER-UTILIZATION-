@@ -2,17 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Events;
+use App\Models\Event;
 use App\Models\User;
 use App\Notifications\NewEventCreated;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Notification;
 
-class EventsController extends Controller
+class EventController extends Controller
 {
     public function create()
     {
-        return view('Events.create');
+        return view('Event.create');
     }
 
     public function store(Request $request)
@@ -24,7 +24,7 @@ class EventsController extends Controller
             'Event_Scope' => ['required', 'in:Internal,External'],
         ]);
 
-        $event = Events::create([
+        $event = Event::create([
             'Event_Title' => $validated['Event_Title'],
             'Description' => $validated['Description'] ?? null,
             'Type_Event' => $validated['Type_Event'] ?? null,

@@ -14,30 +14,16 @@
                 padding-bottom: 32px;
             }
 
-            .auth-form-logo {
-                margin-bottom: 16px;
-                padding-top: 0;
-                padding-bottom: 0;
-            }
-
             @media (min-width: 1024px) {
                 .auth-card > section {
                     min-height: 640px;
                 }
 
                 .auth-card[data-auth-page="register"] .auth-form-panel {
-                    padding-top: 24px;
+                    padding-top: 64px;
                     padding-bottom: 24px;
                 }
 
-                .auth-form-logo {
-                    position: relative;
-                    top: -16px;
-                }
-
-                .auth-card[data-auth-page="login"] .auth-form-logo {
-                    top: -56px;
-                }
             }
 
             .auth-card [data-ui-label],
@@ -164,11 +150,14 @@
                     ])
                 @endif
 
-                <section class="auth-form-panel flex min-h-[640px] items-center justify-center px-8 pb-12 pt-20 sm:px-14">
+                <section class="auth-form-panel flex min-h-[640px] items-center justify-center px-8 py-8 sm:px-14">
                     <div class="w-full max-w-md">
-                        <a href="{{ route('home') }}" wire:navigate class="auth-form-logo mx-auto mb-8 flex w-fit max-w-full items-center justify-center rounded-xl bg-white px-4 py-3" aria-label="SIEL SPACE home">
-                            <img src="{{ asset('images/silesyu-space-logo-v2.png') }}" alt="SIEL SPACE" class="h-auto w-64 max-w-full object-contain" width="2048" height="682">
-                        </a>
+                        <div class="mb-8 text-center">
+                            <h1 class="text-3xl font-black tracking-tight text-emerald-950 dark:text-white">{{ $panelTitle }}</h1>
+                            <p class="mt-2 text-sm font-medium text-zinc-500 dark:text-zinc-400">
+                                {{ $isRegisterPage ? 'Create your account to start reserving CLSU facilities.' : 'Enter your account details to continue to SIEL SPACE.' }}
+                            </p>
+                        </div>
                         {{ $slot }}
                     </div>
                 </section>

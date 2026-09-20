@@ -57,8 +57,8 @@
         <div class="absolute inset-0 bg-gradient-to-b from-black/65 via-black/45 to-black/80" aria-hidden="true"></div>
         <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_20%,rgba(0,0,0,.28)_100%)]" aria-hidden="true"></div>
 
-        <button type="button" x-on:click="previous()" class="absolute left-5 top-1/2 z-20 hidden size-12 -translate-y-1/2 items-center justify-center border-0 bg-transparent text-4xl font-black text-white/80 transition hover:text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 sm:inline-flex lg:left-8" aria-label="Show previous hero image">‹</button>
-        <button type="button" x-on:click="next()" class="absolute right-5 top-1/2 z-20 hidden size-12 -translate-y-1/2 items-center justify-center border-0 bg-transparent text-4xl font-black text-white/80 transition hover:text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 sm:inline-flex lg:right-8" aria-label="Show next hero image">›</button>
+        <button type="button" x-on:click="previous()" class="absolute left-5 top-1/2 z-20 hidden size-12 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white/70 bg-black/25 text-white transition hover:border-yellow-400 hover:bg-black/45 focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400 sm:inline-flex lg:left-8" aria-label="Show previous hero image"><svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg></button>
+        <button type="button" x-on:click="next()" class="absolute right-5 top-1/2 z-20 hidden size-12 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white/70 bg-black/25 text-white transition hover:border-yellow-400 hover:bg-black/45 focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400 sm:inline-flex lg:right-8" aria-label="Show next hero image"><svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></button>
 
         <div class="relative mx-auto grid min-h-[640px] w-full max-w-7xl items-center gap-8 px-4 pb-24 pt-28 sm:px-8 lg:h-[100svh] lg:min-h-0 lg:grid-cols-[1.05fr_.95fr] lg:px-24 lg:pb-20 lg:pt-24">
             <div class="max-w-3xl">
@@ -76,7 +76,7 @@
                 <h2 class="mt-3 text-3xl font-black tracking-tight">Plan with confidence.</h2>
                 <p class="mt-3 leading-7 text-zinc-600">Everything you need to choose a venue and follow the progress of your request.</p>
                 <dl class="mt-7 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-zinc-200 pt-6">
-                    @foreach ([['Facilities', 'Compare spaces'], ['Calendar', 'Check schedules'], ['Requests', 'Track progress'], ['Notifications', 'Receive updates']] as [$term, $description])
+                    @foreach ([['Facility', 'Compare spaces'], ['Calendar', 'Check schedules'], ['Requests', 'Track progress'], ['Notifications', 'Receive updates']] as [$term, $description])
                         <div><dt class="font-black text-[#009639]">{{ $term }}</dt><dd class="mt-1 text-sm text-zinc-500">{{ $description }}</dd></div>
                     @endforeach
                 </dl>
@@ -141,10 +141,10 @@
                     <span class="relative block">
                         <select id="capacity-filter" class="h-14 w-full appearance-none rounded-xl border border-zinc-300 bg-white px-4 pr-11 font-semibold text-zinc-950 outline-none focus:border-[#009639] focus:ring-2 focus:ring-[#009639]/15">
                             <option value="all">All capacities</option>
-                            <option value="small">70-150</option>
-                            <option value="medium">151-300</option>
-                            <option value="large">301+</option>
-                            <option value="custom">Other / Specific capacity</option>
+                            <option value="small">1–150 people</option>
+                            <option value="medium">151–300 people</option>
+                            <option value="large">301+ people</option>
+                            <option value="custom">Enter required capacity</option>
                         </select>
 
                     </span>
@@ -157,7 +157,7 @@
                         <select id="type-filter" class="h-14 w-full appearance-none rounded-xl border border-zinc-300 bg-white px-4 pr-11 font-semibold text-zinc-950 outline-none focus:border-[#009639] focus:ring-2 focus:ring-[#009639]/15">
                             <option value="all">All facility types</option>
                             @foreach ($facilities->pluck('facility_type')->filter()->unique()->sort()->values() as $type)
-                                <option value="{{ strtolower($type) }}">{{ ucfirst($type) }}</option>
+                                <option value="{{ strtolower($type) }}">{{ str($type)->headline() }}</option>
                             @endforeach
                         </select>
 

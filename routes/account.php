@@ -1,7 +1,7 @@
 <?php
 
-use App\Http\Controllers\EventsController;
-use App\Http\Controllers\FacilitiesController;
+use App\Http\Controllers\EventController;
+use App\Http\Controllers\FacilityRequestController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Middleware\PreventBackHistory;
 use Illuminate\Support\Facades\Route;
@@ -29,15 +29,15 @@ Route::middleware([
     Route::post('/notifications/read', [NotificationController::class, 'markAllAsRead'])
         ->name('notifications.read');
 
-    Route::get('/requests/{requestModel}/attachment', [FacilitiesController::class, 'downloadAttachment'])
+    Route::get('/requests/{requestModel}/attachment', [FacilityRequestController::class, 'downloadAttachment'])
         ->middleware('throttle:30,1')
         ->name('requests.attachment.download');
 
-    Route::post('/requests/{requestModel}/payment-proof', [FacilitiesController::class, 'uploadPaymentProof'])
+    Route::post('/requests/{requestModel}/payment-proof', [FacilityRequestController::class, 'uploadPaymentProof'])
         ->middleware(['role:user', 'throttle:10,1'])
         ->name('requests.payment-proof.upload');
 
-    Route::get('/requests/{requestModel}/payment-proof', [FacilitiesController::class, 'downloadPaymentProof'])
+    Route::get('/requests/{requestModel}/payment-proof', [FacilityRequestController::class, 'downloadPaymentProof'])
         ->middleware('throttle:30,1')
         ->name('requests.payment-proof.download');
 
@@ -70,12 +70,12 @@ Route::middleware([
 
     /*
     |--------------------------------------------------------------------------
-    | Events
+    | Event
     |--------------------------------------------------------------------------
     */
 
-    Route::controller(EventsController::class)
-        ->prefix('event')
+    Route::controller(EventController::class)
+        ->prefix('events')
         ->name('events.')
         ->middleware(['verified', 'user.pages'])
         ->group(function () {

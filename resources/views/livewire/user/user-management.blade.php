@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\Facilities;
+use App\Models\Facility;
 use App\Models\User;
 use App\Services\UserInvitationService;
 use App\Support\Ui;
@@ -266,7 +266,7 @@ new #[Layout('components.layouts.app')] class extends Component
         ];
 
         $validated = $this->validate($rules, [
-            'contact_number.regex' => 'Enter a valid PH mobile number: 09XXXXXXXXX or +639XXXXXXXXX.',
+            'contact_number.regex' => 'Enter a valid 11-digit PH mobile number starting with 09.',
         ]);
 
         if ($this->editingId === auth()->id() && ! $validated['is_active']) {
@@ -641,7 +641,7 @@ new #[Layout('components.layouts.app')] class extends Component
             $validated['assignedFacilityIds'],
         )));
 
-        $conflictingFacility = Facilities::query()
+        $conflictingFacility = Facility::query()
             ->whereIn('FID', $facilityIds)
             ->whereHas(
                 'assignedAdmins',
@@ -661,7 +661,7 @@ new #[Layout('components.layouts.app')] class extends Component
         $admin->syncFacilities($facilityIds);
 
         Ui::toast(
-            text: 'Facilities assigned successfully.',
+            text: 'Facility assigned successfully.',
             variant: 'success'
         );
 
@@ -750,7 +750,7 @@ new #[Layout('components.layouts.app')] class extends Component
             return collect();
         }
 
-        return Facilities::query()
+        return Facility::query()
             ->whereDoesntHave(
                 'assignedAdmins',
                 fn ($query) => $query->where('users.id', '!=', $this->selectedAdminId),

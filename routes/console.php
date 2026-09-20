@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\Requests;
+use App\Models\FacilityRequest;
 use App\Models\User;
 use App\Services\FacilityAvailabilityService;
 use Illuminate\Foundation\Inspiring;
@@ -10,13 +10,13 @@ use Illuminate\Support\Facades\Storage;
 
 
 Artisan::command('requests:mark-ended', function () {
-    $endedCount = Requests::markPastRequestsAsEnded();
+    $endedCount = FacilityRequest::markPastRequestsAsEnded();
 
     $this->info("Marked and archived {$endedCount} ended request(s).");
 })->purpose('Mark requests as ended and archive them after their proposed end time');
 
 Artisan::command('requests:archive-cancelled', function () {
-    $archivedCount = Requests::archiveExpiredCancelledRequests();
+    $archivedCount = FacilityRequest::archiveExpiredCancelledRequests();
 
     $this->info("Archived {$archivedCount} cancelled request(s).");
 })->purpose('Archive requests 10 days after cancellation');

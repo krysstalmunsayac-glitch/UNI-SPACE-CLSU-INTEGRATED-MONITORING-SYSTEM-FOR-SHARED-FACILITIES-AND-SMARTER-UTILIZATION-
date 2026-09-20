@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\Facilities;
+use App\Models\Facility;
 use App\Services\FacilityAvailabilityService;
 use App\Support\Ui;
 use Illuminate\Support\Facades\Storage;
@@ -65,7 +65,7 @@ new #[Layout('components.layouts.app')] class extends Component
 
     public array $removedImageIds = [];
 
-    #[Validate('required|in:sports,conference,auditorium,classroom,laboratory,other')]
+    #[Validate('required|in:sports,conference,auditorium,amphitheater,little_theater,classroom,laboratory,other')]
     public ?string $facility_type = null;
 
     #[Validate('nullable|string|max:10000')]
@@ -80,7 +80,7 @@ new #[Layout('components.layouts.app')] class extends Component
     #[Validate('nullable|string|max:10000')]
     public ?string $protocols_and_guidelines = null;
 
-    #[Validate('required|string|min:2|max:255')]
+    #[Validate('nullable|string|max:255')]
     public ?string $Location = null;
 
     #[Validate('nullable|numeric|between:-90,90')]
@@ -187,7 +187,7 @@ new #[Layout('components.layouts.app')] class extends Component
 
     public function edit(int $facilityId): void
     {
-        $facility = Facilities::query()->findOrFail($facilityId);
+        $facility = Facility::query()->findOrFail($facilityId);
 
         $this->viewMode = false;
         $this->editingId = $facility->FID;
@@ -239,7 +239,7 @@ new #[Layout('components.layouts.app')] class extends Component
 
         $availableAt = $this->availableAtValue();
         $existingFacility = $this->editingId
-            ? Facilities::query()->findOrFail($this->editingId)
+            ? Facility::query()->findOrFail($this->editingId)
             : null;
 
         $data = [
@@ -266,7 +266,7 @@ new #[Layout('components.layouts.app')] class extends Component
 
         $facility = $wasEditing
             ? tap($existingFacility)->update($data)
-            : Facilities::query()->create($data);
+            : Facility::query()->create($data);
 
         if ($wasEditing && $this->removedImageIds !== []) {
             $imagesToRemove = $facility->images()
@@ -335,7 +335,7 @@ new #[Layout('components.layouts.app')] class extends Component
 
     public function archiveFacility(int $facilityId): void
     {
-        $facility = Facilities::query()->findOrFail($facilityId);
+        $facility = Facility::query()->findOrFail($facilityId);
         $facility->delete();
 
         Ui::toast(
@@ -360,7 +360,7 @@ new #[Layout('components.layouts.app')] class extends Component
 
     public function restoreFacility(int $facilityId): void
     {
-        $facility = Facilities::onlyTrashed()->findOrFail($facilityId);
+        $facility = Facility::onlyTrashed()->findOrFail($facilityId);
         $facility->restore();
 
         Ui::toast(
@@ -380,7 +380,7 @@ new #[Layout('components.layouts.app')] class extends Component
 
     public function forceDeleteFacility(int $facilityId): void
     {
-        $facility = Facilities::onlyTrashed()
+        $facility = Facility::onlyTrashed()
             ->with('images')
             ->findOrFail($facilityId);
 
@@ -410,7 +410,7 @@ new #[Layout('components.layouts.app')] class extends Component
 
     public function requestToggleStatus(int $facilityId): void
     {
-        $facility = Facilities::query()->findOrFail($facilityId);
+        $facility = Facility::query()->findOrFail($facilityId);
         $this->pendingStatusId = $facility->FID;
         $this->pendingStatusName = $facility->Facility_Name;
         $this->pendingStatusWillActivate = $facility->Status === 'Unavailable';
@@ -422,7 +422,7 @@ new #[Layout('components.layouts.app')] class extends Component
 
     public function confirmToggleStatus(): void
     {
-        $facility = Facilities::query()->findOrFail($this->pendingStatusId);
+        $facility = Facility::query()->findOrFail($this->pendingStatusId);
 
         if ($facility->Status !== 'Unavailable') {
             $this->validate([
@@ -459,7 +459,7 @@ new #[Layout('components.layouts.app')] class extends Component
     #[Computed]
     public function requestableFacilities()
     {
-        return Facilities::query()
+        return Facility::query()
             ->orderBy('Facility_Name')
             ->get(['FID', 'Facility_Name', 'Office', 'Status', 'Available_At']);
     }
@@ -499,7 +499,7 @@ new #[Layout('components.layouts.app')] class extends Component
     {
         app(FacilityAvailabilityService::class)->reactivateExpired();
 
-        $query = Facilities::query()
+        $query = Facility::query()
             ->with(['images' => fn ($query) => $query->oldest('id')->limit(1)])
             ->when(
                 in_array($this->statusFilter, ['Available', 'Unavailable'], true),
@@ -511,7 +511,6 @@ new #[Layout('components.layouts.app')] class extends Component
                 $query->where(function ($searchQuery) use ($term) {
                     $searchQuery
                         ->where('Facility_Name', 'like', $term)
-                        ->orWhere('Location', 'like', $term)
                         ->orWhere('Office', 'like', $term)
                         ->orWhere('facility_type', 'like', $term)
                         ->orWhere('rates', 'like', $term)
@@ -537,10 +536,9 @@ new #[Layout('components.layouts.app')] class extends Component
     #[Computed]
     public function archivedFacilities()
     {
-        $query = Facilities::onlyTrashed()
+        $query = Facility::onlyTrashed()
             ->when($this->search, fn ($query) => $query->where(function ($query) {
                 $query->where('Facility_Name', 'like', '%'.$this->search.'%')
-                    ->orWhere('Location', 'like', '%'.$this->search.'%')
                     ->orWhere('Office', 'like', '%'.$this->search.'%');
             }))
             ->with(['images' => fn ($query) => $query->oldest('id')->limit(1)])

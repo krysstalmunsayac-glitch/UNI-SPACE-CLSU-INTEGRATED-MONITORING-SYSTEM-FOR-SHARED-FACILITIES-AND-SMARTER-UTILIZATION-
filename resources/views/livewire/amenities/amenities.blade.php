@@ -1,7 +1,7 @@
 <?php
 
-use App\Models\Amenities;
-use App\Models\Facilities;
+use App\Models\Amenity;
+use App\Models\Facility;
 use App\Support\Ui;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -67,6 +67,9 @@ new #[Layout('components.layouts.app')] class extends Component
     #[Validate('required|integer|min:1|max:100000')]
     public int $inventory_quantity = 1;
 
+    #[Validate('required|in:permanent,countable')]
+    public string $inventory_type = 'countable';
+
     public function applySearch(): void
     {
         $this->search = trim($this->searchInput);
@@ -99,6 +102,7 @@ new #[Layout('components.layouts.app')] class extends Component
     {
         $this->reset(['name', 'Description', 'facilityIds']);
         $this->inventory_quantity = 1;
+        $this->inventory_type = 'countable';
         $this->Status = 'Available';
         $this->editingId = null;
         $this->showCreateConfirmation = false;
@@ -121,7 +125,8 @@ new #[Layout('components.layouts.app')] class extends Component
             'facilityIds' => ['required', 'array', 'min:1'],
             'facilityIds.*' => ['integer', 'distinct', Rule::exists('facilities', 'FID')->whereNull('deleted_at')],
             'Status' => ['required', Rule::in(['Available', 'Unavailable'])],
-            'inventory_quantity' => ['required', 'integer', 'min:1', 'max:100000'],
+            'inventory_type' => ['required', Rule::in(['permanent', 'countable'])],
+            'inventory_quantity' => [Rule::requiredIf($this->inventory_type === 'countable'), 'integer', 'min:1', 'max:100000'],
         ]);
 
         $this->authorizeFacilityIds($validated['facilityIds']);
@@ -140,16 +145,18 @@ new #[Layout('components.layouts.app')] class extends Component
                 'name' => $this->name,
                 'Description' => $this->Description,
                 'Status' => $this->Status,
-                'inventory_quantity' => $validated['inventory_quantity'],
+                'inventory_type' => $validated['inventory_type'],
+                'inventory_quantity' => $validated['inventory_type'] === 'permanent' ? 1 : $validated['inventory_quantity'],
             ]);
             $amenity->facilities()->sync($validated['facilityIds']);
         } else {
-            $amenity = Amenities::create([
+            $amenity = Amenity::create([
                 'created_by' => auth()->id(),
                 'name' => $this->name,
                 'Description' => $this->Description,
                 'Status' => $this->Status,
-                'inventory_quantity' => $validated['inventory_quantity'],
+                'inventory_type' => $validated['inventory_type'],
+                'inventory_quantity' => $validated['inventory_type'] === 'permanent' ? 1 : $validated['inventory_quantity'],
             ]);
             $amenity->facilities()->sync($validated['facilityIds']);
         }
@@ -183,6 +190,7 @@ new #[Layout('components.layouts.app')] class extends Component
         $this->Description = $amenity->Description;
         $this->Status = $amenity->Status;
         $this->inventory_quantity = $amenity->inventory_quantity;
+        $this->inventory_type = $amenity->inventory_type;
         $this->facilityIds = $amenity->facilities->pluck('FID')->toArray();
         $this->showModal = true;
     }
@@ -286,7 +294,7 @@ new #[Layout('components.layouts.app')] class extends Component
     #[Computed]
     public function amenities()
     {
-        $query = Amenities::query()
+        $query = Amenity::query()
             ->with([
                 'facilities:FID,Facility_Name',
                 'creator:id,name',
@@ -312,7 +320,7 @@ new #[Layout('components.layouts.app')] class extends Component
     #[Computed]
     public function archivedAmenities()
     {
-        $query = Amenities::query()->onlyTrashed()->with('facilities:FID,Facility_Name');
+        $query = Amenity::query()->onlyTrashed()->with('facilities:FID,Facility_Name');
 
         if (auth()->user()->isAdmin()) {
             $query->whereHas('facilities.assignedAdmins', fn ($query) => $query->where('users.id', auth()->id()));
@@ -336,7 +344,7 @@ new #[Layout('components.layouts.app')] class extends Component
             return collect();
         }
 
-        $query = Facilities::query();
+        $query = Facility::query();
 
         if (auth()->user()->isAdmin()) {
             $query->whereHas('assignedAdmins', fn ($adminQuery) => $adminQuery->where('users.id', auth()->id())
@@ -347,7 +355,7 @@ new #[Layout('components.layouts.app')] class extends Component
     }
 
     #[Computed]
-    public function viewingAmenity(): ?Amenities
+    public function viewingAmenity(): ?Amenity
     {
         if (! $this->showViewModal || ! $this->viewingId) {
             return null;
@@ -357,7 +365,7 @@ new #[Layout('components.layouts.app')] class extends Component
             ->load(['facilities:FID,Facility_Name,Office', 'creator:id,name,email,user_type']);
     }
 
-    public function canManageAmenity(Amenities $amenity): bool
+    public function canManageAmenity(Amenity $amenity): bool
     {
         if (! auth()->user()->isAdmin()) {
             return true;
@@ -370,9 +378,9 @@ new #[Layout('components.layouts.app')] class extends Component
             && $amenityFacilityIds->every(fn (int $id) => in_array($id, $assignedIds, true));
     }
 
-    private function getScopedAmenity(int $amenityId, bool $withTrashed = false): Amenities
+    private function getScopedAmenity(int $amenityId, bool $withTrashed = false): Amenity
     {
-        $query = $withTrashed ? Amenities::withTrashed() : Amenities::query();
+        $query = $withTrashed ? Amenity::withTrashed() : Amenity::query();
 
         if (auth()->user()->isAdmin()) {
             $assignedIds = $this->assignedFacilityIds();
@@ -384,9 +392,9 @@ new #[Layout('components.layouts.app')] class extends Component
         return $query->findOrFail($amenityId);
     }
 
-    private function getVisibleAmenity(int $amenityId): Amenities
+    private function getVisibleAmenity(int $amenityId): Amenity
     {
-        $query = Amenities::query();
+        $query = Amenity::query();
 
         if (auth()->user()->isAdmin()) {
             $query->whereHas('facilities.assignedAdmins', fn ($adminQuery) => $adminQuery->where('users.id', auth()->id()));

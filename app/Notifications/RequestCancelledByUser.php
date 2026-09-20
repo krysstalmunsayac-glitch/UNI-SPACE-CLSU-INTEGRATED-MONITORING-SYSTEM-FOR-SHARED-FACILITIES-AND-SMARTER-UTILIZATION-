@@ -2,7 +2,7 @@
 
 namespace App\Notifications;
 
-use App\Models\Requests;
+use App\Models\FacilityRequest;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -11,7 +11,7 @@ class RequestCancelledByUser extends Notification
 {
     use Queueable;
 
-    public function __construct(protected Requests $request) {}
+    public function __construct(protected FacilityRequest $request) {}
 
     public function via(object $notifiable): array
     {
@@ -33,7 +33,7 @@ class RequestCancelledByUser extends Notification
                 'startTime' => $this->request->Proposed_Start_Time?->format('H:i') ?? 'N/A',
                 'endTime' => $this->request->Proposed_End_Time?->format('H:i') ?? 'N/A',
                 'reason' => $this->request->Cancellation_Reason ?? 'No reason provided.',
-                'actionUrl' => route('Request'),
+                'actionUrl' => route('requests.index'),
             ]);
     }
 
