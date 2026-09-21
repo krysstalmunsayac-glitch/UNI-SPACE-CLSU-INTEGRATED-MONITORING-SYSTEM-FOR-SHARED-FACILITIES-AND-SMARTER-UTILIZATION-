@@ -14,6 +14,7 @@
                 ? ((float) $facility->Price > 0 ? '₱'.number_format((float) $facility->Price, 2) : 'No rental fee')
                 : 'Rate upon inquiry');
         $isAvailable = $facility->Status === 'Available';
+        $assignedOfficeAdmin = $facility->assignedAdmins->first();
     @endphp
 
     <main class="min-h-screen bg-zinc-100 pb-20 pt-10 text-zinc-950 sm:pt-14">
@@ -188,6 +189,36 @@
                     <dl class="mt-7 grid gap-3 sm:grid-cols-2">
                         <div class="rounded-2xl bg-emerald-50 p-4"><dt class="text-xs font-black uppercase tracking-wide text-emerald-700">Capacity</dt><dd class="mt-2 font-bold">{{ $facility->Capacity ? number_format($facility->Capacity).' people' : 'Not specified' }}</dd></div>
                         <div class="rounded-2xl bg-emerald-50 p-4"><dt class="text-xs font-black uppercase tracking-wide text-emerald-700">Managing office</dt><dd class="mt-2 font-bold">{{ $facility->Office ?: 'Not specified' }}</dd></div>
+
+                        @if ($assignedOfficeAdmin)
+                            <div class="overflow-hidden rounded-2xl border border-emerald-200 bg-white sm:col-span-2">
+                                <div class="flex items-center gap-4 p-4 sm:p-5">
+                                    <span class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-emerald-700 text-white shadow-sm" aria-hidden="true">
+                                        <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <rect x="3" y="5" width="18" height="14" rx="2" />
+                                            <path d="m3 7 9 6 9-6" />
+                                        </svg>
+                                    </span>
+
+                                    <div class="min-w-0 flex-1">
+                                        <dt class="text-xs font-black uppercase tracking-wide text-emerald-700">Facility contact</dt>
+                                        <dd class="mt-1 truncate font-bold text-zinc-900">{{ $assignedOfficeAdmin->name }}</dd>
+                                        <dd class="text-xs font-medium text-zinc-500">Assigned office administrator</dd>
+                                    </div>
+
+                                </div>
+
+                                <a
+                                    href="mailto:{{ $assignedOfficeAdmin->email }}"
+                                    class="flex items-center justify-between gap-3 border-t border-emerald-100 bg-emerald-50/70 px-4 py-3 text-sm font-bold text-emerald-900 transition hover:bg-emerald-100 sm:px-5"
+                                >
+                                    <span class="min-w-0 break-all">{{ $assignedOfficeAdmin->email }}</span>
+                                    <svg class="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <path d="M5 12h14M13 6l6 6-6 6" />
+                                    </svg>
+                                </a>
+                            </div>
+                        @endif
                     </dl>
 
                     <div class="mt-7 border-t border-zinc-200 pt-6">

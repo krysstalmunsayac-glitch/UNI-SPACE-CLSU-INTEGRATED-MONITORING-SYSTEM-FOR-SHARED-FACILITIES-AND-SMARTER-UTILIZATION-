@@ -3,28 +3,26 @@
 namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
-use App\Models\AuditLog;
 use App\Models\Event;
 use App\Models\Facility;
-use App\Models\Feedback;
 use App\Models\FacilityRequest;
-use App\Models\Schedule;
 use App\Models\User;
-use App\Services\AdminReportExporter;
+use App\Services\DashboardAnalyticsService;
+use App\Services\Reports\PdfReportExporter;
 use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request as HttpRequest;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Schema;
 
 class DashboardController extends Controller
 {
-    public function analyticsPdf(HttpRequest $httpRequest, AdminReportExporter $exporter)
+    public function __construct(private readonly DashboardAnalyticsService $analytics) {}
+
+    public function analyticsPdf(HttpRequest $httpRequest, PdfReportExporter $exporter)
     {
-        [$dateFrom, $dateTo] = $this->analyticsDateRange($httpRequest);
+        [$dateFrom, $dateTo] = $this->analytics->analyticsDateRange($httpRequest);
         $user = $httpRequest->user();
         $requestScope = FacilityRequest::withTrashed()
             ->when($user->isAdmin(), fn (Builder $query) => $query
@@ -35,14 +33,14 @@ class DashboardController extends Controller
             ->orderBy('Facility_Name')
             ->get();
         $rangeQuery = (clone $requestScope)->whereBetween('Created_at', [$dateFrom, $dateTo]);
-        $requestMetrics = $this->requestDashboardMetrics($rangeQuery, $dateFrom, $dateTo);
-        $analytics = $this->operationalAnalytics($requestScope, $facilities, $dateFrom, $dateTo);
+        $requestMetrics = $this->analytics->requestDashboardMetrics($rangeQuery, $dateFrom, $dateTo);
+        $analytics = $this->analytics->operationalAnalytics($requestScope, $facilities, $dateFrom, $dateTo);
         $amenityDemand = collect($requestMetrics['amenityUsage'] ?? [])->map(fn ($count, $name) => [
             'amenity' => $name,
             'count' => (int) $count,
         ])->values()->all();
 
-        $content = $exporter->analyticsPdf([
+        $content = $exporter->analytics([
             ...$analytics,
             'amenityDemand' => $amenityDemand,
             'kpis' => [
@@ -70,7 +68,7 @@ class DashboardController extends Controller
             $focusedFacilityId = null;
         }
 
-        $requestMetrics = $this->requestDashboardMetrics(
+        $requestMetrics = $this->analytics->requestDashboardMetrics(
             FacilityRequest::withTrashed()->where('User_ID', Auth::id())
         );
 
@@ -121,14 +119,14 @@ class DashboardController extends Controller
                 ]),
             'focusedFacilityId' => $focusedFacilityId,
             'events' => Event::query()->orderBy('Event_Title')->get(),
-            'schedules' => $this->publicScheduleEvents(),
+            'schedules' => $this->analytics->publicScheduleEvents(),
             ...$requestMetrics,
         ]);
     }
 
     public function superAdmin(HttpRequest $httpRequest): View
     {
-        [$dateFrom, $dateTo] = $this->analyticsDateRange($httpRequest);
+        [$dateFrom, $dateTo] = $this->analytics->analyticsDateRange($httpRequest);
         $analyticsScope = FacilityRequest::withTrashed();
         $analyticsQuery = (clone $analyticsScope)
             ->whereBetween('Created_at', [$dateFrom, $dateTo]);
@@ -143,10 +141,10 @@ class DashboardController extends Controller
             $monthlyUserTotals[] = User::query()->whereYear('created_at', $month->year)->whereMonth('created_at', $month->month)->count();
         }
 
-        $requestMetrics = $this->requestDashboardMetrics($analyticsQuery, $dateFrom, $dateTo);
-        $responseRateMetrics = $this->responseRateMetrics($analyticsQuery);
+        $requestMetrics = $this->analytics->requestDashboardMetrics($analyticsQuery, $dateFrom, $dateTo);
+        $responseRateMetrics = $this->analytics->responseRateMetrics($analyticsQuery);
         $facilities = Facility::query()->orderBy('Facility_Name')->get();
-        $operationalAnalytics = $this->operationalAnalytics($analyticsScope, $facilities, $dateFrom, $dateTo);
+        $operationalAnalytics = $this->analytics->operationalAnalytics($analyticsScope, $facilities, $dateFrom, $dateTo);
 
         return view('dashboards.super-admin', [
             'totalUsers' => User::query()->count(),
@@ -171,7 +169,7 @@ class DashboardController extends Controller
     public function officeAdmin(HttpRequest $httpRequest): View
     {
         $user = Auth::user();
-        [$dateFrom, $dateTo] = $this->analyticsDateRange($httpRequest);
+        [$dateFrom, $dateTo] = $this->analytics->analyticsDateRange($httpRequest);
         $requestScope = FacilityRequest::withTrashed()
             ->whereHas('facility.assignedAdmins', fn ($query) => $query->where('users.id', $user?->id));
         $requestMetricsQuery = (clone $requestScope)
@@ -179,9 +177,9 @@ class DashboardController extends Controller
         $facilityQuery = Facility::query()->whereHas('assignedAdmins', fn ($query) => $query->where('users.id', $user?->id));
         $facilities = (clone $facilityQuery)->orderBy('Facility_Name')->get();
 
-        $requestMetrics = $this->requestDashboardMetrics($requestMetricsQuery, $dateFrom, $dateTo);
-        $responseRateMetrics = $this->responseRateMetrics($requestMetricsQuery);
-        $operationalAnalytics = $this->operationalAnalytics($requestScope, $facilities, $dateFrom, $dateTo);
+        $requestMetrics = $this->analytics->requestDashboardMetrics($requestMetricsQuery, $dateFrom, $dateTo);
+        $responseRateMetrics = $this->analytics->responseRateMetrics($requestMetricsQuery);
+        $operationalAnalytics = $this->analytics->operationalAnalytics($requestScope, $facilities, $dateFrom, $dateTo);
 
         return view('dashboards.office-admin', [
             'facilityCount' => $facilityQuery->count(),
@@ -193,565 +191,6 @@ class DashboardController extends Controller
             ...$responseRateMetrics,
             ...$operationalAnalytics,
         ]);
-    }
-
-    private function responseRateMetrics(Builder $baseQuery): array
-    {
-        $counts = (clone $baseQuery)
-            ->selectRaw('COUNT(*) as total_requests')
-            ->selectRaw(
-                "SUM(CASE WHEN Status IN ('Approved', 'Rejected', 'Cancelled', 'Ended') THEN 1 ELSE 0 END) as responded_requests"
-            )
-            ->first();
-
-        $total = (int) ($counts?->total_requests ?? 0);
-        $responded = (int) ($counts?->responded_requests ?? 0);
-
-        return [
-            'responseRate' => $total > 0 ? round(($responded / $total) * 100, 1) : 0,
-            'respondedRequestCount' => $responded,
-            'responseRateTotalCount' => $total,
-        ];
-    }
-
-    private function requestDashboardMetrics(Builder $baseQuery, ?Carbon $dateFrom = null, ?Carbon $dateTo = null): array
-    {
-        $statuses = ['Pending', 'Approved', 'Rejected', 'Cancelled'];
-        $requestStatusCounts = collect($statuses)
-            ->mapWithKeys(fn (string $status) => [
-                $status => (clone $baseQuery)->where('Status', $status)->count(),
-            ])
-            ->all();
-
-        $dailyLabels = [];
-        $dailyCapacityTotals = [];
-        $dailyRequestTotals = [];
-
-        $trendStart = $dateFrom?->copy()->startOfDay() ?? today()->subDays(6);
-        $trendEnd = $dateTo?->copy()->startOfDay() ?? today();
-        $trendDateColumn = $dateFrom ? 'Created_at' : 'Proposed_Date';
-
-        for ($date = $trendStart->copy(); $date->lte($trendEnd); $date->addDay()) {
-            $dailyLabels[] = $date->format('M d');
-
-            $dailyCapacityTotals[] = (int) (clone $baseQuery)
-                ->whereDate($trendDateColumn, $date)
-                ->whereNotIn('Status', ['Rejected', 'Cancelled'])
-                ->sum('Capacity');
-
-            $dailyRequestTotals[] = (clone $baseQuery)
-                ->whereDate($trendDateColumn, $date)
-                ->count();
-        }
-
-        $capacityDates = collect($dailyLabels)->keys()->mapWithKeys(function (int $index) use ($trendStart): array {
-            return [$trendStart->copy()->addDays($index)->toDateString() => $index];
-        });
-        $facilityCapacitySeries = (clone $baseQuery)
-            ->with('facility')
-            ->whereNotIn('Status', ['Rejected', 'Cancelled'])
-            ->whereBetween($trendDateColumn, [$trendStart->copy()->startOfDay(), $trendEnd->copy()->endOfDay()])
-            ->get()
-            ->groupBy(fn (FacilityRequest $request) => $request->facility?->Facility_Name ?? 'Unknown facility')
-            ->map(function ($requests, string $facilityName) use ($capacityDates, $trendDateColumn, $dailyLabels): array {
-                $totals = array_fill(0, count($dailyLabels), 0);
-
-                foreach ($requests as $request) {
-                    $dateValue = $request->{$trendDateColumn};
-                    $dateKey = Carbon::parse($dateValue)->toDateString();
-                    $index = $capacityDates->get($dateKey);
-
-                    if ($index !== null) {
-                        $totals[$index] += (int) ($request->Capacity ?? 0);
-                    }
-                }
-
-                return ['facility' => $facilityName, 'totals' => $totals];
-            })
-            ->sortByDesc(fn (array $series) => array_sum($series['totals']))
-            ->values()
-            ->all();
-
-        $facilityUsageSeries = (clone $baseQuery)
-            ->with('facility')
-            ->whereBetween($trendDateColumn, [$trendStart->copy()->startOfDay(), $trendEnd->copy()->endOfDay()])
-            ->get()
-            ->groupBy(fn (FacilityRequest $request) => $request->facility?->Facility_Name ?? 'Unknown facility')
-            ->map(function ($requests, string $facilityName) use ($capacityDates, $trendDateColumn, $dailyLabels): array {
-                $totals = array_fill(0, count($dailyLabels), 0);
-
-                foreach ($requests as $request) {
-                    $dateKey = Carbon::parse($request->{$trendDateColumn})->toDateString();
-                    $index = $capacityDates->get($dateKey);
-
-                    if ($index !== null) {
-                        $totals[$index]++;
-                    }
-                }
-
-                return ['facility' => $facilityName, 'totals' => $totals];
-            })
-            ->sortByDesc(fn (array $series) => array_sum($series['totals']))
-            ->values()
-            ->all();
-
-        $mostUsedFacilityRecord = (clone $baseQuery)
-            ->whereNotNull('Facility_ID')
-            ->selectRaw('Facility_ID, COUNT(*) as total')
-            ->groupBy('Facility_ID')
-            ->orderByDesc('total')
-            ->first();
-
-        $mostUsedFacility = null;
-
-        if ($mostUsedFacilityRecord) {
-            $facility = Facility::withTrashed()->find($mostUsedFacilityRecord->Facility_ID);
-
-            $mostUsedFacility = [
-                'name' => $facility?->Facility_Name ?? 'Unknown facility',
-                'count' => (int) $mostUsedFacilityRecord->total,
-                'capacity' => $facility?->Capacity,
-                'status' => $facility?->Status,
-            ];
-        }
-
-        $facilityUsageCounts = (clone $baseQuery)
-            ->whereNotNull('Facility_ID')
-            ->selectRaw('Facility_ID, COUNT(*) as total')
-            ->groupBy('Facility_ID')
-            ->pluck('total', 'Facility_ID');
-
-        $facilityTypeUsage = Facility::withTrashed()
-            ->whereIn('FID', $facilityUsageCounts->keys())
-            ->get(['FID', 'facility_type'])
-            ->groupBy(fn (Facility $facility) => $facility->facility_type ?: 'Other')
-            ->map(fn ($facilities) => $facilities->sum(
-                fn (Facility $facility) => (int) ($facilityUsageCounts[$facility->FID] ?? 0)
-            ))
-            ->sortDesc()
-            ->all();
-
-        $eventTypeUsage = (clone $baseQuery)
-            ->with('event')
-            ->whereNotNull('Event_ID')
-            ->get()
-            ->filter(fn (FacilityRequest $request) => filled($request->event?->Type_Event))
-            ->groupBy(fn (FacilityRequest $request) => trim($request->event->Type_Event))
-            ->map->count()
-            ->sortDesc()
-            ->all();
-
-        $mostUsedEventType = collect($eventTypeUsage)
-            ->map(fn (int $count, string $type) => ['type' => $type, 'count' => $count])
-            ->first();
-
-        $amenityUsage = (clone $baseQuery)
-            ->with('amenities')
-            ->get()
-            ->flatMap(fn (FacilityRequest $request) => $request->amenities)
-            ->groupBy(fn ($amenity) => $amenity->name)
-            ->map->count()
-            ->sortDesc()
-            ->all();
-
-        $mostUsedAmenity = collect($amenityUsage)
-            ->map(fn (int $count, string $name) => ['name' => $name, 'count' => $count])
-            ->first();
-
-        $approvedOutcomeCount = (int) (($requestStatusCounts['Approved'] ?? 0)
-            + (clone $baseQuery)->where('Status', 'Ended')->count());
-        $rejectedOutcomeCount = (int) ($requestStatusCounts['Rejected'] ?? 0);
-        $decidedRequestCount = $approvedOutcomeCount + $rejectedOutcomeCount;
-        $approvalRate = $decidedRequestCount > 0
-            ? round(($approvedOutcomeCount / $decidedRequestCount) * 100, 1)
-            : null;
-
-        $scopedRequests = (clone $baseQuery)
-            ->with('facility')
-            ->get([
-                'RID', 'Facility_ID', 'Proposed_Date', 'Proposed_End_Date',
-                'Proposed_Start_Time', 'Proposed_End_Time', 'Status', 'Created_at',
-            ]);
-
-        $decisionLogs = AuditLog::query()
-            ->where('auditable_type', FacilityRequest::class)
-            ->whereIn('auditable_id', $scopedRequests->pluck('RID'))
-            ->whereIn('action', ['request_approved', 'request_rejected'])
-            ->oldest('created_at')
-            ->get(['auditable_id', 'created_at'])
-            ->groupBy('auditable_id')
-            ->map->first();
-        $reviewDurations = $scopedRequests
-            ->filter(fn (FacilityRequest $request) => $decisionLogs->has($request->RID) && $request->Created_at)
-            ->map(fn (FacilityRequest $request) => Carbon::parse($request->Created_at)
-                ->diffInMinutes(Carbon::parse($decisionLogs->get($request->RID)->created_at)) / 60);
-        $averageReviewHours = $reviewDurations->isNotEmpty() ? round($reviewDurations->average(), 1) : null;
-
-        $dayOrder = collect(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']);
-        $peakBookingDays = $dayOrder->map(fn (string $day) => [
-            'day' => $day,
-            'count' => $scopedRequests->filter(
-                fn (FacilityRequest $request) => $request->Proposed_Date?->format('l') === $day
-            )->count(),
-        ])->values()->all();
-        $peakBookingHours = $scopedRequests
-            ->filter(fn (FacilityRequest $request) => $request->Proposed_Start_Time)
-            ->groupBy(fn (FacilityRequest $request) => $request->Proposed_Start_Time->format('g:00 A'))
-            ->map->count()
-            ->sortDesc();
-        $peakBookingHour = $peakBookingHours->isNotEmpty()
-            ? ['hour' => $peakBookingHours->keys()->first(), 'count' => $peakBookingHours->first()]
-            : null;
-
-        $facilityBookingHours = $scopedRequests
-            ->filter(fn (FacilityRequest $request) => in_array($request->Status, ['Approved', 'Ended'], true)
-                && $request->facility
-                && $request->Proposed_Start_Time
-                && $request->Proposed_End_Time)
-            ->groupBy(fn (FacilityRequest $request) => $request->facility->Facility_Name)
-            ->map(function ($requests): float {
-                return round($requests->sum(function (FacilityRequest $request): float {
-                    $dailyHours = max(0, $request->Proposed_Start_Time->diffInMinutes($request->Proposed_End_Time) / 60);
-                    $days = $request->Proposed_Date->diffInDays($request->Proposed_End_Date ?? $request->Proposed_Date) + 1;
-
-                    return $dailyHours * $days;
-                }), 1);
-            })
-            ->sortDesc();
-        $totalFacilityBookingHours = (float) $facilityBookingHours->sum();
-        $facilityUtilization = $facilityBookingHours->map(fn (float $hours, string $facility) => [
-            'facility' => $facility,
-            'hours' => $hours,
-            'share' => $totalFacilityBookingHours > 0 ? round(($hours / $totalFacilityBookingHours) * 100, 1) : 0,
-        ])->values()->all();
-
-        $facilityStatusRecords = (clone $baseQuery)
-            ->whereNotNull('Facility_ID')
-            ->selectRaw('Facility_ID, Status, COUNT(*) as total')
-            ->groupBy('Facility_ID', 'Status')
-            ->get();
-        $statusFacilities = Facility::withTrashed()
-            ->whereIn('FID', $facilityStatusRecords->pluck('Facility_ID')->unique())
-            ->get(['FID', 'Facility_Name'])
-            ->keyBy('FID');
-        $facilityStatusBreakdown = $facilityStatusRecords
-            ->groupBy('Facility_ID')
-            ->map(function ($records, $facilityId) use ($statusFacilities, $statuses): array {
-                $counts = collect($statuses)->mapWithKeys(fn (string $status): array => [
-                    $status => (int) ($records->firstWhere('Status', $status)?->total ?? 0),
-                ])->all();
-
-                return [
-                    'facility' => $statusFacilities->get($facilityId)?->Facility_Name ?? 'Unknown facility',
-                    'statuses' => $counts,
-                    'total' => array_sum($counts),
-                ];
-            })
-            ->sortByDesc('total')
-            ->values()
-            ->all();
-
-        return [
-            'expectedCapacityToday' => (int) (clone $baseQuery)
-                ->when(! $dateFrom, fn (Builder $query) => $query->whereDate('Proposed_Date', today()))
-                ->whereNotIn('Status', ['Rejected', 'Cancelled'])
-                ->sum('Capacity'),
-            'capacityMetricLabel' => $dateFrom ? 'Expected in Range' : 'Expected Today',
-            'capacityMetricNote' => $dateFrom
-                ? 'Expected attendees from requests submitted in the selected range.'
-                : 'Active expected attendees for today.',
-            'rejectedRequests' => $requestStatusCounts['Rejected'] ?? 0,
-            'cancelledRequests' => $requestStatusCounts['Cancelled'] ?? 0,
-            'mostUsedFacility' => $mostUsedFacility,
-            'facilityTypeUsage' => $facilityTypeUsage,
-            'eventTypeUsage' => $eventTypeUsage,
-            'mostUsedEventType' => $mostUsedEventType,
-            'amenityUsage' => $amenityUsage,
-            'mostUsedAmenity' => $mostUsedAmenity,
-            'approvalRate' => $approvalRate,
-            'approvalOutcomeCounts' => [
-                'Approved' => $approvedOutcomeCount,
-                'Rejected' => $rejectedOutcomeCount,
-            ],
-            'averageReviewHours' => $averageReviewHours,
-            'reviewedRequestCount' => $reviewDurations->count(),
-            'peakBookingDays' => $peakBookingDays,
-            'peakBookingHour' => $peakBookingHour,
-            'facilityUtilization' => $facilityUtilization,
-            'facilityStatusBreakdown' => $facilityStatusBreakdown,
-            'rejectedRequestRecords' => (clone $baseQuery)
-                ->with(['user', 'facility'])
-                ->where('Status', 'Rejected')
-                ->latest('Created_at')
-                ->take(5)
-                ->get(),
-            'cancelledRequestRecords' => (clone $baseQuery)
-                ->with(['user', 'facility'])
-                ->where('Status', 'Cancelled')
-                ->latest('Created_at')
-                ->take(5)
-                ->get(),
-            'dashboardStatusCounts' => $requestStatusCounts,
-            'dailyCapacityLabels' => $dailyLabels,
-            'dailyCapacityTotals' => $dailyCapacityTotals,
-            'dailyRequestTotals' => $dailyRequestTotals,
-            'facilityCapacitySeries' => $facilityCapacitySeries,
-            'facilityUsageSeries' => $facilityUsageSeries,
-        ];
-    }
-
-    /**
-     * Build operational analytics from booked schedules and scoped requests.
-     * Facility currently have no operating-hours fields, so availability is
-     * measured against the dashboard's documented 8 AM–6 PM window.
-     */
-    private function operationalAnalytics(
-        Builder $requestScope,
-        Collection $facilities,
-        Carbon $dateFrom,
-        Carbon $dateTo,
-    ): array {
-        $approvedRequestIds = (clone $requestScope)
-            ->whereIn('Status', ['Approved', 'Ended'])
-            ->pluck('RID');
-        $facilityLookup = $facilities->keyBy('FID');
-        $dayCount = max(1, $dateFrom->copy()->startOfDay()->diffInDays($dateTo->copy()->startOfDay()) + 1);
-        $availableHoursPerFacility = $dayCount * 10;
-
-        $bookedSchedules = Schedule::query()
-            ->where('Status', 'Booked')
-            ->whereIn('Request_ID', $approvedRequestIds)
-            ->whereBetween('Date', [$dateFrom->toDateString(), $dateTo->toDateString()])
-            ->get(['Request_ID', 'Date', 'Start_Time', 'End_Time']);
-        $scheduleRequests = FacilityRequest::withTrashed()
-            ->whereIn('RID', $bookedSchedules->pluck('Request_ID')->unique())
-            ->get(['RID', 'Facility_ID'])
-            ->keyBy('RID');
-
-        $bookedHoursByFacility = $bookedSchedules
-            ->groupBy(fn (Schedule $schedule) => $scheduleRequests->get($schedule->Request_ID)?->Facility_ID)
-            ->map(fn ($schedules) => round($schedules->sum(
-                fn (Schedule $schedule) => max(0, $schedule->Start_Time->diffInMinutes($schedule->End_Time) / 60)
-            ), 1));
-
-        $facilityUtilizationRates = $facilities->map(function (Facility $facility) use ($bookedHoursByFacility, $availableHoursPerFacility): array {
-            $bookedHours = (float) ($bookedHoursByFacility[$facility->FID] ?? 0);
-
-            return [
-                'facility' => $facility->Facility_Name,
-                'bookedHours' => $bookedHours,
-                'availableHours' => $availableHoursPerFacility,
-                'rate' => $availableHoursPerFacility > 0 ? round(min(100, $bookedHours / $availableHoursPerFacility * 100), 1) : 0,
-            ];
-        })->sortByDesc('rate')->values()->all();
-
-        $totalBookedHours = (float) $bookedHoursByFacility->sum();
-        $totalAvailableHours = $availableHoursPerFacility * max(1, $facilities->count());
-        $overallFacilityUtilizationRate = $totalAvailableHours > 0
-            ? round(min(100, $totalBookedHours / $totalAvailableHours * 100), 1)
-            : 0;
-
-        $heatmap = collect(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])
-            ->mapWithKeys(fn (string $day) => [$day => array_fill(8, 10, 0)])
-            ->all();
-        foreach ($bookedSchedules as $schedule) {
-            $day = $schedule->Date->format('l');
-            $startHour = max(8, (int) $schedule->Start_Time->format('G'));
-            $endHour = min(18, (int) ceil((float) $schedule->End_Time->format('G') + ((int) $schedule->End_Time->format('i') / 60)));
-            for ($hour = $startHour; $hour < $endHour; $hour++) {
-                $heatmap[$day][$hour]++;
-            }
-        }
-
-        $months = collect();
-        for ($month = $dateFrom->copy()->startOfMonth(); $month->lte($dateTo); $month->addMonth()) {
-            $months->push($month->copy());
-        }
-        $months = $months->take(-12)->values();
-        $outcomeRecords = (clone $requestScope)
-            ->whereBetween('Created_at', [$months->first()?->copy()->startOfMonth() ?? $dateFrom, $dateTo])
-            ->get(['Status', 'Created_at']);
-        $requestOutcomesTrend = [
-            'labels' => $months->map->format('M Y')->all(),
-            'series' => collect(['Pending', 'Approved', 'Rejected', 'Cancelled'])->mapWithKeys(
-                fn (string $status) => [$status => $months->map(fn (Carbon $month) => $outcomeRecords
-                    ->filter(fn (FacilityRequest $request) => $request->Status === $status
-                        && $request->Created_at?->isSameMonth($month))
-                    ->count())->all()]
-            )->all(),
-        ];
-        $typeTrendUsesDailyBuckets = $dateFrom->copy()->startOfDay()->diffInDays($dateTo->copy()->startOfDay()) <= 31;
-        $typeTrendBuckets = collect();
-        if ($typeTrendUsesDailyBuckets) {
-            for ($day = $dateFrom->copy()->startOfDay(); $day->lte($dateTo); $day->addDay()) {
-                $typeTrendBuckets->push($day->copy());
-            }
-        } else {
-            $typeTrendBuckets = $months;
-        }
-        $typeTrendStart = $typeTrendUsesDailyBuckets
-            ? $dateFrom->copy()->startOfDay()
-            : ($months->first()?->copy()->startOfMonth() ?? $dateFrom);
-        $facilityTypeRecords = (clone $requestScope)
-            ->with('facility:FID,facility_type')
-            ->whereBetween('Created_at', [$typeTrendStart, $dateTo])
-            ->get(['RID', 'Facility_ID', 'Created_at']);
-        $facilityTypes = $facilityTypeRecords
-            ->map(fn (FacilityRequest $request) => filled($request->facility?->facility_type)
-                ? ucfirst($request->facility->facility_type)
-                : 'Other')
-            ->unique()
-            ->sort()
-            ->values();
-        $facilityTypeUsageTrend = [
-            'labels' => $typeTrendBuckets
-                ->map(fn (Carbon $bucket) => $bucket->format($typeTrendUsesDailyBuckets ? 'M d' : 'M Y'))
-                ->all(),
-            'series' => $facilityTypes->mapWithKeys(fn (string $type) => [
-                $type => $typeTrendBuckets->map(fn (Carbon $bucket) => $facilityTypeRecords
-                    ->filter(fn (FacilityRequest $request) => (
-                        filled($request->facility?->facility_type)
-                            ? ucfirst($request->facility->facility_type)
-                            : 'Other'
-                    ) === $type && ($typeTrendUsesDailyBuckets
-                        ? $request->Created_at?->isSameDay($bucket)
-                        : $request->Created_at?->isSameMonth($bucket)))
-                    ->count())->all(),
-            ])->all(),
-        ];
-
-        $rangeRequests = (clone $requestScope)
-            ->with('facility:FID,Facility_Name,Capacity')
-            ->whereBetween('Created_at', [$dateFrom, $dateTo])
-            ->get(['RID', 'Facility_ID', 'Status', 'Capacity']);
-        $capacityUtilization = $rangeRequests
-            ->filter(fn (FacilityRequest $request) => $request->facility?->Capacity > 0 && $request->Capacity !== null)
-            ->groupBy('Facility_ID')
-            ->map(function ($requests, $facilityId) use ($facilityLookup): array {
-                $facility = $facilityLookup->get($facilityId);
-                $rate = $requests->average(fn (FacilityRequest $request) => min(100, $request->Capacity / $request->facility->Capacity * 100));
-
-                return ['facility' => $facility?->Facility_Name ?? 'Unknown facility', 'rate' => round($rate, 1)];
-            })->sortByDesc('rate')->values()->all();
-        $facilityRequestGroups = $rangeRequests
-            ->whereNotNull('Facility_ID')
-            ->filter(fn (FacilityRequest $request) => $facilityLookup->has($request->Facility_ID))
-            ->groupBy('Facility_ID');
-        $cancellationRates = $facilityRequestGroups->map(function ($requests, $facilityId) use ($facilityLookup): array {
-            $total = $requests->count();
-            $cancelled = $requests->where('Status', 'Cancelled')->count();
-
-            return [
-                'facility' => $facilityLookup->get($facilityId)->Facility_Name,
-                'rate' => $total ? round($cancelled / $total * 100, 1) : 0,
-                'cancelled' => $cancelled,
-                'total' => $total,
-            ];
-        })->filter(fn (array $row) => $row['cancelled'] > 0)->sortByDesc('rate')->values()->all();
-        $facilityDecisionRates = $facilityRequestGroups->map(function ($requests, $facilityId) use ($facilityLookup): array {
-            $approved = $requests->whereIn('Status', ['Approved', 'Ended'])->count();
-            $rejected = $requests->where('Status', 'Rejected')->count();
-            $decided = $approved + $rejected;
-
-            return [
-                'facility' => $facilityLookup->get($facilityId)->Facility_Name,
-                'approved' => $decided ? round($approved / $decided * 100, 1) : 0,
-                'rejected' => $decided ? round($rejected / $decided * 100, 1) : 0,
-                'decided' => $decided,
-            ];
-        })->filter(fn (array $row) => $row['decided'] > 0)->sortByDesc('approved')->values()->all();
-        $facilityRatings = Feedback::query()
-            ->whereIn('Facility_ID', $facilities->pluck('FID'))
-            ->whereNotNull('Rating')
-            ->whereBetween('Created_at', [$dateFrom, $dateTo])
-            ->selectRaw('Facility_ID, AVG(Rating) as average_rating, COUNT(*) as rating_count')
-            ->groupBy('Facility_ID')
-            ->get()
-            ->map(fn (Feedback $feedback): array => [
-                'facility' => $facilityLookup->get($feedback->Facility_ID)?->Facility_Name ?? 'Unknown facility',
-                'rating' => round((float) $feedback->average_rating, 1),
-                'count' => (int) $feedback->rating_count,
-            ])
-            ->sortByDesc('rating')
-            ->values()
-            ->all();
-
-        return [
-            'facilityUtilizationRates' => $facilityUtilizationRates,
-            'overallFacilityUtilizationRate' => $overallFacilityUtilizationRate,
-            'bookingDemandHeatmap' => $heatmap,
-            'requestOutcomesTrend' => $requestOutcomesTrend,
-            'facilityTypeUsageTrend' => $facilityTypeUsageTrend,
-            'capacityUtilization' => $capacityUtilization,
-            'cancellationRates' => $cancellationRates,
-            'facilityDecisionRates' => $facilityDecisionRates,
-            'facilityRatings' => $facilityRatings,
-            'availabilityBaseline' => '8:00 AM–6:00 PM daily',
-        ];
-    }
-
-    private function analyticsDateRange(HttpRequest $request): array
-    {
-        $validated = $request->validate([
-            'date_from' => ['nullable', 'date'],
-            'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
-        ]);
-
-        $dateFrom = isset($validated['date_from'])
-            ? Carbon::parse($validated['date_from'])->startOfDay()
-            : today()->subMonth()->startOfDay();
-        $dateTo = isset($validated['date_to'])
-            ? Carbon::parse($validated['date_to'])->endOfDay()
-            : today()->endOfDay();
-
-        if ($dateFrom->diffInDays($dateTo) > 365) {
-            $dateFrom = $dateTo->copy()->subDays(365)->startOfDay();
-        }
-
-        return [$dateFrom, $dateTo];
-    }
-
-    private function publicScheduleEvents(): array
-    {
-        if (! Schema::hasTable('schedules')) {
-            return [];
-        }
-
-        return Schedule::query()
-            ->with(['request.facility', 'request.event'])
-            ->where('Status', 'Booked')
-            ->get()
-            ->map(function (Schedule $schedule): array {
-                $facilityName = $schedule->request?->facility?->Facility_Name
-                    ?? "Request #{$schedule->Request_ID}";
-                $eventName = $schedule->request?->event?->Event_Title
-                    ?? 'Reserved facility';
-                $date = Carbon::parse($schedule->Date)->toDateString();
-                $start = Carbon::parse($date.' '.Carbon::parse($schedule->Start_Time)->format('H:i:s'));
-                $end = Carbon::parse($date.' '.Carbon::parse($schedule->End_Time)->format('H:i:s'));
-                $status = $schedule->request?->Status === 'Ended' || $end->isPast()
-                    ? 'Ended'
-                    : ($start->isPast() ? 'Ongoing' : 'Approved');
-                $colors = match ($status) {
-                    'Ongoing' => ['background' => '#007a2f', 'border' => '#006b2b'],
-                    'Ended' => ['background' => '#737373', 'border' => '#525252'],
-                    default => ['background' => '#007a2f', 'border' => '#006b2b'],
-                };
-
-                return [
-                    'id' => $schedule->SID,
-                    'title' => $eventName,
-                    'event' => $eventName,
-                    'facility' => $facilityName,
-                    'status' => $status,
-                    'start' => $start->format('Y-m-d\TH:i:s'),
-                    'end' => $end->format('Y-m-d\TH:i:s'),
-                    'backgroundColor' => $colors['background'],
-                    'borderColor' => $colors['border'],
-                ];
-            })
-            ->values()
-            ->all();
     }
 
     public function facilityRedirect(): RedirectResponse

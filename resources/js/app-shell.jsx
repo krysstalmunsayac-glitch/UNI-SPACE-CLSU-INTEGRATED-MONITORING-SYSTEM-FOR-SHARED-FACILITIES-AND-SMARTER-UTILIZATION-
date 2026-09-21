@@ -193,13 +193,16 @@ function AppShell({ props }) {
         <aside className={`react-app-sidebar ${collapsed ? 'is-collapsed' : ''} ${mobileOpen ? 'is-mobile-open' : ''}`}>
             <div className="react-sidebar-brand">
                 <a href={props.brandUrl} onClick={(event) => navigate(event, props.brandUrl)}>
-                    <picture>
-                        <source media="(max-width: 63.999rem)" srcSet={props.logoUrl}/>
+                    <span className="react-sidebar-brand-mark">
                         <img
                             src={collapsed ? (props.collapsedLogoUrl ?? props.logoUrl) : props.logoUrl}
-                            alt="SIEL SPACE"
+                            alt="Central Luzon State University"
                         />
-                    </picture>
+                    </span>
+                    <span className="react-sidebar-brand-copy">
+                        <strong>SIEL SPACE</strong>
+                        <small>A 360° Walkthrough of the University Campus</small>
+                    </span>
                 </a>
             </div>
             <nav>

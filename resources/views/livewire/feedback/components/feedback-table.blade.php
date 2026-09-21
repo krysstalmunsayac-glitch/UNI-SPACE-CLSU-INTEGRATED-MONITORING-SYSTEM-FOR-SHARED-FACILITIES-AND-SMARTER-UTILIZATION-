@@ -74,6 +74,12 @@
                                 <x-ui::button variant="ghost" size="sm" icon="ellipsis-horizontal" aria-label="Actions for feedback FDB-{{ str_pad((string) $feedback->getKey(), 5, '0', STR_PAD_LEFT) }}" />
                                 <x-ui::menu>
                                     <x-ui::menu.item
+                                        icon="eye"
+                                        wire:click="showDetails({{ $feedback->getKey() }})"
+                                    >
+                                        View
+                                    </x-ui::menu.item>
+                                    <x-ui::menu.item
                                         icon="trash"
                                         class="text-red-600"
                                         wire:click="delete({{ $feedback->getKey() }})"

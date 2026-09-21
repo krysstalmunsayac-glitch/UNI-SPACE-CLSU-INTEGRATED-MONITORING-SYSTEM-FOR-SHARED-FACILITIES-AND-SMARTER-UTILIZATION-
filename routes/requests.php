@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\FacilityRequestController;
+use App\Http\Controllers\EventRequestController;
+use App\Http\Controllers\WaitingListController;
 use App\Http\Middleware\PreventBackHistory;
 use Illuminate\Support\Facades\Route;
 
@@ -24,14 +26,15 @@ Route::middleware([
             Route::post('create/{facility}', 'storeRequest')
                 ->name('store');
 
-            Route::get('event/create/{event}', 'showEventRequest')
-                ->name('event.create');
-
-            Route::post('event/create/{event}', 'storeEventRequest')
-                ->name('event.store');
         });
 
-    Route::controller(FacilityRequestController::class)
+    Route::get('requests/events/{event}', [EventRequestController::class, 'create'])
+        ->name('requests.event.create');
+
+    Route::post('requests/events/{event}', [EventRequestController::class, 'store'])
+        ->name('requests.event.store');
+
+    Route::controller(WaitingListController::class)
         ->prefix('requests/waiting-list')
         ->group(function () {
             Route::get('/', 'waitingList')

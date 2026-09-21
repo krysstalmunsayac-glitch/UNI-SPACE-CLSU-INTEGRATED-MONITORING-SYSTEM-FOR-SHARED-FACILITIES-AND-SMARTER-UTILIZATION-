@@ -67,7 +67,7 @@
 
             $shellProps = [
                 'brandUrl' => route('dashboard'),
-                'logoUrl' => asset('images/silesyu-space-logo-v2.png'),
+                'logoUrl' => asset('images/Logo_white.png'),
                 'collapsedLogoUrl' => asset('images/Logo_white.png'),
                 'navigation' => $navigation,
                 'user' => [

@@ -16,6 +16,9 @@ class FacilityController extends Controller
 
         $facility->load([
             'images',
+            'assignedAdmins' => fn ($query) => $query
+                ->where('users.user_type', 'admin')
+                ->select('users.id', 'users.name', 'users.email'),
             'amenities' => fn ($query) => $query
                 ->where('amenities.Status', 'Available')
                 ->orderBy('amenities.name'),

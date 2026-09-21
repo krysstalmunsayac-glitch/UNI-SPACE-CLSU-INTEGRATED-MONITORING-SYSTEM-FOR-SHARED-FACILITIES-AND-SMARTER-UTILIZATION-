@@ -8,14 +8,20 @@ use App\Models\AuditLog;
 use App\Models\Facility;
 use App\Models\FacilityRequest;
 use App\Models\User;
-use App\Services\AdminReportExporter;
+use App\Services\Reports\CsvReportExporter;
+use App\Services\Reports\PdfReportExporter;
+use App\Services\Reports\XlsxReportExporter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportExportController extends Controller
 {
-    public function __construct(private readonly AdminReportExporter $exporter) {}
+    public function __construct(
+        private readonly CsvReportExporter $csv,
+        private readonly XlsxReportExporter $xlsx,
+        private readonly PdfReportExporter $pdf,
+    ) {}
 
     public function facilitiesCsv(Request $request): StreamedResponse
     {
@@ -24,10 +30,10 @@ class ReportExportController extends Controller
         return response()->streamDownload(function () use ($facilities) {
             $output = fopen('php://output', 'w');
             fwrite($output, "\xEF\xBB\xBF");
-            fputcsv($output, $this->exporter->facilityHeaders());
+            fputcsv($output, $this->csv->facilityHeaders());
 
             foreach ($facilities as $facility) {
-                fputcsv($output, $this->exporter->facilityRow($facility));
+                fputcsv($output, $this->csv->facilityRow($facility));
             }
 
             fclose($output);
@@ -37,7 +43,7 @@ class ReportExportController extends Controller
     public function facilitiesPdf(Request $request)
     {
         $facilities = $this->facilityQuery($request)->orderBy('Facility_Name')->get();
-        $content = $this->exporter->facilitiesPdf($facilities, $this->scopeLabel($request));
+        $content = $this->pdf->facilities($facilities, $this->scopeLabel($request));
 
         return response($content, 200, [
             'Content-Type' => 'application/pdf',
@@ -48,7 +54,7 @@ class ReportExportController extends Controller
     public function facilitiesXlsx(Request $request)
     {
         $facilities = $this->facilityQuery($request)->orderBy('Facility_Name')->get();
-        $content = $this->exporter->facilitiesXlsx($facilities);
+        $content = $this->xlsx->facilities($facilities);
 
         return response($content, 200, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -63,10 +69,10 @@ class ReportExportController extends Controller
         return response()->streamDownload(function () use ($requests) {
             $output = fopen('php://output', 'w');
             fwrite($output, "\xEF\xBB\xBF");
-            fputcsv($output, $this->exporter->requestHeaders());
+            fputcsv($output, $this->csv->requestHeaders());
 
             foreach ($requests as $facilityRequest) {
-                fputcsv($output, $this->exporter->requestRow($facilityRequest));
+                fputcsv($output, $this->csv->requestRow($facilityRequest));
             }
 
             fclose($output);
@@ -76,7 +82,7 @@ class ReportExportController extends Controller
     public function requestsPdf(Request $request)
     {
         $requests = $this->requestQuery($request)->latest('Created_at')->get();
-        $content = $this->exporter->requestsPdf($requests, $this->scopeLabel($request));
+        $content = $this->pdf->requests($requests, $this->scopeLabel($request));
 
         return response($content, 200, [
             'Content-Type' => 'application/pdf',
@@ -87,7 +93,7 @@ class ReportExportController extends Controller
     public function requestsXlsx(Request $request)
     {
         $requests = $this->requestQuery($request)->latest('Created_at')->get();
-        $content = $this->exporter->requestsXlsx($requests);
+        $content = $this->xlsx->requests($requests);
 
         return response($content, 200, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -102,10 +108,10 @@ class ReportExportController extends Controller
         return response()->streamDownload(function () use ($users) {
             $output = fopen('php://output', 'w');
             fwrite($output, "\xEF\xBB\xBF");
-            fputcsv($output, $this->exporter->userHeaders());
+            fputcsv($output, $this->csv->userHeaders());
 
             foreach ($users as $user) {
-                fputcsv($output, $this->exporter->userRow($user));
+                fputcsv($output, $this->csv->userRow($user));
             }
 
             fclose($output);
@@ -114,14 +120,14 @@ class ReportExportController extends Controller
 
     public function usersPdf()
     {
-        $content = $this->exporter->usersPdf($this->userQuery()->get());
+        $content = $this->pdf->users($this->userQuery()->get());
 
         return response($content, 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'attachment; filename="users-'.now()->format('Y-m-d').'.pdf"']);
     }
 
     public function usersXlsx()
     {
-        $content = $this->exporter->usersXlsx($this->userQuery()->get());
+        $content = $this->xlsx->users($this->userQuery()->get());
 
         return response($content, 200, ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'Content-Disposition' => 'attachment; filename="users-'.now()->format('Y-m-d').'.xlsx"']);
     }
@@ -133,10 +139,10 @@ class ReportExportController extends Controller
         return response()->streamDownload(function () use ($amenities) {
             $output = fopen('php://output', 'w');
             fwrite($output, "\xEF\xBB\xBF");
-            fputcsv($output, $this->exporter->amenityHeaders());
+            fputcsv($output, $this->csv->amenityHeaders());
 
             foreach ($amenities as $amenity) {
-                fputcsv($output, $this->exporter->amenityRow($amenity));
+                fputcsv($output, $this->csv->amenityRow($amenity));
             }
 
             fclose($output);
@@ -145,14 +151,14 @@ class ReportExportController extends Controller
 
     public function amenitiesPdf()
     {
-        $content = $this->exporter->amenitiesPdf($this->amenityQuery()->get());
+        $content = $this->pdf->amenities($this->amenityQuery()->get());
 
         return response($content, 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'attachment; filename="amenities-'.now()->format('Y-m-d').'.pdf"']);
     }
 
     public function amenitiesXlsx()
     {
-        $content = $this->exporter->amenitiesXlsx($this->amenityQuery()->get());
+        $content = $this->xlsx->amenities($this->amenityQuery()->get());
 
         return response($content, 200, ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'Content-Disposition' => 'attachment; filename="amenities-'.now()->format('Y-m-d').'.xlsx"']);
     }
@@ -164,10 +170,10 @@ class ReportExportController extends Controller
         return response()->streamDownload(function () use ($logs) {
             $output = fopen('php://output', 'w');
             fwrite($output, "\xEF\xBB\xBF");
-            fputcsv($output, $this->exporter->auditHeaders());
+            fputcsv($output, $this->csv->auditHeaders());
 
             foreach ($logs as $log) {
-                fputcsv($output, $this->exporter->auditRow($log));
+                fputcsv($output, $this->csv->auditRow($log));
             }
 
             fclose($output);
@@ -176,14 +182,14 @@ class ReportExportController extends Controller
 
     public function auditsPdf()
     {
-        $content = $this->exporter->auditsPdf($this->auditQuery()->get());
+        $content = $this->pdf->audits($this->auditQuery()->get());
 
         return response($content, 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'attachment; filename="audit-history-'.now()->format('Y-m-d').'.pdf"']);
     }
 
     public function auditsXlsx()
     {
-        $content = $this->exporter->auditsXlsx($this->auditQuery()->get());
+        $content = $this->xlsx->audits($this->auditQuery()->get());
 
         return response($content, 200, ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'Content-Disposition' => 'attachment; filename="audit-history-'.now()->format('Y-m-d').'.xlsx"']);
     }

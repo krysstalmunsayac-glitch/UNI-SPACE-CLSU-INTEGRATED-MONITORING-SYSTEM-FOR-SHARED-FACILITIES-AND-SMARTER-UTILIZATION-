@@ -1,14 +1,11 @@
 <?php
 
-use App\Http\Controllers\FacilityRequestController;
+use App\Services\BookingRequestValidator;
 use Illuminate\Validation\ValidationException;
 
 function invokeBookingDurationValidator(string $start, string $end): void
 {
-    $controller = (new ReflectionClass(FacilityRequestController::class))->newInstanceWithoutConstructor();
-    $method = new ReflectionMethod($controller, 'validateBookingDuration');
-
-    $method->invoke($controller, $start, $end);
+    app(BookingRequestValidator::class)->validateBookingDuration($start, $end);
 }
 
 it('accepts a booking lasting at least one hour', function () {

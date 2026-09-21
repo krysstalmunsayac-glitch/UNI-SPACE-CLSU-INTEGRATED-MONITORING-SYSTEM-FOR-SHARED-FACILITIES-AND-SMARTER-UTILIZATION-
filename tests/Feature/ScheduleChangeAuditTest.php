@@ -1,5 +1,6 @@
 <?php
 
+use App\Livewire\Schedules\ScheduleManagement;
 use App\Models\AuditLog;
 use App\Models\Facility;
 use App\Models\FacilityRequest;
@@ -7,7 +8,7 @@ use App\Models\Schedule;
 use App\Models\User;
 use App\Notifications\ScheduleUpdated;
 use Illuminate\Support\Facades\Notification;
-use Livewire\Volt\Volt;
+use Livewire\Livewire;
 
 it('records administrator schedule changes and notifies the end user', function (string $role) {
     Notification::fake();
@@ -51,11 +52,11 @@ it('records administrator schedule changes and notifies the end user', function 
 
     $this->actingAs($administrator);
 
-    Volt::test('schedule.schedule')
+    Livewire::test(ScheduleManagement::class)
         ->call('edit', $schedule->SID)
-        ->set('Date', $newDate)
-        ->set('Start_Time', '10:00')
-        ->set('End_Time', '11:00')
+        ->set('form.Date', $newDate)
+        ->set('form.Start_Time', '10:00')
+        ->set('form.End_Time', '11:00')
         ->call('save')
         ->assertHasNoErrors();
 
@@ -69,4 +70,3 @@ it('records administrator schedule changes and notifies the end user', function 
 
     Notification::assertSentTo($endUser, ScheduleUpdated::class);
 })->with(['super_admin', 'admin']);
-

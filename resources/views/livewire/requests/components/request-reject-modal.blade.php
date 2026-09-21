@@ -1,0 +1,33 @@
+<x-ui::modal wire:model.self="showRejectModal" class="md:w-[32rem]">
+    <div class="space-y-6">
+        <div>
+            <x-ui::heading size="lg">Reject Request</x-ui::heading>
+            <x-ui::subheading>Select at least one reason before rejecting this request.</x-ui::subheading>
+        </div>
+
+        <x-ui::checkbox.group label="Reason for rejection">
+            @foreach ([
+                'Schedule conflict',
+                'Facility unavailable',
+                'Incomplete request information',
+                'Capacity exceeds facility limit',
+                'Does not meet facility policies',
+                'Other',
+            ] as $reason)
+                <x-ui::checkbox wire:model.live="rejectionReasons" value="{{ $reason }}" label="{{ $reason }}" />
+            @endforeach
+        </x-ui::checkbox.group>
+        @error('rejectionReasons') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
+        @error('rejectionReasons.*') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
+
+        @if (in_array('Other', $rejectionReasons, true))
+            <x-ui::textarea wire:model="otherRejectionReason" label="Please specify the other reason" rows="3" placeholder="Type the reason for rejecting this request..." />
+        @endif
+
+        <div class="flex gap-2">
+            <x-ui::button wire:click="reject" variant="danger" class="flex-1">Reject request</x-ui::button>
+            <x-ui::button wire:click="$set('showRejectModal', false)" variant="ghost" class="flex-1">Cancel</x-ui::button>
+        </div>
+    </div>
+</x-ui::modal>
+

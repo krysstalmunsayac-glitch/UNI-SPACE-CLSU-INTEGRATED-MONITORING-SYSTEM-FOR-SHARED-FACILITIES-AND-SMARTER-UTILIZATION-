@@ -1,0 +1,299 @@
+    {{-- Add/edit user modal --}}
+    <x-ui::modal
+        wire:model.self="showModal"
+        class="md:w-[28rem]"
+    >
+        <div class="space-y-6">
+            <div>
+                <x-ui::heading size="lg">
+                    {{ $editingId ? 'Edit User' : 'Add User' }}
+                </x-ui::heading>
+
+                <x-ui::subheading>
+                    {{ $editingId
+                        ? 'Update this user\'s details. Changing the email sends a new invitation.'
+                        : 'Create an account and send a secure invitation.' }}
+                </x-ui::subheading>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <div class="size-20 shrink-0 overflow-hidden rounded-full border border-zinc-200 bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800">
+                    @if ($form->profile_photo)
+                        <img src="{{ $form->profile_photo->temporaryUrl() }}" alt="Profile photo preview" class="h-full w-full object-cover">
+                    @elseif ($existingProfilePhotoUrl)
+                        <img src="{{ $existingProfilePhotoUrl }}" alt="{{ $form->name }}" class="h-full w-full object-cover">
+                    @else
+                        <div class="flex h-full w-full items-center justify-center text-xl font-bold text-zinc-600 dark:text-zinc-200">
+                            {{ $form->name !== '' ? mb_strtoupper(mb_substr($form->name, 0, 1)) : '?' }}
+                        </div>
+                    @endif
+                </div>
+
+                <div class="min-w-0 flex-1 space-y-1.5">
+                    <label for="managed_profile_photo" class="block text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+                        Profile picture
+                    </label>
+                    <input
+                        id="managed_profile_photo"
+                        type="file"
+                        wire:model="form.profile_photo"
+                        accept="image/png,image/jpeg,image/webp"
+                        class="block w-full text-sm text-zinc-600 file:mr-3 file:rounded-lg file:border-0 file:bg-emerald-50 file:px-3 file:py-2 file:font-semibold file:text-emerald-700 hover:file:bg-emerald-100 dark:text-zinc-300 dark:file:bg-emerald-950/40 dark:file:text-emerald-300"
+                    >
+                    <p class="text-xs text-zinc-500">JPG, PNG, or WebP up to 2 MB.</p>
+                    <div wire:loading wire:target="profile_photo" class="text-xs font-medium text-emerald-700">
+                        Uploading preview…
+                    </div>
+                    @error('form.profile_photo')
+                        <span class="block text-sm text-red-600">{{ $message }}</span>
+                    @enderror
+                </div>
+            </div>
+
+            <div>
+                <x-ui::input
+                    wire:model="form.name"
+                    label="Full Name"
+                    placeholder="Juan Dela Cruz"
+                    required
+                    minlength="2"
+                    maxlength="100"
+                />
+
+            </div>
+
+            <div>
+                <x-ui::input
+                    wire:model="form.email"
+                    type="email"
+                    label="Email"
+                    placeholder="juan@clsu.edu.ph"
+                    required
+                    maxlength="255"
+                />
+
+            </div>
+
+            @unless ($editingId)
+                <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900 dark:border-emerald-500/30 dark:bg-emerald-950/20 dark:text-emerald-100">
+                    A secure invitation will be emailed to this user. They will verify the address and create their own password.
+                </div>
+            @endunless
+
+            <div>
+                <x-ui::input
+                    wire:model="form.contact_number"
+                    label="Contact Number"
+                    type="tel"
+                    placeholder="09XXXXXXXXX"
+                    minlength="11"
+                    maxlength="11"
+                    inputmode="numeric"
+                    pattern="09[0-9]{9}"
+                    title="Enter an 11-digit mobile number starting with 09."
+                    oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11)"
+                />
+
+            </div>
+
+            <div>
+                <x-ui::input
+                    wire:model="form.office"
+                    label="Office"
+                    placeholder="Enter office/department"
+                    minlength="2"
+                    maxlength="150"
+                />
+
+            </div>
+
+            <div>
+                <x-ui::input
+                    wire:model="form.address"
+                    label="Address"
+                    placeholder="Enter address"
+                    minlength="5"
+                    maxlength="500"
+                />
+
+            </div>
+
+            <div>
+                <x-ui::select
+                    wire:model="form.user_type"
+                    label="Role"
+                >
+                    <x-ui::select.option value="admin">
+                        Office Admin
+                    </x-ui::select.option>
+
+                    <x-ui::select.option value="user">
+                        End User
+                    </x-ui::select.option>
+                </x-ui::select>
+
+            </div>
+
+            @if ($editingId)
+            <x-ui::switch
+                wire:model="form.is_active"
+                label="Active account"
+                :disabled="$editingId === auth()->id()"
+            />
+            @endif
+
+            @if ($editingId === auth()->id())
+                <p class="-mt-4 text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                    You cannot deactivate your own account.
+                </p>
+            @endif
+
+            <div class="flex gap-2">
+                @if($editingId)
+                    <x-ui::button
+                        wire:click="save"
+                        variant="primary"
+                        class="flex-1"
+                    >
+                        Update
+                    </x-ui::button>
+                @else
+                    <x-ui::button wire:click="save" variant="primary" class="flex-1">
+                        Send invitation
+                    </x-ui::button>
+                @endif
+
+                <x-ui::button
+                    wire:click="$set('showModal', false)"
+                    variant="ghost"
+                    class="flex-1"
+                >
+                    Cancel
+                </x-ui::button>
+            </div>
+        </div>
+    </x-ui::modal>
+
+    <x-ui::modal wire:model.self="showCreateConfirmation" class="md:w-[28rem]">
+        <div class="space-y-6">
+            <div>
+                <x-ui::heading size="lg">Confirm new user</x-ui::heading>
+                <x-ui::subheading>
+                    Send a password-setup invitation to <span class="font-semibold">{{ $form->email }}</span>?
+                </x-ui::subheading>
+
+            </div>
+            <div class="flex gap-2">
+                <x-ui::button wire:click="save(true, false, true)" wire:loading.attr="disabled" wire:target="save" variant="primary" class="flex-1">Send invitation</x-ui::button>
+                <x-ui::button wire:click="$set('showCreateConfirmation', false)" variant="ghost" class="flex-1">Cancel</x-ui::button>
+            </div>
+        </div>
+    </x-ui::modal>
+
+    <x-ui::modal
+        wire:model.self="showRoleChangeConfirmation"
+        class="md:w-[28rem]"
+    >
+        <div class="space-y-6">
+            <div>
+                <x-ui::heading size="lg">{{ $editingId ? 'Confirm role change' : 'Confirm Office Admin role' }}</x-ui::heading>
+
+                <x-ui::subheading>
+                    @if ($editingId)
+                        You are about to change this user's role from
+                        <span class="font-semibold">{{ match ($originalUserType) {
+                            'super_admin' => 'Super Admin',
+                            'admin' => 'Office Admin',
+                            default => 'End User',
+                        } }}</span>
+                        to
+                        <span class="font-semibold">{{ match ($form->user_type) {
+                            'super_admin' => 'Super Admin',
+                            'admin' => 'Office Admin',
+                            default => 'End User',
+                        } }}</span>.
+                        This will change the user's system access and permissions.
+                    @else
+                        You are creating <span class="font-semibold">{{ $form->name }}</span> as an Office Admin.
+                        Office Admins can manage assigned facilities, requests, schedules, amenities, and feedback.
+                    @endif
+                </x-ui::subheading>
+            </div>
+
+            <div class="flex gap-2">
+                <x-ui::button
+                    wire:click="save(true)"
+                    wire:loading.attr="disabled"
+                    wire:target="save"
+                    variant="primary"
+                    class="flex-1"
+                >
+                    {{ $editingId ? 'Confirm role change' : 'Confirm Office Admin role' }}
+                </x-ui::button>
+
+                <x-ui::button
+                    wire:click="$set('showRoleChangeConfirmation', false)"
+                    variant="ghost"
+                    class="flex-1"
+                >
+                    Cancel
+                </x-ui::button>
+            </div>
+        </div>
+    </x-ui::modal>
+
+    <x-ui::modal
+        wire:model.self="showAccountStatusConfirmation"
+        class="md:w-[28rem]"
+    >
+        <div class="space-y-6">
+            <div>
+                <x-ui::heading size="lg">
+                    Confirm account {{ $form->is_active ? 'activation' : 'deactivation' }}
+                </x-ui::heading>
+
+                <x-ui::subheading>
+                    Are you sure you want to {{ $form->is_active ? 'activate' : 'deactivate' }}
+                    <span class="font-semibold">{{ $form->name }}</span>'s account?
+                    @if ($form->is_active)
+                        The user will regain access to the system.
+                    @else
+                        The user will not be able to access the system until the account is reactivated.
+                    @endif
+                </x-ui::subheading>
+
+                @if (! $form->is_active)
+                    <div class="mt-4">
+                        <x-ui::input
+                            wire:model="deactivationConfirmation"
+                            label="Type DEACTIVATE to confirm"
+                            placeholder="DEACTIVATE"
+                            autocomplete="off"
+                        />
+                    </div>
+                @endif
+            </div>
+
+            <div class="flex gap-2">
+                <x-ui::button
+                    wire:click="save(true, true)"
+                    wire:loading.attr="disabled"
+                    wire:target="save"
+                    :variant="$form->is_active ? 'primary' : 'danger'"
+                    class="flex-1"
+                >
+                    {{ $form->is_active ? 'Activate account' : 'Deactivate account' }}
+                </x-ui::button>
+
+                <x-ui::button
+                    wire:click="$set('showAccountStatusConfirmation', false)"
+                    variant="ghost"
+                    class="flex-1"
+                >
+                    Cancel
+                </x-ui::button>
+            </div>
+        </div>
+    </x-ui::modal>
+
+

@@ -5,7 +5,7 @@
 
 <link rel="icon" type="image/png" href="{{ asset('images/Logo_Green.png') }}?v=2" />
 
-@if (request()->routeIs('home', 'dashboard', 'Facility*'))
+@if (request()->routeIs('home', 'dashboard', 'facilities.*'))
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
 @endif
@@ -112,22 +112,6 @@
         z-index: 0;
     }
 
-    .react-app-sidebar.is-collapsed .react-sidebar-brand > a {
-        width: 62px !important;
-        height: 58px !important;
-        border: 1px solid #009639 !important;
-        border-radius: 18px !important;
-        background: #009639 !important;
-        padding: 5px !important;
-        box-shadow: 0 8px 18px rgba(0, 150, 57, 0.18) !important;
-    }
-
-    .react-app-sidebar.is-collapsed .react-sidebar-brand img {
-        width: 100% !important;
-        height: 100% !important;
-        border-radius: 12px !important;
-        object-fit: cover !important;
-    }
 </style>
 
 @vite(['resources/css/app.css', 'resources/js/app.js'])

@@ -11,6 +11,7 @@ Route::get('/', HomeController::class)
     ->name('home');
 
 Route::get('/facilities/{facility}', [FacilityController::class, 'show'])
+    ->whereNumber('facility')
     ->name('facilities.show');
 
 Route::redirect('/about', '/#about')

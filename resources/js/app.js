@@ -4,6 +4,9 @@ import { Calendar } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import timeGridPlugin from '@fullcalendar/timegrid';
+import { bookingRequestForm } from './requests/booking-form';
+
+window.bookingRequestForm = bookingRequestForm;
 
 window.ScheduleCalendar = {
     Calendar,

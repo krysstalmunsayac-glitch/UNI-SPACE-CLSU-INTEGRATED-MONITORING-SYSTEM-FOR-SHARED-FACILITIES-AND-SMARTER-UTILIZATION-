@@ -36,11 +36,19 @@ it('shows the responsible office instead of the location on the request page', f
         'Location' => 'Central Luzon State University, Science City of Muñoz, Nueva Ecija',
         'Status' => 'Available',
     ]);
+    $officeAdmin = User::factory()->create([
+        'name' => 'Assigned Alumni Admin',
+        'email' => 'alumni-admin@clsu.edu.ph',
+        'user_type' => 'admin',
+    ]);
+    $facility->assignedAdmins()->attach($officeAdmin->id);
 
     $this->actingAs($externalUser)
         ->get(route('requests.create', $facility))
         ->assertOk()
         ->assertSee('Office')
         ->assertSee('CLSU Alumni Association Inc.')
+        ->assertSee('Assigned Alumni Admin')
+        ->assertSee('alumni-admin@clsu.edu.ph')
         ->assertDontSee('Central Luzon State University, Science City of Muñoz, Nueva Ecija');
 });
