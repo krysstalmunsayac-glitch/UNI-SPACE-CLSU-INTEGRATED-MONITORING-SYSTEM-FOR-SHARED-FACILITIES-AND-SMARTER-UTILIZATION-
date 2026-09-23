@@ -71,9 +71,9 @@
                 this.loadingIndex = null;
                 await this.$nextTick();
                 requestAnimationFrame(() => {
+                    this.active = index;
                     this.transitioning = true;
                     window.setTimeout(() => {
-                        this.active = index;
                         this.currentSrc = this.incomingSrc;
                         this.currentAlt = this.incomingAlt;
                         this.transitioning = false;
