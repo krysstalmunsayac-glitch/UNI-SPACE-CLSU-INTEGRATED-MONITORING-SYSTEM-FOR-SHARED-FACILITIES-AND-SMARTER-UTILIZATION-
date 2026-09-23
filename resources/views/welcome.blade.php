@@ -34,6 +34,9 @@
             ['image' => 'images/siel-space-slide-05.jpg', 'alt' => 'Front entrance of the CLSU auditorium'],
             ['image' => 'images/siel-space-slide-06.jpg', 'alt' => 'Angled exterior view of the CLSU auditorium'],
         ];
+        $heroSlidesForBrowser = collect($heroSlides)
+            ->map(fn ($slide) => ['image' => asset($slide['image']), 'alt' => $slide['alt']])
+            ->values();
     @endphp
 
     <section
@@ -41,6 +44,7 @@
         class="relative flex min-h-[640px] scroll-mt-20 overflow-hidden bg-zinc-950 text-white lg:h-[100svh]"
         x-data="{
             active: 0,
+            slides: @js($heroSlidesForBrowser),
             total: {{ count($heroSlides) }},
             timer: null,
             init() { this.start(); },
@@ -60,22 +64,15 @@
         aria-roledescription="carousel"
         aria-label="CLSU facility images"
     >
-        @foreach ($heroSlides as $slide)
-            <img
-                src="{{ asset($slide['image']) }}"
-                alt="{{ $slide['alt'] }}"
-                class="home-hero-slide absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-1000 ease-in-out"
-                style="opacity: {{ $loop->first ? '1' : '0' }}"
-                x-bind:style="{ opacity: active === {{ $loop->index }} ? 1 : 0 }"
-                x-bind:aria-hidden="active !== {{ $loop->index }}"
-                decoding="async"
-                @if ($loop->first)
-                    fetchpriority="high"
-                @else
-                    fetchpriority="auto"
-                @endif
-            >
-        @endforeach
+        <img
+            src="{{ asset($heroSlides[0]['image']) }}"
+            x-bind:src="slides[active].image"
+            alt="{{ $heroSlides[0]['alt'] }}"
+            x-bind:alt="slides[active].alt"
+            class="home-hero-slide absolute inset-0 h-full w-full object-cover object-center"
+            decoding="async"
+            fetchpriority="high"
+        >
         <div class="absolute inset-0 bg-gradient-to-b from-black/65 via-black/45 to-black/80" aria-hidden="true"></div>
         <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_20%,rgba(0,0,0,.28)_100%)]" aria-hidden="true"></div>
         <button
@@ -158,8 +155,9 @@
                             <img
                                 src="{{ $category['image'] }}"
                                 alt=""
-                                loading="eager"
+                                loading="lazy"
                                 decoding="async"
+                                fetchpriority="low"
                                 onerror="this.onerror=null;this.src='{{ asset('images/siel-space-slide-02.jpg') }}'"
                                 class="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-105"
                             >

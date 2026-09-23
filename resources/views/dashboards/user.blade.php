@@ -17,6 +17,9 @@
             ['image' => 'images/siel-space-slide-05.jpg', 'alt' => 'Front entrance of the CLSU auditorium'],
             ['image' => 'images/siel-space-slide-06.jpg', 'alt' => 'Angled exterior view of the CLSU auditorium'],
         ];
+        $heroSlidesForBrowser = collect($heroSlides)
+            ->map(fn ($slide) => ['image' => asset($slide['image']), 'alt' => $slide['alt']])
+            ->values();
     @endphp
 
     <section
@@ -24,6 +27,7 @@
         class="relative flex min-h-[640px] scroll-mt-20 overflow-hidden bg-zinc-950 text-white lg:h-[100svh]"
         x-data="{
             active: 0,
+            slides: @js($heroSlidesForBrowser),
             total: {{ count($heroSlides) }},
             timer: null,
             init() { this.start(); },
@@ -43,17 +47,15 @@
         aria-roledescription="carousel"
         aria-label="SIEL Space campus images"
     >
-        @foreach ($heroSlides as $slide)
-            <img
-                src="{{ asset($slide['image']) }}"
-                alt="{{ $slide['alt'] }}"
-                class="external-hero-slide absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-1000 ease-in-out"
-                style="opacity: {{ $loop->first ? '1' : '0' }}"
-                x-bind:style="{ opacity: active === {{ $loop->index }} ? 1 : 0 }"
-                x-bind:aria-hidden="active !== {{ $loop->index }}"
-                @if ($loop->first) fetchpriority="high" @endif
-            >
-        @endforeach
+        <img
+            src="{{ asset($heroSlides[0]['image']) }}"
+            x-bind:src="slides[active].image"
+            alt="{{ $heroSlides[0]['alt'] }}"
+            x-bind:alt="slides[active].alt"
+            class="external-hero-slide absolute inset-0 h-full w-full object-cover object-center"
+            decoding="async"
+            fetchpriority="high"
+        >
         <div class="absolute inset-0 bg-gradient-to-b from-black/65 via-black/45 to-black/80" aria-hidden="true"></div>
         <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_20%,rgba(0,0,0,.28)_100%)]" aria-hidden="true"></div>
 
@@ -116,7 +118,7 @@
                 <div class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
                     @foreach ($facilityCategories as $category)
                         <button type="button" data-category-filter="{{ $category['type'] }}" class="group relative min-h-52 overflow-hidden rounded-2xl border border-zinc-300 bg-zinc-900 text-left focus:outline-none focus:ring-2 focus:ring-yellow-400">
-                            <img src="{{ $category['image'] }}" alt="" class="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-105">
+                            <img src="{{ $category['image'] }}" alt="" loading="lazy" decoding="async" fetchpriority="low" class="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-105">
                             <span class="absolute inset-0 bg-black/50 transition group-hover:bg-black/65" aria-hidden="true"></span>
                             <span class="absolute inset-x-0 bottom-0 block p-5 text-white"><span class="block text-xl font-black leading-tight">{{ $category['name'] }}</span><span class="mt-2 block text-sm font-semibold text-yellow-300">{{ $category['count'] }} {{ Str::plural('space', $category['count']) }}</span></span>
                         </button>
