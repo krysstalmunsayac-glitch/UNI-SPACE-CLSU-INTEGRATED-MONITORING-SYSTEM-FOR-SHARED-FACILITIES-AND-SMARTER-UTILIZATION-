@@ -3,10 +3,13 @@
 namespace App\Actions\Facilities;
 
 use App\Models\Facility;
+use App\Services\FacilityImageProcessor;
 use Illuminate\Support\Facades\Storage;
 
 class SaveFacility
 {
+    public function __construct(private readonly FacilityImageProcessor $imageProcessor) {}
+
     public function handle(?Facility $facility, array $data, array $newImages = [], array $removedImageIds = []): Facility
     {
         $facility ??= new Facility;
@@ -19,7 +22,7 @@ class SaveFacility
         }
 
         foreach ($newImages as $image) {
-            $facility->images()->create(['image_path' => $image->store('facilities', 'public')]);
+            $facility->images()->create(['image_path' => $this->imageProcessor->store($image)]);
         }
 
         return $facility->refresh();

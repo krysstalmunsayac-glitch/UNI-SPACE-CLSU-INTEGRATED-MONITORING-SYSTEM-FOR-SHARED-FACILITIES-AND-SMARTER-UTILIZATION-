@@ -9,6 +9,8 @@ use App\Actions\Lifecycle\RestoreRecord;
 use App\Models\Facility;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class);
 
@@ -27,6 +29,25 @@ it('creates and updates a facility through the facility action', function () {
 
     expect($updated->FID)->toBe($facility->FID)
         ->and($updated->Facility_Name)->toBe('Updated Hall');
+});
+
+it('compresses facility uploads to a card-sized webp image', function () {
+    Storage::fake('public');
+
+    $facility = app(SaveFacility::class)->handle(null, [
+        'Facility_Name' => 'Compressed Hall',
+        'Status' => 'Available',
+    ], [UploadedFile::fake()->image('large-facility.jpg', 2400, 1600)]);
+
+    $path = $facility->images()->value('image_path');
+
+    Storage::disk('public')->assertExists($path);
+    expect($path)->toEndWith('.webp');
+
+    [$width, $height, $type] = getimagesize(Storage::disk('public')->path($path));
+
+    expect(max($width, $height))->toBe(1200)
+        ->and($type)->toBe(IMAGETYPE_WEBP);
 });
 
 it('archives, restores, and permanently deletes soft-deletable records through lifecycle actions', function () {
