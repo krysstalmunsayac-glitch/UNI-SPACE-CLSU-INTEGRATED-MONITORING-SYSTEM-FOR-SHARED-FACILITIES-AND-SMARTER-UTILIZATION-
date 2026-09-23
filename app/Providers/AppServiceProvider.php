@@ -10,6 +10,13 @@ use App\Livewire\Feedback\FeedbackManagement;
 use App\Livewire\Reports\ReportManagement;
 use App\Livewire\Schedules\ScheduleManagement;
 use App\Livewire\Users\UserManagement;
+use App\Models\Amenity;
+use App\Models\Event;
+use App\Models\Facility;
+use App\Models\FacilityRequest;
+use App\Models\Schedule;
+use App\Models\User;
+use App\Observers\AdminContentChangeObserver;
 use App\Support\Ui;
 use App\Support\UiManager;
 use Illuminate\Foundation\AliasLoader;
@@ -75,5 +82,12 @@ class AppServiceProvider extends ServiceProvider
                 }
             };
         });
+
+        Amenity::observe(AdminContentChangeObserver::class);
+        Event::observe(AdminContentChangeObserver::class);
+        Facility::observe(AdminContentChangeObserver::class);
+        FacilityRequest::observe(AdminContentChangeObserver::class);
+        Schedule::observe(AdminContentChangeObserver::class);
+        User::observe(AdminContentChangeObserver::class);
     }
 }

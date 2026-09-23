@@ -377,5 +377,6 @@
 
     @stack('scripts')
     @livewireScripts
+    @include('partials.site-auto-refresh')
 </body>
 </html>
