@@ -46,32 +46,75 @@
             active: 0,
             slides: @js($heroSlidesForBrowser),
             total: {{ count($heroSlides) }},
+            currentSrc: @js($heroSlidesForBrowser[0]['image']),
+            currentAlt: @js($heroSlidesForBrowser[0]['alt']),
+            incomingSrc: null,
+            incomingAlt: '',
+            transitioning: false,
+            loadingIndex: null,
             timer: null,
-            init() { this.start(); },
+            init() { this.start(); this.preload(1); },
             start() {
                 clearInterval(this.timer);
-                this.timer = setInterval(() => this.active = (this.active + 1) % this.total, 10000);
+                this.timer = setInterval(() => this.show((this.active + 1) % this.total), 10000);
             },
             stop() { clearInterval(this.timer); },
-            goTo(index) { this.active = index; this.start(); },
-            previous() { this.active = (this.active - 1 + this.total) % this.total; this.start(); },
-            next() { this.active = (this.active + 1) % this.total; this.start(); },
+            preload(index) { const image = new Image(); image.src = this.slides[index].image; },
+            async show(index) {
+                if (index === this.active || this.transitioning || this.loadingIndex !== null) return;
+                this.loadingIndex = index;
+                const image = new Image();
+                image.src = this.slides[index].image;
+                try { await image.decode(); } catch { if (!image.complete) { this.loadingIndex = null; return; } }
+                this.incomingSrc = this.slides[index].image;
+                this.incomingAlt = this.slides[index].alt;
+                this.loadingIndex = null;
+                await this.$nextTick();
+                requestAnimationFrame(() => {
+                    this.transitioning = true;
+                    window.setTimeout(() => {
+                        this.active = index;
+                        this.currentSrc = this.incomingSrc;
+                        this.currentAlt = this.incomingAlt;
+                        this.transitioning = false;
+                        this.incomingSrc = null;
+                        this.preload((index + 1) % this.total);
+                    }, window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 800);
+                });
+            },
+            goTo(index) { this.show(index); this.start(); },
+            previous() { this.show((this.active - 1 + this.total) % this.total); this.start(); },
+            next() { this.show((this.active + 1) % this.total); this.start(); },
             destroy() { clearInterval(this.timer); }
         }"
         x-on:keydown.left.prevent="previous()"
         x-on:keydown.right.prevent="next()"
+        x-on:mouseenter="stop()"
+        x-on:mouseleave="start()"
+        x-on:focusin="stop()"
+        x-on:focusout="start()"
         tabindex="0"
         aria-roledescription="carousel"
         aria-label="CLSU facility images"
     >
         <img
             src="{{ asset($heroSlides[0]['image']) }}"
-            x-bind:src="slides[active].image"
+            x-bind:src="currentSrc"
             alt="{{ $heroSlides[0]['alt'] }}"
-            x-bind:alt="slides[active].alt"
+            x-bind:alt="currentAlt"
             class="home-hero-slide absolute inset-0 h-full w-full object-cover object-center"
             decoding="async"
             fetchpriority="high"
+        >
+        <img
+            x-cloak
+            x-show="incomingSrc"
+            x-bind:src="incomingSrc"
+            x-bind:alt="incomingAlt"
+            x-bind:class="transitioning ? 'opacity-100' : 'opacity-0'"
+            class="home-hero-slide absolute inset-0 h-full w-full object-cover object-center opacity-0 transition-opacity duration-700 ease-in-out"
+            decoding="async"
+            aria-live="off"
         >
         <div class="absolute inset-0 bg-gradient-to-b from-black/65 via-black/45 to-black/80" aria-hidden="true"></div>
         <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_20%,rgba(0,0,0,.28)_100%)]" aria-hidden="true"></div>
