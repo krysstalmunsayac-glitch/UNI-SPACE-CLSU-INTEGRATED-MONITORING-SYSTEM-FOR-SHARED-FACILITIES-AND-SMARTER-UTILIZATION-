@@ -65,6 +65,7 @@
                     alt="{{ $facility->Facility_Name }}"
                     class="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                     loading="lazy"
+                    decoding="async"
                 >
             </button>
         @else

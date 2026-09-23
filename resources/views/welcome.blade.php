@@ -68,7 +68,13 @@
                 style="opacity: {{ $loop->first ? '1' : '0' }}"
                 x-bind:style="{ opacity: active === {{ $loop->index }} ? 1 : 0 }"
                 x-bind:aria-hidden="active !== {{ $loop->index }}"
-                @if ($loop->first) fetchpriority="high" @endif
+                decoding="async"
+                @if ($loop->first)
+                    fetchpriority="high"
+                @else
+                    loading="lazy"
+                    fetchpriority="low"
+                @endif
             >
         @endforeach
         <div class="absolute inset-0 bg-gradient-to-b from-black/65 via-black/45 to-black/80" aria-hidden="true"></div>
@@ -150,7 +156,7 @@
                 <div class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
                     @foreach ($facilityCategories as $category)
                         <button type="button" data-category-filter="{{ $category['type'] }}" class="group relative min-h-52 overflow-hidden rounded-2xl border border-zinc-300 bg-zinc-900 text-left focus:outline-none focus:ring-2 focus:ring-yellow-400">
-                            <img src="{{ $category['image'] }}" alt="" class="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-105">
+                            <img src="{{ $category['image'] }}" alt="" loading="lazy" decoding="async" class="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-105">
                             <span class="absolute inset-0 bg-black/50 transition group-hover:bg-black/65" aria-hidden="true"></span>
                             <span class="absolute inset-x-0 bottom-0 block p-5 text-white"><span class="block text-xl font-black leading-tight">{{ $category['name'] }}</span><span class="mt-2 block text-sm font-semibold text-yellow-300">{{ $category['count'] }} {{ Str::plural('space', $category['count']) }}</span></span>
                         </button>
@@ -191,7 +197,7 @@
     @include('partials.campus-map', ['mapFacilities' => $facilities])
 
     <section class="relative overflow-hidden bg-zinc-950 text-white">
-        <img src="{{ asset('images/siel-space-slide-02.jpg') }}" alt="Interior of a CLSU auditorium" class="absolute inset-0 h-full w-full object-cover object-center">
+        <img src="{{ asset('images/siel-space-slide-02.jpg') }}" alt="Interior of a CLSU auditorium" loading="lazy" decoding="async" class="absolute inset-0 h-full w-full object-cover object-center">
         <div class="absolute inset-0 bg-black/65" aria-hidden="true"></div>
         <div class="relative mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8 lg:py-32">
             <p class="text-sm font-black uppercase tracking-[.2em] text-yellow-400">Ready when you are</p><h2 class="mt-4 max-w-3xl text-4xl font-black tracking-tight sm:text-6xl">Need a space for your next activity?</h2><p class="mt-5 max-w-2xl text-lg leading-8 text-white/80">Explore CLSU facilities, review what each venue offers, and send your reservation request.</p>

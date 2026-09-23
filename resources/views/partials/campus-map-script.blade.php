@@ -434,7 +434,9 @@
                     return true;
                 };
 
-                if (!initializeCampusMap()) {
+                const startCampusMap = () => {
+                    if (initializeCampusMap()) return;
+
                     let attempts = 0;
                     const leafletTimer = window.setInterval(() => {
                         attempts += 1;
@@ -446,4 +448,16 @@
                             if (mapElement) mapElement.textContent = 'The campus map could not be loaded. Please refresh and try again.';
                         }
                     }, 250);
+                };
+
+                const mapSection = document.getElementById('map');
+                if (mapSection && 'IntersectionObserver' in window) {
+                    const mapObserver = new IntersectionObserver((entries, observer) => {
+                        if (!entries.some(entry => entry.isIntersecting)) return;
+                        observer.disconnect();
+                        startCampusMap();
+                    }, { rootMargin: '400px 0px' });
+                    mapObserver.observe(mapSection);
+                } else {
+                    startCampusMap();
                 }
