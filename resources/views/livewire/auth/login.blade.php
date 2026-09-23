@@ -33,12 +33,8 @@ new #[Layout('components.layouts.auth')] class extends Component
 
         $this->ensureIsNotRateLimited();
 
-        $user = User::withTrashed()
-            ->where(function ($query): void {
-                $query->where('email', $this->email)
-                    ->orWhere('clsu_id', $this->email);
-            })
-            ->first();
+        $loginField = filter_var($this->email, FILTER_VALIDATE_EMAIL) ? 'email' : 'clsu_id';
+        $user = User::withTrashed()->where($loginField, $this->email)->first();
 
         $canRecoverSelfDeletedAccount = $user?->trashed()
             && $user->account_type === 'external'
