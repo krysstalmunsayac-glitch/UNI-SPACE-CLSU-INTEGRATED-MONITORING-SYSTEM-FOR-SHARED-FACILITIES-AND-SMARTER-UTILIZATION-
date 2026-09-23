@@ -146,7 +146,8 @@
 
                                 <div class="rounded-xl bg-emerald-50 p-4 text-sm text-emerald-900/80 dark:bg-zinc-900 dark:text-zinc-300 lg:col-span-2">
                                     <p><span class="font-black">Location:</span> {{ $request->facility?->Location ?? 'N/A' }}</p>
-                                    <p class="mt-2"><span class="font-black">Purpose:</span> {{ $request->Purpose ?? 'N/A' }}</p>
+                                    <p class="mt-2"><span class="font-black">Purpose of Request:</span> {{ $request->Purpose ?? 'N/A' }}</p>
+                                    <p class="mt-2"><span class="font-black">Event Description:</span> {{ $request->Request_Details ?? $request->event?->Description ?? 'N/A' }}</p>
                                     <p class="mt-2"><span class="font-black">Event type:</span> {{ $request->event?->Type_Event ?? 'N/A' }}</p>
                                     <p class="mt-2"><span class="font-black">Event classification:</span> {{ $request->event?->Event_Scope ? $request->event->Event_Scope.' event' : 'N/A' }}</p>
                                     @if ($isCancelled && $request->Cancellation_Reason)
@@ -290,8 +291,8 @@
                                         </div>
                                     @endforeach
                                     <div class="sm:col-span-2">
-                                        <dt class="text-xs font-black uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Description</dt>
-                                        <dd class="mt-1 whitespace-pre-wrap font-semibold text-emerald-950 dark:text-white">{{ $request->event?->Description ?? 'N/A' }}</dd>
+                                        <dt class="text-xs font-black uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Event Description</dt>
+                                        <dd class="mt-1 whitespace-pre-wrap font-semibold text-emerald-950 dark:text-white">{{ $request->Request_Details ?? $request->event?->Description ?? 'N/A' }}</dd>
                                     </div>
                                     <div class="sm:col-span-2">
                                         <dt class="text-xs font-black uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Request letter</dt>
@@ -446,8 +447,8 @@
                                     </select>
                                 </div>
                                 <div class="lg:col-span-2">
-                                    <label for="description-{{ $request->RID }}" class="mb-2 block text-xs font-black uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Description</label>
-                                    <textarea id="description-{{ $request->RID }}" name="Description" rows="3" placeholder="Describe the event" class="w-full rounded-xl border border-emerald-900/10 bg-white px-4 py-3 text-sm text-emerald-950 outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900 dark:text-white">{{ $oldForRequest('Description', $request->event?->Description) }}</textarea>
+                                    <label for="request-details-{{ $request->RID }}" class="mb-2 block text-xs font-black uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Event Description</label>
+                                    <textarea id="request-details-{{ $request->RID }}" name="Request_Details" rows="3" placeholder="Enter setup, activity, or other important details" class="w-full rounded-xl border border-emerald-900/10 bg-white px-4 py-3 text-sm text-emerald-950 outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900 dark:text-white">{{ $oldForRequest('Request_Details', $request->Request_Details ?? $request->event?->Description) }}</textarea>
                                 </div>
                                 <div>
                                     <label for="start-date-{{ $request->RID }}" class="mb-2 block text-xs font-black uppercase tracking-wide text-emerald-700 dark:text-emerald-300">First event day</label>
@@ -469,10 +470,10 @@
                                     <label id="end-time-{{ $request->RID }}-label" for="end-time-{{ $request->RID }}" class="mb-2 block text-xs font-black uppercase tracking-wide text-emerald-700 dark:text-emerald-300">End time</label>
                                     <x-ui::time-select id="end-time-{{ $request->RID }}" aria-labelledby="end-time-{{ $request->RID }}-label" name="Proposed_End_Time" :value="$oldForRequest('Proposed_End_Time', data_get($request->Daily_Schedules, '0.end', $request->Proposed_End_Time?->format('H:i')))" :options="app(\App\Services\FacilityAvailabilityService::class)->endSlots()" />
                                 </div>
-                                <div>
-                                    <label for="purpose-{{ $request->RID }}" class="mb-2 block text-xs font-black uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Purpose</label>
-                                    <input id="purpose-{{ $request->RID }}" name="Purpose" value="{{ $oldForRequest('Purpose', $request->Purpose) }}" placeholder="Enter reservation purpose" class="w-full rounded-xl border border-emerald-900/10 bg-white px-4 py-3 text-sm text-emerald-950 outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900 dark:text-white">
-                                </div>
+                                @include('requests.partials.purpose-questionnaire', [
+                                    'selectedPurposes' => $request->selectablePurposeCategories(),
+                                    'otherPurpose' => $request->selectableOtherPurpose(),
+                                ])
                                 <div class="lg:col-span-2">
                                     <label class="mb-2 block text-xs font-black uppercase tracking-wide text-emerald-700 dark:text-emerald-300" for="attachment-{{ $request->RID }}">
                                         Request letter

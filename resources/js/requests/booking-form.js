@@ -5,6 +5,7 @@ export function bookingRequestForm(config) {
         availability: {},
         availabilityLoading: false,
         availabilityError: '',
+        amenityAvailability: config.amenityAvailability ?? {},
         scheduleValidationError: '',
         activePhoto: null,
 
@@ -50,6 +51,7 @@ export function bookingRequestForm(config) {
         applySharedTime() {
             this.dailySchedules = this.dailySchedules.map(schedule => ({ ...schedule, start: this.sharedStartTime, end: this.sharedEndTime }));
             if (this.dailySchedules.length && this.dailySchedules.every(schedule => schedule.start && schedule.end)) this.scheduleValidationError = '';
+            this.loadAvailability();
         },
         minimumEndTime(startTime) {
             if (!startTime) return null;
@@ -72,6 +74,7 @@ export function bookingRequestForm(config) {
             schedule.start = time;
             schedule.end = this.addMinutes(time, 60);
             if (this.dailySchedules.every(item => item.start && item.end)) this.scheduleValidationError = '';
+            this.loadAvailability();
         },
         async loadAvailability() {
             const from = this.$refs.startDate?.value;
@@ -83,15 +86,27 @@ export function bookingRequestForm(config) {
                 const url = new URL(this.availabilityUrl, window.location.origin);
                 url.searchParams.set('from', from);
                 url.searchParams.set('to', to);
+                if (this.dailySchedules.every(schedule => schedule.date && schedule.start && schedule.end)) {
+                    this.dailySchedules.forEach((schedule, index) => {
+                        url.searchParams.set(`schedules[${index}][date]`, schedule.date);
+                        url.searchParams.set(`schedules[${index}][start]`, schedule.start);
+                        url.searchParams.set(`schedules[${index}][end]`, schedule.end);
+                    });
+                }
                 const response = await fetch(url, { headers: { Accept: 'application/json' } });
                 if (!response.ok) throw new Error('Availability could not be loaded.');
-                this.availability = (await response.json()).days;
+                const data = await response.json();
+                this.availability = data.days;
+                this.amenityAvailability = data.amenities ?? this.amenityAvailability;
             } catch (error) {
                 this.availability = {};
                 this.availabilityError = error.message;
             } finally {
                 this.availabilityLoading = false;
             }
+        },
+        amenityRemaining(id) {
+            return Number(this.amenityAvailability[String(id)] ?? 0);
         },
         slotStatus(date, start, end) {
             if (date < this.bookingToday || (date === this.bookingToday && start <= this.bookingCurrentTime)) return 'past';

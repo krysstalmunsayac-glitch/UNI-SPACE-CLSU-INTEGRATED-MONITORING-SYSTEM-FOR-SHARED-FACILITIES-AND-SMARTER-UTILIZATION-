@@ -25,7 +25,7 @@
                     <dd class="mt-1 text-zinc-700 dark:text-zinc-300">{{ $amenity->isPermanent() ? 'Permanent / built-in' : 'Countable' }}</dd>
                 </div>
                 <div>
-                    <dt class="text-xs font-bold text-zinc-500">Available quantity</dt>
+                    <dt class="text-xs font-bold text-zinc-500">Configured quantity</dt>
                     <dd class="mt-1 text-zinc-700 dark:text-zinc-300">{{ $amenity->quantityLabel() }}</dd>
                 </div>
                 <div>

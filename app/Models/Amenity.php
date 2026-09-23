@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -120,17 +121,27 @@ class Amenity extends Model
         string $endTime,
         ?int $ignoreRequestId = null,
     ): int {
-        return (int) DB::table('request_facility_amenities')
-            ->join('requests', 'requests.RID', '=', 'request_facility_amenities.Request_ID')
-            ->where('request_facility_amenities.Amenity_ID', $this->AID)
-            ->whereNull('requests.deleted_at')
-            ->whereDate('requests.Proposed_Date', '<=', $endDate)
-            ->whereDate(DB::raw('COALESCE(requests.Proposed_End_Date, requests.Proposed_Date)'), '>=', $startDate)
-            ->whereIn('requests.Status', ['Pending', 'Awaiting Payment', 'Approved'])
-            ->when($ignoreRequestId, fn ($query) => $query->where('requests.RID', '!=', $ignoreRequestId))
-            ->where('requests.Proposed_Start_Time', '<', $endTime)
-            ->where('requests.Proposed_End_Time', '>', $startTime)
-            ->sum('request_facility_amenities.quantity');
+        $dates = collect(Carbon::parse($startDate)->daysUntil(Carbon::parse($endDate)))
+            ->map(fn (Carbon $date) => $date->toDateString())
+            ->push($endDate)
+            ->unique();
+
+        return (int) $this->requests()
+            ->whereDate('Proposed_Date', '<=', $endDate)
+            ->whereDate(DB::raw('COALESCE(Proposed_End_Date, Proposed_Date)'), '>=', $startDate)
+            ->whereIn('Status', ['Pending', 'Awaiting Payment', 'Approved'])
+            ->when($ignoreRequestId, fn ($query) => $query->where('RID', '!=', $ignoreRequestId))
+            ->get()
+            ->filter(function (FacilityRequest $request) use ($dates, $startTime, $endTime): bool {
+                return $dates->contains(function (string $date) use ($request, $startTime, $endTime): bool {
+                    $schedule = $request->scheduleForDate($date);
+
+                    return $schedule
+                        && $schedule['start'] < $endTime
+                        && $schedule['end'] > $startTime;
+                });
+            })
+            ->sum(fn (FacilityRequest $request) => (int) $request->pivot->quantity);
     }
 
     protected static function booted(): void

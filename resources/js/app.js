@@ -4,6 +4,8 @@ import { Calendar } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import timeGridPlugin from '@fullcalendar/timegrid';
+import Swal from 'sweetalert2';
+import 'sweetalert2/dist/sweetalert2.min.css';
 import { bookingRequestForm } from './requests/booking-form';
 
 window.bookingRequestForm = bookingRequestForm;
@@ -130,23 +132,10 @@ window.scheduleCalendar = function (initialEvents, livewireView, livewire) {
     };
 };
 
-let sweetAlertPromise;
+window.Swal = Swal;
 
-const loadSweetAlert = () => {
-    if (window.Swal) return Promise.resolve(window.Swal);
-    if (sweetAlertPromise) return sweetAlertPromise;
-
-    sweetAlertPromise = new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
-        script.async = true;
-        script.onload = () => resolve(window.Swal);
-        script.onerror = reject;
-        document.head.appendChild(script);
-    });
-
-    return sweetAlertPromise;
-};
+const loadSweetAlert = () => Promise.resolve(Swal);
+const sweetAlertSuccessColor = '#009639';
 
 window.confirmLogout = async () => {
     const Swal = await loadSweetAlert().catch(() => null);
@@ -159,12 +148,12 @@ window.confirmLogout = async () => {
         title: 'Confirm logout',
         text: 'Do you want to log out of your account?',
         icon: 'success',
-        iconColor: '#006b2b',
+        iconColor: sweetAlertSuccessColor,
         position: 'center',
         showCancelButton: true,
         confirmButtonText: 'Yes, log out',
         cancelButtonText: 'Cancel',
-        confirmButtonColor: '#006b2b',
+        confirmButtonColor: sweetAlertSuccessColor,
         reverseButtons: true,
         customClass: {
             popup: 'rounded-2xl',
@@ -189,6 +178,8 @@ document.addEventListener('submit', async event => {
 });
 
 window.addEventListener('swal', async event => {
+    const rawDetail = event?.detail;
+    const detail = Array.isArray(rawDetail) ? (rawDetail[0] ?? {}) : (rawDetail ?? {});
     const {
         title = 'Success',
         text = '',
@@ -196,17 +187,39 @@ window.addEventListener('swal', async event => {
         timer = 2500,
         showConfirmButton = false,
         position = 'center',
-    } = event?.detail ?? {};
+    } = detail;
 
     const Swal = await loadSweetAlert().catch(() => null);
-    if (!Swal) return;
+    if (!Swal) {
+        const overlay = document.createElement('div');
+        overlay.className = 'fixed inset-0 z-[10000] grid place-items-center bg-black/45 p-4';
+        overlay.innerHTML = `
+            <div role="alertdialog" aria-modal="true" class="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-2xl">
+                <div class="mx-auto grid size-14 place-items-center rounded-full bg-emerald-100 text-3xl font-bold text-emerald-700">&#10003;</div>
+                <h2 class="mt-4 text-xl font-black text-emerald-950"></h2>
+                <p class="mt-2 text-sm leading-6 text-zinc-600"></p>
+                <button type="button" class="mt-5 min-h-11 rounded-xl bg-emerald-700 px-6 py-2 font-bold text-white hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2">OK</button>
+            </div>`;
+        overlay.querySelector('h2').textContent = title;
+        overlay.querySelector('p').textContent = text;
+        const close = () => overlay.remove();
+        overlay.querySelector('button').addEventListener('click', close);
+        overlay.addEventListener('click', clickEvent => {
+            if (clickEvent.target === overlay) close();
+        });
+        document.body.appendChild(overlay);
+        window.setTimeout(close, Math.max(timer, 3500));
+        return;
+    }
 
     Swal.fire({
         title,
         text,
         icon,
+        iconColor: icon === 'success' ? sweetAlertSuccessColor : undefined,
         timer,
         showConfirmButton,
+        confirmButtonColor: icon === 'success' ? sweetAlertSuccessColor : undefined,
         timerProgressBar: true,
         position,
         toast: false,

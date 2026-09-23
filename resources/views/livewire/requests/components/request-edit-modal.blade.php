@@ -20,7 +20,39 @@
 
             <x-ui::input wire:model="form.Proposed_End_Time" type="time" label="End Time" />
 
-            <x-ui::textarea wire:model="form.Purpose" label="Purpose" placeholder="Enter the purpose of the request" rows="3" />
+            <fieldset class="space-y-3 rounded-xl border border-emerald-200 bg-emerald-50/50 p-4 dark:border-emerald-900 dark:bg-emerald-950/20">
+                <legend class="px-1 text-sm font-semibold text-zinc-900 dark:text-zinc-100">Purpose of Request</legend>
+                <p class="text-sm text-zinc-600 dark:text-zinc-400">Select every category that applies.</p>
+
+                <div class="grid gap-2 sm:grid-cols-2">
+                    @foreach (\App\Models\FacilityRequest::PURPOSE_OPTIONS as $purposeOption)
+                        <label class="flex items-start gap-2 text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                            <input
+                                type="checkbox"
+                                value="{{ $purposeOption }}"
+                                wire:model="Purpose_Categories"
+                                class="mt-0.5 rounded border-zinc-300 text-emerald-700 focus:ring-emerald-600"
+                            >
+                            <span>{{ $purposeOption }}</span>
+                        </label>
+                    @endforeach
+                </div>
+
+                @error('Purpose_Categories')
+                    <p class="text-sm font-medium text-red-600">{{ $message }}</p>
+                @enderror
+
+                <x-ui::input
+                    wire:model="Other_Purpose"
+                    label="Other purpose"
+                    placeholder="Complete this only when Other is selected"
+                />
+                @error('Other_Purpose')
+                    <p class="text-sm font-medium text-red-600">{{ $message }}</p>
+                @enderror
+            </fieldset>
+
+            <x-ui::textarea wire:model="form.Request_Details" label="Event Description" placeholder="Describe the event, activity, setup, or other important details" rows="4" />
 
             <x-ui::input wire:model="form.Capacity" type="number" min="1" label="Expected Attendees" />
 

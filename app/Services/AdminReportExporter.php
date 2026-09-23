@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Services\Reports\ClsuLetterheadPdf;
 use Illuminate\Support\Collection;
 
 class AdminReportExporter
@@ -46,7 +47,7 @@ class AdminReportExporter
             'Request ID', 'Request Type', 'Requester', 'CLSU ID', 'Email', 'Contact Number',
             'Organization or Office', 'Created By', 'Facility', 'Event', 'Event Type',
             'First Day', 'Last Day', 'Start Time', 'End Time', 'Daily Schedule',
-            'Attendees', 'Amenity', 'Status', 'Purpose', 'Purpose Categories',
+            'Attendees', 'Amenity', 'Status', 'Purpose of Request', 'Event Description', 'Purpose Categories',
             'Other Purpose', 'Review Requested At',
             'Review Notes', 'Rejection Reason', 'Cancellation Reason', 'Attachment',
             'Submitted At', 'Updated At',
@@ -76,6 +77,7 @@ class AdminReportExporter
             $request->amenities->map(fn ($amenity) => $amenity->name.' ('.(int) $amenity->pivot->quantity.' units)')->join(', '),
             $request->Review_Requested_At && $request->Status === 'Pending' ? 'Needs Revision' : ($request->Status ?? ''),
             $request->Purpose ?? '',
+            $request->Request_Details ?? $request->event?->Description ?? '',
             collect($request->Purpose_Categories ?? [])->join(', '),
             $request->Other_Purpose ?? '',
             $this->dateTimeText($request->Review_Requested_At),
@@ -174,7 +176,7 @@ class AdminReportExporter
 
     public function analyticsPdf(array $data, string $scopeLabel, string $dateLabel): string
     {
-        $pdf = new class('L', 'mm', 'A4') extends \FPDF
+        $pdf = new class('L', 'mm', 'A4') extends ClsuLetterheadPdf
         {
             public string $scope = '';
 
@@ -182,57 +184,95 @@ class AdminReportExporter
 
             public function Header(): void
             {
+                parent::Header();
+                $this->SetFillColor(5, 105, 75);
+                $this->Rect(12, $this->GetY(), 4, 18, 'F');
+                $this->SetX(20);
                 $this->SetFont('Arial', 'B', 17);
                 $this->SetTextColor(5, 105, 75);
-                $this->Cell(0, 8, 'SIEL SPACE - FACILITY ANALYTICS REPORT', 0, 1);
+                $this->Cell(0, 8, 'FACILITY ANALYTICS', 0, 1);
+                $this->SetX(20);
                 $this->SetFont('Arial', '', 8);
                 $this->SetTextColor(80, 90, 100);
                 $this->Cell(0, 5, 'Period: '.$this->period.' | Scope: '.$this->scope.' | Generated: '.now()->format('Y-m-d H:i'), 0, 1);
-                $this->Ln(3);
+                $this->Ln(5);
             }
 
             public function Footer(): void
             {
-                $this->SetY(-10);
-                $this->SetFont('Arial', '', 7);
-                $this->SetTextColor(100, 100, 100);
-                $this->Cell(0, 5, 'SIEL SPACE | Page '.$this->PageNo().'/{nb}', 0, 0, 'C');
+                parent::Footer();
             }
 
             public function section(string $title, string $description): void
             {
-                if ($this->GetY() > 175) {
+                if ($this->GetY() > 151) {
                     $this->AddPage();
                 }
-                $this->SetFont('Arial', 'B', 12);
-                $this->SetTextColor(20, 30, 35);
-                $this->Cell(0, 7, $title, 0, 1);
+                $this->SetFillColor(232, 242, 238);
+                $this->SetFont('Arial', 'B', 11);
+                $this->SetTextColor(5, 105, 75);
+                $this->Cell(0, 7, '  '.$title, 0, 1, 'L', true);
                 $this->SetFont('Arial', '', 8);
                 $this->SetTextColor(90, 100, 110);
                 $this->MultiCell(0, 4, $description);
                 $this->Ln(2);
             }
 
+            public function kpis(array $items): void
+            {
+                if ($items === []) {
+                    return;
+                }
+
+                $columns = min(5, count($items));
+                $gap = 3;
+                $width = ($this->GetPageWidth() - $this->lMargin - $this->rMargin - (($columns - 1) * $gap)) / $columns;
+                $startY = $this->GetY();
+
+                foreach (array_values($items) as $index => $item) {
+                    $column = $index % $columns;
+                    $row = intdiv($index, $columns);
+                    $x = $this->lMargin + ($column * ($width + $gap));
+                    $y = $startY + ($row * 20);
+                    $this->SetXY($x, $y);
+                    $this->SetFillColor(245, 249, 247);
+                    $this->SetDrawColor(210, 226, 219);
+                    $this->Rect($x, $y, $width, 17, 'DF');
+                    $this->SetXY($x + 3, $y + 2);
+                    $this->SetFont('Arial', '', 7);
+                    $this->SetTextColor(80, 95, 90);
+                    $this->Cell($width - 6, 4, $item['label'], 0, 1);
+                    $this->SetX($x + 3);
+                    $this->SetFont('Arial', 'B', 13);
+                    $this->SetTextColor(5, 105, 75);
+                    $this->Cell($width - 6, 7, $item['value'], 0, 0);
+                }
+
+                $rows = (int) ceil(count($items) / $columns);
+                $this->SetXY($this->lMargin, $startY + ($rows * 20));
+            }
+
             public function bars(array $rows, string $valueKey, float $maximum, string $suffix = ''): void
             {
                 $maximum = max(1, $maximum);
                 foreach ($rows as $row) {
-                    if ($this->GetY() > 190) {
+                    if ($this->GetY() > 164) {
                         $this->AddPage();
                     }
                     $label = (string) ($row['facility'] ?? $row['amenity'] ?? 'Unknown');
                     $value = (float) ($row[$valueKey] ?? 0);
                     $this->SetFont('Arial', '', 8);
                     $this->SetTextColor(45, 55, 65);
-                    $this->Cell(62, 6, substr($label, 0, 34), 0, 0);
+                    $this->Cell(65, 5, substr($label, 0, 38), 0, 0);
                     $x = $this->GetX();
-                    $y = $this->GetY() + 1;
+                    $y = $this->GetY() + .75;
                     $this->SetFillColor(232, 240, 237);
-                    $this->Rect($x, $y, 160, 4, 'F');
+                    $this->Rect($x, $y, 155, 3.5, 'F');
                     $this->SetFillColor(16, 185, 129);
-                    $this->Rect($x, $y, 160 * min(1, $value / $maximum), 4, 'F');
-                    $this->SetX($x + 163);
-                    $this->Cell(28, 6, number_format($value, 1).$suffix, 0, 1, 'R');
+                    $this->Rect($x, $y, 155 * min(1, $value / $maximum), 3.5, 'F');
+                    $this->SetX($x + 158);
+                    $this->SetFont('Arial', 'B', 7);
+                    $this->Cell(26, 5, number_format($value, 1).$suffix, 0, 1, 'R');
                 }
                 $this->Ln(2);
             }
@@ -240,23 +280,18 @@ class AdminReportExporter
 
         $pdf->scope = $this->pdfText($scopeLabel);
         $pdf->period = $this->pdfText($dateLabel);
+        $this->configureLetterhead($pdf);
         $pdf->AliasNbPages();
         $pdf->SetMargins(12, 10, 12);
-        $pdf->SetAutoPageBreak(true, 15);
+        $pdf->SetAutoPageBreak(true, 42);
         $pdf->SetCompression(false);
         $pdf->AddPage();
 
         $pdf->section('Executive Summary', 'Key indicators for facility demand, utilization, request decisions, and administrative performance.');
-        $kpis = $data['kpis'];
-        foreach ($kpis as $label => $value) {
-            $pdf->SetFillColor(242, 247, 245);
-            $pdf->SetFont('Arial', 'B', 9);
-            $pdf->SetTextColor(5, 105, 75);
-            $pdf->Cell(54, 8, $this->pdfText($label), 1, 0, 'L', true);
-            $pdf->SetTextColor(25, 30, 35);
-            $pdf->Cell(38, 8, $this->pdfText((string) $value), 1, 0, 'R');
-        }
-        $pdf->Ln(12);
+        $pdf->kpis(collect($data['kpis'])->map(fn ($value, $label) => [
+            'label' => $this->pdfText((string) $label),
+            'value' => $this->pdfText((string) $value),
+        ])->values()->all());
 
         $utilization = $data['facilityUtilizationRates'] ?? [];
         $pdf->section('Facility Time Utilization', 'Booked schedule hours divided by available hours using the 8:00 AM-6:00 PM daily baseline. Higher percentages indicate more intensive use of the available schedule.');
@@ -347,27 +382,29 @@ class AdminReportExporter
 
     public function facilitiesPdf(Collection $facilities, string $scopeLabel): string
     {
-        $pdf = new class('P', 'mm', 'A4') extends \FPDF
+        $pdf = new class('P', 'mm', 'A4') extends ClsuLetterheadPdf
         {
             public string $scopeLabel = '';
 
             public function Header(): void
             {
+                parent::Header();
+                $this->SetFillColor(5, 105, 75);
+                $this->Rect(10, $this->GetY(), 3, 18, 'F');
+                $this->SetX(17);
                 $this->SetFont('Arial', 'B', 16);
                 $this->SetTextColor(0, 107, 43);
-                $this->Cell(0, 8, 'SIEL SPACE - FACILITY REPORT', 0, 1);
+                $this->Cell(0, 8, 'FACILITY DIRECTORY', 0, 1);
+                $this->SetX(17);
                 $this->SetFont('Arial', '', 8);
                 $this->SetTextColor(90, 100, 105);
                 $this->Cell(0, 5, 'Scope: '.$this->scopeLabel.' | Generated: '.now()->format('Y-m-d H:i'), 0, 1);
-                $this->Ln(4);
+                $this->Ln(6);
             }
 
             public function Footer(): void
             {
-                $this->SetY(-10);
-                $this->SetFont('Arial', '', 7);
-                $this->SetTextColor(100, 100, 100);
-                $this->Cell(0, 5, 'SIEL SPACE | Page '.$this->PageNo().'/{nb}', 0, 0, 'C');
+                parent::Footer();
             }
 
             public function facilityTitle(string $title): void
@@ -376,37 +413,37 @@ class AdminReportExporter
                     $this->AddPage();
                 }
 
-                $this->SetFillColor(0, 107, 43);
-                $this->SetTextColor(255, 255, 255);
+                $this->SetFillColor(232, 242, 238);
+                $this->SetTextColor(5, 105, 75);
                 $this->SetFont('Arial', 'B', 10);
-                $this->MultiCell(0, 7, $title, 0, 'L', true);
+                $this->MultiCell(0, 8, '  '.$title, 0, 'L', true);
                 $this->Ln(1);
             }
 
             public function detailRow(string $label, string $value): void
             {
-                if ($this->GetY() > 270) {
+                if ($this->GetY() > 245) {
                     $this->AddPage();
                 }
 
                 $startY = $this->GetY();
                 $this->SetFont('Arial', 'B', 8);
-                $this->SetTextColor(45, 55, 65);
+                $this->SetTextColor(5, 105, 75);
                 $this->Cell(38, 5, $label, 0, 0);
                 $this->SetFont('Arial', '', 8);
                 $this->SetTextColor(30, 35, 38);
                 $this->MultiCell(0, 5, $value !== '' ? $value : 'N/A');
-
-                if ($this->GetY() === $startY) {
-                    $this->Ln(5);
-                }
+                $this->SetDrawColor(230, 235, 232);
+                $this->Line($this->lMargin, $this->GetY(), $this->GetPageWidth() - $this->rMargin, $this->GetY());
+                $this->Ln(1);
             }
         };
 
         $pdf->scopeLabel = $this->pdfText($scopeLabel).' | Records: '.$facilities->count();
+        $this->configureLetterhead($pdf);
         $pdf->AliasNbPages();
         $pdf->SetMargins(10, 10, 10);
-        $pdf->SetAutoPageBreak(true, 15);
+        $pdf->SetAutoPageBreak(true, 42);
         $pdf->SetCompression(false);
         $pdf->AddPage();
 
@@ -525,7 +562,7 @@ class AdminReportExporter
 
     private function detailPdf(string $title, string $scopeLabel, array $records): string
     {
-        $pdf = new class('P', 'mm', 'A4') extends \FPDF
+        $pdf = new class('P', 'mm', 'A4') extends ClsuLetterheadPdf
         {
             public string $reportTitle = '';
 
@@ -533,21 +570,23 @@ class AdminReportExporter
 
             public function Header(): void
             {
+                parent::Header();
+                $this->SetFillColor(5, 105, 75);
+                $this->Rect(10, $this->GetY(), 3, 18, 'F');
+                $this->SetX(17);
                 $this->SetFont('Arial', 'B', 16);
                 $this->SetTextColor(0, 107, 43);
                 $this->Cell(0, 8, $this->reportTitle, 0, 1);
+                $this->SetX(17);
                 $this->SetFont('Arial', '', 8);
                 $this->SetTextColor(90, 100, 105);
                 $this->Cell(0, 5, 'Scope: '.$this->scopeLabel.' | Generated: '.now()->format('Y-m-d H:i'), 0, 1);
-                $this->Ln(4);
+                $this->Ln(6);
             }
 
             public function Footer(): void
             {
-                $this->SetY(-10);
-                $this->SetFont('Arial', '', 7);
-                $this->SetTextColor(100, 100, 100);
-                $this->Cell(0, 5, 'SIEL SPACE | Page '.$this->PageNo().'/{nb}', 0, 0, 'C');
+                parent::Footer();
             }
 
             public function recordTitle(string $title): void
@@ -556,10 +595,10 @@ class AdminReportExporter
                     $this->AddPage();
                 }
 
-                $this->SetFillColor(0, 107, 43);
-                $this->SetTextColor(255, 255, 255);
+                $this->SetFillColor(232, 242, 238);
+                $this->SetTextColor(5, 105, 75);
                 $this->SetFont('Arial', 'B', 10);
-                $this->MultiCell(0, 7, $title, 0, 'L', true);
+                $this->MultiCell(0, 8, '  '.$title, 0, 'L', true);
                 $this->Ln(1);
             }
 
@@ -570,19 +609,23 @@ class AdminReportExporter
                 }
 
                 $this->SetFont('Arial', 'B', 8);
-                $this->SetTextColor(45, 55, 65);
+                $this->SetTextColor(5, 105, 75);
                 $this->Cell(42, 5, $label, 0, 0);
                 $this->SetFont('Arial', '', 8);
                 $this->SetTextColor(30, 35, 38);
                 $this->MultiCell(0, 5, $value !== '' ? $value : 'N/A');
+                $this->SetDrawColor(230, 235, 232);
+                $this->Line($this->lMargin, $this->GetY(), $this->GetPageWidth() - $this->rMargin, $this->GetY());
+                $this->Ln(1);
             }
         };
 
-        $pdf->reportTitle = $this->pdfText('SIEL SPACE - '.$title);
+        $pdf->reportTitle = $this->pdfText($title);
         $pdf->scopeLabel = $this->pdfText($scopeLabel).' | Records: '.count($records);
+        $this->configureLetterhead($pdf);
         $pdf->AliasNbPages();
         $pdf->SetMargins(10, 10, 10);
-        $pdf->SetAutoPageBreak(true, 15);
+        $pdf->SetAutoPageBreak(true, 42);
         $pdf->SetCompression(false);
         $pdf->AddPage();
 
@@ -606,7 +649,7 @@ class AdminReportExporter
 
     private function tablePdf(string $title, string $scopeLabel, array $headers, array $widths, array $rows): string
     {
-        $pdf = new class('L', 'mm', 'A4') extends \FPDF
+        $pdf = new class('L', 'mm', 'A4') extends ClsuLetterheadPdf
         {
             public string $reportTitle = '';
 
@@ -618,6 +661,7 @@ class AdminReportExporter
 
             public function Header(): void
             {
+                parent::Header();
                 $this->SetFont('Arial', 'B', 16);
                 $this->SetTextColor(5, 75, 55);
                 $this->Cell(0, 8, $this->reportTitle, 0, 1);
@@ -638,10 +682,7 @@ class AdminReportExporter
 
             public function Footer(): void
             {
-                $this->SetY(-10);
-                $this->SetFont('Arial', '', 7);
-                $this->SetTextColor(100, 100, 100);
-                $this->Cell(0, 5, 'SIEL SPACE | Page '.$this->PageNo().'/{nb}', 0, 0, 'C');
+                parent::Footer();
             }
         };
 
@@ -649,9 +690,10 @@ class AdminReportExporter
         $pdf->scopeLabel = $this->pdfText($scopeLabel).' | Records: '.count($rows);
         $pdf->headers = $headers;
         $pdf->widths = $widths;
+        $this->configureLetterhead($pdf);
         $pdf->AliasNbPages();
         $pdf->SetMargins(10, 10, 10);
-        $pdf->SetAutoPageBreak(true, 15);
+        $pdf->SetAutoPageBreak(true, 42);
         $pdf->SetCompression(false);
         $pdf->AddPage();
         $pdf->SetFont('Arial', '', 7);
@@ -681,6 +723,12 @@ class AdminReportExporter
         }
 
         return $pdf->Output('S');
+    }
+
+    private function configureLetterhead(ClsuLetterheadPdf $pdf): void
+    {
+        $pdf->letterheadHeader = public_path('images/clsu-letterhead-header.png');
+        $pdf->letterheadFooter = public_path('images/clsu-letterhead-footer.jpg');
     }
 
     private function pdfText(string $value): string

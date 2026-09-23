@@ -28,3 +28,4 @@ yarn-error.log
 /tmp
 /test-output.txt
 /tmp-test-output.txt
+database/schema/mysql-schema.sql

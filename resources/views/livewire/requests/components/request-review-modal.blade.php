@@ -31,8 +31,12 @@
                 <p class="mt-1 font-medium text-emerald-950 dark:text-white">{{ $Event_Type ?: '—' }}</p>
             </div>
             <div class="sm:col-span-2">
-                <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Purpose</p>
+                <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Purpose of Request</p>
                 <p class="mt-1 whitespace-pre-wrap font-medium text-emerald-950 dark:text-white">{{ $form->Purpose ?: '—' }}</p>
+            </div>
+            <div class="sm:col-span-2">
+                <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Event Description</p>
+                <p class="mt-1 whitespace-pre-wrap font-medium text-emerald-950 dark:text-white">{{ $form->Request_Details ?: '—' }}</p>
             </div>
         </div>
 

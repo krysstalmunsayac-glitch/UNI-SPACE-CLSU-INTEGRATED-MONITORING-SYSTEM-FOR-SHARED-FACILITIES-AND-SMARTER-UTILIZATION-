@@ -1,8 +1,9 @@
 <?php
 
 use App\Models\User;
-use Illuminate\Auth\Event\Lockout;
+use Illuminate\Auth\Events\Lockout;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
@@ -32,16 +33,32 @@ new #[Layout('components.layouts.auth')] class extends Component
 
         $this->ensureIsNotRateLimited();
 
-        $user = User::query()
-            ->where('email', $this->email)
-            ->orWhere('clsu_id', $this->email)
+        $user = User::withTrashed()
+            ->where(function ($query): void {
+                $query->where('email', $this->email)
+                    ->orWhere('clsu_id', $this->email);
+            })
             ->first();
 
-        if (! $user || ! Auth::attempt([
+        $canRecoverSelfDeletedAccount = $user?->trashed()
+            && $user->account_type === 'external'
+            && $user->self_deleted_at
+            && $user->deleted_at->isAfter(now()->subDays(90))
+            && $user->is_active
+            && $user->email_verified_at
+            && Hash::check($this->password, $user->password);
+
+        if ($canRecoverSelfDeletedAccount) {
+            $user->restore();
+            $user->update(['self_deleted_at' => null]);
+            Auth::login($user, $this->remember);
+        }
+
+        if (! $canRecoverSelfDeletedAccount && (! $user || $user->trashed() || ! Auth::attempt([
             'id' => $user->id,
             'password' => $this->password,
             'is_active' => true,
-        ], $this->remember)) {
+        ], $this->remember))) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
@@ -61,8 +78,10 @@ new #[Layout('components.layouts.auth')] class extends Component
         };
 
         Session::flash('sweet_alert', [
-            'title' => 'Welcome back!',
-            'text' => 'You have logged in successfully.',
+            'title' => $canRecoverSelfDeletedAccount ? 'Account restored!' : 'Welcome back!',
+            'text' => $canRecoverSelfDeletedAccount
+                ? 'Your account has been restored successfully.'
+                : 'You have logged in successfully.',
             'icon' => 'success',
             'position' => 'center',
         ]);

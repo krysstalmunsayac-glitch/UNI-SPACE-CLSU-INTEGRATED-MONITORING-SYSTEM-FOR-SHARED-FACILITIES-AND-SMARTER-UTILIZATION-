@@ -201,7 +201,7 @@ function AppShell({ props }) {
                     </span>
                     <span className="react-sidebar-brand-copy">
                         <strong>SIEL SPACE</strong>
-                        <small>A 360° Walkthrough of the University Campus</small>
+                        <small>CLSU Facility Reservation and Management System</small>
                     </span>
                 </a>
             </div>

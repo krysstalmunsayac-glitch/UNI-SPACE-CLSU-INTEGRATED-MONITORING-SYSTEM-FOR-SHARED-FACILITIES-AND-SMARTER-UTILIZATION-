@@ -44,6 +44,9 @@ class RequestSubmissionService
                     ])->all(),
                 'Status' => 'Pending',
                 'Purpose' => $validated['Purpose'],
+                'Request_Details' => $validated['Request_Details'],
+                'Purpose_Categories' => $validated['Purpose_Categories'],
+                'Other_Purpose' => $validated['Other_Purpose'] ?? null,
                 'Capacity' => $validated['Capacity'] ?? null,
             ]);
 
@@ -58,8 +61,8 @@ class RequestSubmissionService
     }
 
     /**
-     * @param array<int, int> $amenityQuantities
-     * @param array<int, array{date:string,start:string,end:string}> $dailySchedules
+     * @param  array<int, int>  $amenityQuantities
+     * @param  array<int, array{date:string,start:string,end:string}>  $dailySchedules
      */
     public function submitFacility(
         Facility $facility,
@@ -98,7 +101,7 @@ class RequestSubmissionService
             $event = Event::create([
                 'User_ID' => $guestBooking ? null : $actor->id,
                 'Event_Title' => $validated['Event_Title'],
-                'Description' => $validated['Description'],
+                'Description' => $validated['Request_Details'],
                 'Type_Event' => $validated['Type_Event'],
                 'Event_Scope' => $validated['Event_Scope'],
             ]);
@@ -119,9 +122,8 @@ class RequestSubmissionService
                 'Proposed_End_Time' => $lastSchedule['end'],
                 'Daily_Schedules' => $dailySchedules,
                 'Status' => 'Pending',
-                'Purpose' => collect($validated['Purpose_Categories'])
-                    ->map(fn (string $category): string => $category === 'Other' ? $validated['Other_Purpose'] : $category)
-                    ->implode(', '),
+                'Purpose' => $validated['Purpose'],
+                'Request_Details' => $validated['Request_Details'],
                 'Purpose_Categories' => $validated['Purpose_Categories'],
                 'Other_Purpose' => $validated['Other_Purpose'] ?? null,
                 'Capacity' => $validated['Capacity'] ?? null,

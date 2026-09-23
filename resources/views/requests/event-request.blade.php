@@ -37,8 +37,10 @@
                         @error('Proposed_End_Time') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
                     <div class="sm:col-span-2">
-                        <x-ui::textarea label="Purpose" name="Purpose" rows="4" minlength="5" maxlength="1000" required>{{ old('Purpose') }}</x-ui::textarea>
-                        @error('Purpose') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                        @include('requests.partials.purpose-questionnaire')
+
+                        <x-ui::textarea label="Event Description" name="Request_Details" rows="4" minlength="5" maxlength="2000" required>{{ old('Request_Details') }}</x-ui::textarea>
+                        @error('Request_Details') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
                     <div class="sm:col-span-2">
                         <x-ui::input label="Expected Number of Attendees" name="Capacity" type="number" min="1" max="100000" value="{{ old('Capacity') }}" required />

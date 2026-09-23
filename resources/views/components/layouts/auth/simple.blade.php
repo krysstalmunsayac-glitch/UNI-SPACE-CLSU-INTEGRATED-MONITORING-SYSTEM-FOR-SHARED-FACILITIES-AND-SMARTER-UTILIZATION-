@@ -131,6 +131,7 @@
     <body class="min-h-screen bg-zinc-100 font-sans text-emerald-950 antialiased dark:bg-zinc-950 dark:text-zinc-100">
         @php
             $isRegisterPage = request()->routeIs('register');
+            $isForgotPasswordPage = request()->routeIs('password.request');
             $panelTitle = $isRegisterPage ? 'Create Account' : (request()->routeIs('login') ? 'Sign in' : 'Hello, Friend!');
             $panelText = $isRegisterPage
                 ? 'To keep connected with SIEL SPACE, please log in with your account.'
@@ -152,12 +153,14 @@
 
                 <section class="auth-form-panel flex min-h-[640px] items-center justify-center px-8 py-8 sm:px-14">
                     <div class="w-full max-w-md">
-                        <div class="mb-8 text-center">
-                            <h1 class="text-3xl font-black tracking-tight text-emerald-950 dark:text-white">{{ $panelTitle }}</h1>
-                            <p class="mt-2 text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                                {{ $isRegisterPage ? 'Create your account to start reserving CLSU facilities.' : 'Enter your account details to continue to SIEL SPACE.' }}
-                            </p>
-                        </div>
+                        @unless ($isForgotPasswordPage)
+                            <div class="mb-8 text-center">
+                                <h1 class="text-3xl font-black tracking-tight text-emerald-950 dark:text-white">{{ $panelTitle }}</h1>
+                                <p class="mt-2 text-sm font-medium text-zinc-500 dark:text-zinc-400">
+                                    {{ $isRegisterPage ? 'Create your account to start reserving CLSU facilities.' : 'Enter your account details to continue to SIEL SPACE.' }}
+                                </p>
+                            </div>
+                        @endunless
                         {{ $slot }}
                     </div>
                 </section>

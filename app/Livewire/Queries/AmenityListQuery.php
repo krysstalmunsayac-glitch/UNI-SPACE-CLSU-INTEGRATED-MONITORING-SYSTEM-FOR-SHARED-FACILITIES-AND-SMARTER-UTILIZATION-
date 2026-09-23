@@ -12,7 +12,6 @@ class AmenityListQuery
     {
         return Amenity::query()
             ->with(['facilities:FID,Facility_Name', 'creator:id,name'])
-            ->withSum(['requests as current_usage_quantity' => fn ($query) => $query->whereIn('Status', ['Pending', 'Approved'])], 'request_facility_amenities.quantity')
             ->when($search !== '', fn ($query) => $query->where(fn ($nested) => $nested
                 ->where('name', 'like', "%{$search}%")->orWhere('Description', 'like', "%{$search}%")))
             ->when($actor->isAdmin(), fn ($query) => $query->whereHas('facilities.assignedAdmins', fn ($admins) => $admins->where('users.id', $actor->id)))

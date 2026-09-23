@@ -46,14 +46,15 @@
             <div
                 class="grid items-start gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(28rem,1.1fr)]"
                 x-data="bookingRequestForm({
-                    step: {{ $errors->hasAny(['Amenity_ID', 'Amenity_ID.*', 'Amenity_Quantity', 'Amenity_Quantity.*', 'Purpose_Categories', 'Purpose_Categories.*', 'Other_Purpose', 'Capacity', 'attachment']) ? 3 : ($errors->hasAny(['Proposed_Date', 'Proposed_End_Date', 'Daily_Schedules', 'Daily_Schedules.*']) ? 2 : 1) }},
-                    selectedAmenities: @js(array_map('strval', old('Amenity_ID', []))),
+                    step: {{ $errors->hasAny(['Amenity_ID', 'Amenity_ID.*', 'Amenity_Quantity', 'Amenity_Quantity.*', 'Capacity', 'attachment']) ? 3 : ($errors->hasAny(['Proposed_Date', 'Proposed_End_Date', 'Daily_Schedules', 'Daily_Schedules.*']) ? 2 : 1) }},
+                    selectedAmenities: @js(collect(old('Amenity_ID', []))->map('strval')->intersect($additionalAmenities->pluck('AID')->map('strval'))->values()->all()),
                     dailySchedules: @js(old('Daily_Schedules', [])),
                     sharedStartTime: @js(data_get(old('Daily_Schedules', []), '0.start', '')),
                     sharedEndTime: @js(data_get(old('Daily_Schedules', []), '0.end', '')),
                     slots: @js($scheduling['slots']),
                     endSlots: [...@js($scheduling['slots']), @js($scheduling['closes_at'])],
                     availabilityUrl: @js($scheduling['availability_url']),
+                    amenityAvailability: @js($additionalAmenities->mapWithKeys(fn ($amenity) => [(string) $amenity->AID => $amenity->inventory_quantity])),
                     bookingToday: @js(today()->toDateString()),
                     bookingCurrentTime: @js(now()->format('H:i')),
                     customizeDailyTimes: @js(collect(old('Daily_Schedules', []))->map(fn ($schedule) => ($schedule['start'] ?? '').'|'.($schedule['end'] ?? ''))->unique()->count() > 1),
@@ -248,9 +249,6 @@
                             </button>
                         @empty
                             <div class="col-span-2 flex min-h-52 flex-col items-center justify-center rounded-2xl border border-dashed border-emerald-300 bg-emerald-50 p-8 text-center dark:border-emerald-700 dark:bg-zinc-900">
-                                <div class="mb-4 flex size-20 items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-emerald-900/10 dark:bg-zinc-950 dark:ring-white/10">
-                                    <img src="{{ $facility->primaryImageUrl() }}" alt="" class="h-14 w-14 object-contain opacity-80">
-                                </div>
                                 <p class="font-semibold text-emerald-950 dark:text-white">No facility photos yet</p>
                                 <p class="mt-1 text-sm text-emerald-900/60 dark:text-zinc-400">Photos of this facility will appear here when available.</p>
                             </div>

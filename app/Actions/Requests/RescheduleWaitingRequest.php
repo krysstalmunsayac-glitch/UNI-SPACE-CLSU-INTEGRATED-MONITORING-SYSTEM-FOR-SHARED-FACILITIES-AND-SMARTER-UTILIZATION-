@@ -14,8 +14,8 @@ class RescheduleWaitingRequest
     public function __construct(private readonly BookingRequestValidator $validator) {}
 
     /**
-     * @param array<int, array{date:string,start:string,end:string}> $dailySchedules
-     * @param array<int, int> $amenityQuantities
+     * @param  array<int, array{date:string,start:string,end:string}>  $dailySchedules
+     * @param  array<int, int>  $amenityQuantities
      */
     public function handle(
         FacilityRequest $request,
@@ -66,7 +66,7 @@ class RescheduleWaitingRequest
 
                 $lockedRequest->event?->update([
                     'Event_Title' => $validated['Event_Title'] ?? $lockedRequest->event->Event_Title,
-                    'Description' => $validated['Description'] ?? $lockedRequest->event->Description,
+                    'Description' => $validated['Request_Details'],
                     'Type_Event' => $validated['Type_Event'] ?? $lockedRequest->event->Type_Event,
                     'Event_Scope' => $validated['Event_Scope'] ?? $lockedRequest->event->Event_Scope,
                 ]);
@@ -78,6 +78,9 @@ class RescheduleWaitingRequest
                     'Proposed_End_Time' => $validated['Proposed_End_Time'],
                     'Daily_Schedules' => $dailySchedules,
                     'Purpose' => $validated['Purpose'],
+                    'Request_Details' => $validated['Request_Details'],
+                    'Purpose_Categories' => $validated['Purpose_Categories'],
+                    'Other_Purpose' => $validated['Other_Purpose'] ?? null,
                     'Capacity' => $validated['Capacity'],
                     'attachment_path' => $attachmentPath,
                     'Status' => $lockedRequest->Status,

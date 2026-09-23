@@ -31,22 +31,26 @@ class BookingRequestValidator
             }
 
             $requested = $amenityQuantities[(int) $amenity->AID];
-            $reserved = $amenity->overlappingReservedQuantity($startDate, $endDate, $startTime, $endTime, $ignoreRequestId);
-            $available = max(0, $amenity->inventory_quantity - $reserved);
 
-            if ($requested <= $available) {
+            if ($amenity->Status === 'Available' && $requested <= $amenity->inventory_quantity) {
                 continue;
             }
 
+            if ($amenity->Status !== 'Available') {
+                throw ValidationException::withMessages([
+                    "Amenity_ID.{$amenity->AID}" => "{$amenity->name} is currently unavailable.",
+                ]);
+            }
+
             throw ValidationException::withMessages([
-                "Amenity_Quantity.{$amenity->AID}" => "Only {$amenity->quantityLabel($available)} of {$amenity->quantityLabel()} for {$amenity->name} are available for the selected date and time; {$requested} requested.",
+                "Amenity_Quantity.{$amenity->AID}" => "Only {$amenity->quantityLabel()} may be requested for {$amenity->name}; {$requested} requested.",
             ]);
         }
     }
 
     /**
-     * @param array<int, int|string> $amenityIds
-     * @param array<int|string, int|string|null> $submittedQuantities
+     * @param  array<int, int|string>  $amenityIds
+     * @param  array<int|string, int|string|null>  $submittedQuantities
      * @return array<int, int>
      */
     public function validatedAmenityQuantities(array $amenityIds, array $submittedQuantities): array
@@ -60,6 +64,7 @@ class BookingRequestValidator
 
             if ($amenity?->isPermanent()) {
                 $quantities[$id] = 1;
+
                 continue;
             }
 

@@ -10,13 +10,6 @@ use App\Livewire\Feedback\FeedbackManagement;
 use App\Livewire\Reports\ReportManagement;
 use App\Livewire\Schedules\ScheduleManagement;
 use App\Livewire\Users\UserManagement;
-use App\Models\Amenity;
-use App\Models\Event;
-use App\Models\Facility;
-use App\Models\FacilityRequest;
-use App\Models\Schedule;
-use App\Models\User;
-use App\Observers\AdminContentChangeObserver;
 use App\Support\Ui;
 use App\Support\UiManager;
 use Illuminate\Foundation\AliasLoader;
@@ -61,7 +54,7 @@ class AppServiceProvider extends ServiceProvider
         // tag. Livewire navigation can leave the duplicate preload unused and
         // trigger repeated browser warnings, so preload scripts only.
         Vite::usePreloadTagAttributes(
-            fn (string $src, string $url): array|false => str_ends_with(parse_url($url, PHP_URL_PATH) ?: $url, '.css')
+            fn (?string $src, string $url): array|false => str_ends_with(parse_url($url, PHP_URL_PATH) ?: $url, '.css')
                 ? false
                 : []
         );
@@ -82,12 +75,5 @@ class AppServiceProvider extends ServiceProvider
                 }
             };
         });
-
-        Amenity::observe(AdminContentChangeObserver::class);
-        Event::observe(AdminContentChangeObserver::class);
-        Facility::observe(AdminContentChangeObserver::class);
-        FacilityRequest::observe(AdminContentChangeObserver::class);
-        Schedule::observe(AdminContentChangeObserver::class);
-        User::observe(AdminContentChangeObserver::class);
     }
 }

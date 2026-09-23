@@ -22,6 +22,8 @@ class RequestForm extends Form
 
     public string $Purpose = '';
 
+    public string $Request_Details = '';
+
     public ?int $Capacity = null;
 
     protected function rules(): array
@@ -35,6 +37,7 @@ class RequestForm extends Form
             'Proposed_End_Time' => ['required', 'date_format:H:i', 'after:Proposed_Start_Time'],
             'Status' => ['required', 'in:Pending,Approved,Rejected,Cancelled'],
             'Purpose' => ['required', 'string', 'min:5', 'max:1000'],
+            'Request_Details' => ['required', 'string', 'min:5', 'max:2000'],
             'Capacity' => ['nullable', 'integer', 'min:1', 'max:100000'],
         ];
     }

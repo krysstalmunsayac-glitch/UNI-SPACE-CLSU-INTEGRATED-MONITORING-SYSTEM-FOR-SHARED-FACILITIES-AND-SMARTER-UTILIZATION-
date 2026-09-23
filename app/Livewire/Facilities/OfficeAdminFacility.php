@@ -3,12 +3,12 @@
 namespace App\Livewire\Facilities;
 
 use App\Actions\Facilities\SaveFacility;
+use App\Livewire\Facilities\Concerns\ManagesOfficeFacilityAvailability;
+use App\Livewire\Facilities\Concerns\ManagesOfficeFacilityImages;
 use App\Models\Facility;
 use App\Services\FacilityAvailabilityService;
 use App\Support\Ui;
-use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
-use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Validate;
@@ -19,6 +19,8 @@ use Livewire\WithPagination;
 #[Layout('components.layouts.app')]
 class OfficeAdminFacility extends Component
 {
+    use ManagesOfficeFacilityAvailability;
+    use ManagesOfficeFacilityImages;
     use WithFileUploads;
     use WithPagination;
 
@@ -57,6 +59,10 @@ class OfficeAdminFacility extends Component
     public array $existingImages = [];
 
     public array $removedImageIds = [];
+
+    public ?string $legacyImageUrl = null;
+
+    public bool $removeLegacyImage = false;
 
     #[Validate('nullable|string|max:10000')]
     public ?string $rates = null;
@@ -117,6 +123,8 @@ class OfficeAdminFacility extends Component
             'images',
             'existingImages',
             'removedImageIds',
+            'legacyImageUrl',
+            'removeLegacyImage',
             'rates',
             'Office',
             'Description',
@@ -159,6 +167,12 @@ class OfficeAdminFacility extends Component
             ->map(fn ($image) => ['id' => $image->id, 'path' => $image->image_path])
             ->all();
         $this->removedImageIds = [];
+        $this->legacyImageUrl = $facility->Image_URL
+            ? (str_starts_with($facility->Image_URL, 'http://') || str_starts_with($facility->Image_URL, 'https://')
+                ? $facility->Image_URL
+                : asset(ltrim($facility->Image_URL, '/')))
+            : null;
+        $this->removeLegacyImage = false;
         $this->resetValidation();
         $this->showModal = true;
     }
@@ -193,6 +207,7 @@ class OfficeAdminFacility extends Component
             'Deactivated_At' => $this->Status === 'Unavailable'
                 ? ($facility->Deactivated_At ?? now())
                 : null,
+            'Image_URL' => $this->removeLegacyImage ? null : $facility->Image_URL,
         ], $this->images, $this->removedImageIds);
 
         Ui::toast(
@@ -211,82 +226,6 @@ class OfficeAdminFacility extends Component
         $this->resetPage('assignedFacilitiesPage');
     }
 
-    public function removeExistingImage(int $imageId): void
-    {
-        $image = collect($this->existingImages)->firstWhere('id', $imageId);
-
-        if (! $image) {
-            return;
-        }
-
-        $this->removedImageIds[] = $imageId;
-        $this->removedImageIds = array_values(array_unique($this->removedImageIds));
-        $this->existingImages = array_values(array_filter(
-            $this->existingImages,
-            fn (array $existingImage) => $existingImage['id'] !== $imageId,
-        ));
-        $this->resetErrorBag('images');
-    }
-
-    public function removeNewImage(int $index): void
-    {
-        if (! array_key_exists($index, $this->images)) {
-            return;
-        }
-
-        unset($this->images[$index]);
-        $this->images = array_values($this->images);
-        $this->resetErrorBag('images');
-    }
-
-    public function requestToggleStatus(int $facilityId): void
-    {
-        $facility = $this->getScopedFacility($facilityId);
-        $this->pendingStatusId = $facility->FID;
-        $this->pendingStatusName = $facility->Facility_Name;
-        $this->pendingStatusWillActivate = $facility->Status === 'Unavailable';
-        $this->setAvailableAtFields($facility->Available_At);
-        $this->deactivationConfirmation = '';
-        $this->resetValidation('deactivationConfirmation');
-        $this->showStatusConfirmation = true;
-    }
-
-    public function confirmToggleStatus(): void
-    {
-        $facility = $this->getScopedFacility($this->pendingStatusId);
-
-        if ($facility->Status !== 'Unavailable') {
-            $this->validate([
-                'deactivationConfirmation' => ['required', 'in:DEACTIVATE'],
-                'Available_Date' => ['required', 'date', 'after_or_equal:today'],
-                'Available_Hour' => ['required_with:Available_Date', 'in:01,02,03,04,05,06,07,08,09,10,11,12'],
-                'Available_Minute' => ['required_with:Available_Date', 'in:00,15,30,45'],
-                'Available_Period' => ['required_with:Available_Date', 'in:AM,PM'],
-            ], [
-                'deactivationConfirmation.required' => 'Type DEACTIVATE to confirm.',
-                'deactivationConfirmation.in' => 'Type DEACTIVATE exactly to confirm.',
-                'Available_Date.required' => 'Choose when the facility will become available again.',
-                'Available_Date.after_or_equal' => 'Choose today or a future date.',
-            ]);
-        }
-
-        $cancelledCount = app(FacilityAvailabilityService::class)->toggle($facility, $this->availableAtValue());
-        $facility->refresh();
-
-        Ui::toast(
-            text: $facility->Status === 'Available'
-                ? 'Facility reactivated successfully!'
-                : "Facility deactivated. {$cancelledCount} active request(s) cancelled.",
-            variant: 'success'
-        );
-
-        $this->showStatusConfirmation = false;
-        $this->pendingStatusId = null;
-        $this->Available_At = null;
-        $this->Available_Date = null;
-        $this->deactivationConfirmation = '';
-    }
-
     #[Computed]
     public function requestableFacilities()
     {
@@ -296,36 +235,6 @@ class OfficeAdminFacility extends Component
             })
             ->orderBy('Facility_Name')
             ->get(['FID', 'Facility_Name', 'Office', 'Status', 'Available_At']);
-    }
-
-    private function setAvailableAtFields($availableAt): void
-    {
-        $this->Available_At = $availableAt?->format('Y-m-d H:i:s');
-        $this->Available_Date = $availableAt?->format('Y-m-d');
-        $this->Available_Hour = $availableAt?->format('h') ?? '08';
-        $this->Available_Minute = $availableAt?->format('i') ?? '00';
-        $this->Available_Period = $availableAt?->format('A') ?? 'AM';
-    }
-
-    private function availableAtValue(): ?string
-    {
-        if (! $this->Available_Date) {
-            return null;
-        }
-
-        $hour = (int) $this->Available_Hour;
-        $hour = $this->Available_Period === 'PM' && $hour !== 12 ? $hour + 12 : $hour;
-        $hour = $this->Available_Period === 'AM' && $hour === 12 ? 0 : $hour;
-
-        $availableAt = Carbon::parse(sprintf('%s %02d:%s:00', $this->Available_Date, $hour, $this->Available_Minute));
-
-        if ($availableAt->isPast()) {
-            throw ValidationException::withMessages([
-                'Available_Date' => 'Choose a future date and time.',
-            ]);
-        }
-
-        return $availableAt->format('Y-m-d H:i:s');
     }
 
     #[Computed]

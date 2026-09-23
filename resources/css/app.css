@@ -11,3 +11,11 @@
 .swal2-container {
     z-index: 10000 !important;
 }
+
+.swal2-container .swal2-timer-progress-bar {
+    background: #009639;
+}
+
+.swal2-container .swal2-confirm:focus-visible {
+    box-shadow: 0 0 0 3px rgb(0 150 57 / 25%) !important;
+}

@@ -19,6 +19,31 @@ class FacilityRequest extends Model
 
     public const MAX_REQUESTS_PER_EVENT_DATE = 3;
 
+    public const PURPOSE_OPTIONS = [
+        'Meeting or Conference',
+        'Seminar or Workshop',
+        'Training Session',
+        'Class or Educational Activity',
+        'Student Organization Event',
+        'Club Meeting',
+        'Sports or Recreational Activity',
+        'Cultural or Arts Program',
+        'Religious Activity',
+        'Community Outreach Program',
+        'Birthday Celebration',
+        'Wedding Reception or Ceremony',
+        'Family Gathering or Reunion',
+        'Corporate Event',
+        'Product Launch or Promotion',
+        'Exhibition or Fair',
+        'Concert or Performance',
+        'Graduation or Recognition Ceremony',
+        'Health or Medical Mission',
+        'Government or Public Service Activity',
+        'Photo or Video Shoot',
+        'Other',
+    ];
+
     public const CREATED_AT = 'Created_at';
 
     public const UPDATED_AT = 'Updated_at';
@@ -52,6 +77,7 @@ class FacilityRequest extends Model
         'Review_Notes',
         'Review_Requested_At',
         'Purpose',
+        'Request_Details',
         'Purpose_Categories',
         'Other_Purpose',
         'Capacity',
@@ -94,6 +120,37 @@ class FacilityRequest extends Model
         return self::STATUS_TRANSITIONS[$status] ?? [];
     }
 
+    /** @return list<string> */
+    public function selectablePurposeCategories(): array
+    {
+        $stored = collect($this->Purpose_Categories)
+            ->filter(fn ($purpose): bool => is_string($purpose) && in_array($purpose, self::PURPOSE_OPTIONS, true))
+            ->values();
+
+        if ($stored->isNotEmpty()) {
+            return $stored->all();
+        }
+
+        $purpose = trim((string) $this->Purpose);
+
+        if ($purpose === '') {
+            return [];
+        }
+
+        return in_array($purpose, self::PURPOSE_OPTIONS, true) ? [$purpose] : ['Other'];
+    }
+
+    public function selectableOtherPurpose(): ?string
+    {
+        if ($this->Other_Purpose !== null && trim($this->Other_Purpose) !== '') {
+            return $this->Other_Purpose;
+        }
+
+        $purpose = trim((string) $this->Purpose);
+
+        return $purpose !== '' && ! in_array($purpose, self::PURPOSE_OPTIONS, true) ? $purpose : null;
+    }
+
     public function canBeReviewed(): bool
     {
         return $this->Status === 'Pending';
@@ -109,7 +166,7 @@ class FacilityRequest extends Model
                     ? "Submitted guest request #{$request->RID} on behalf of {$request->Guest_Name}."
                     : "Submitted request #{$request->RID}.",
                 null,
-                $request->only(['User_ID', 'Created_By', 'Is_Guest_Booking', 'Guest_Name', 'Guest_Organization', 'Facility_ID', 'Proposed_Date', 'Status', 'Purpose']),
+                $request->only(['User_ID', 'Created_By', 'Is_Guest_Booking', 'Guest_Name', 'Guest_Organization', 'Facility_ID', 'Proposed_Date', 'Status', 'Purpose', 'Request_Details']),
             );
         });
 

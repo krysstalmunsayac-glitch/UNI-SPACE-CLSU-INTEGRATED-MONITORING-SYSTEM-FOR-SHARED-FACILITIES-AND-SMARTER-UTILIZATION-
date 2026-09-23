@@ -35,6 +35,7 @@ class NewRequestSubmitted extends Notification
                 'endTime' => $this->request->Proposed_End_Time?->format('H:i') ?? 'N/A',
                 'expectedCapacity' => $this->request->Capacity ?? 'N/A',
                 'purpose' => $this->request->Purpose,
+                'requestDetails' => $this->request->Request_Details ?? $this->request->event?->Description,
                 'status' => $this->request->Status,
                 'actionUrl' => route('requests.index'),
             ]);

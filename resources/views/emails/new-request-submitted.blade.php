@@ -18,9 +18,13 @@ A new facility request has been submitted. Please review the reservation details
 **Status:** {{ $status }}
 </x-mail::panel>
 
-**Purpose**
+**Purpose of Request**
 
 {{ $purpose }}
+
+**Event Description**
+
+{{ $requestDetails ?: 'Not provided' }}
 
 <x-mail::button :url="$actionUrl">
 Review Facility Request

@@ -29,8 +29,7 @@ class WaitingListController extends Controller
         FacilityRequest $requestModel,
         FacilityAvailabilityService $availability,
         RescheduleWaitingRequest $action,
-    )
-    {
+    ) {
         if ($requestModel->User_ID !== auth()->id()) {
             abort(403);
         }
@@ -47,25 +46,40 @@ class WaitingListController extends Controller
 
         $validated = $request->validate([
             'Event_Title' => ['nullable', 'string', 'min:3', 'max:255', 'regex:/^(?=.*[\pL\pN]).+$/u'],
-            'Description' => ['nullable', 'string', 'min:5', 'max:2000', 'regex:/^(?=.*[\pL\pN]).+$/u'],
+            'Request_Details' => ['required', 'string', 'min:5', 'max:2000', 'regex:/^(?=.*[\pL\pN]).+$/u'],
             'Type_Event' => ['nullable', 'string', 'max:100'],
             'Event_Scope' => ['nullable', Rule::in(['Internal', 'External'])],
             'Proposed_Date' => ['required', 'date', 'after_or_equal:'.$earliestReservationDate],
             'Proposed_End_Date' => ['required', 'date', 'after_or_equal:Proposed_Date'],
             'Proposed_Start_Time' => ['required', 'regex:/^(?:0[5-9]|1\d|2[0-3]):(?:00|30)$/'],
             'Proposed_End_Time' => ['required', 'regex:/^(?:(?:0[6-9]|1\d|2[0-3]):(?:00|30)|24:00)$/', 'after:Proposed_Start_Time'],
-            'Purpose' => ['required', 'string', 'min:5', 'max:1000', 'regex:/^(?=.*[\pL\pN]).+$/u'],
+            'Purpose_Categories' => ['required', 'array', 'min:1'],
+            'Purpose_Categories.*' => ['string', 'distinct', Rule::in(FacilityRequest::PURPOSE_OPTIONS)],
+            'Other_Purpose' => [
+                'nullable',
+                Rule::requiredIf(fn () => in_array('Other', $request->input('Purpose_Categories', []), true)),
+                'string',
+                'min:3',
+                'max:150',
+            ],
             'Capacity' => ['required', 'integer', 'min:1', 'max:'.($requestModel->facility?->Capacity ?? 100000)],
             'attachment' => ['nullable', 'file', 'mimes:pdf', 'max:5120'],
         ], [
             'Proposed_Date.after_or_equal' => app(BookingPolicy::class)->noticeMessage(auth()->user()),
             'Event_Title.regex' => 'The event name must contain at least one letter or number.',
-            'Description.regex' => 'The event description must contain at least one letter or number.',
+            'Request_Details.regex' => 'The event description must contain at least one letter or number.',
             'Capacity.required' => 'Enter the expected number of attendees.',
             'Proposed_Start_Time.regex' => 'Choose a start time between 5:00 AM and 11:30 PM in 30-minute intervals.',
             'Proposed_End_Time.regex' => 'Choose an end time between 6:00 AM and 12:00 AM in 30-minute intervals.',
-            'Purpose.regex' => 'The purpose must contain at least one letter or number.',
+            'Purpose_Categories.required' => 'Select at least one purpose of request.',
+            'Other_Purpose.required' => 'Describe the other purpose.',
         ]);
+
+        $validated['Purpose'] = collect($validated['Purpose_Categories'])
+            ->map(fn (string $category): string => $category === 'Other'
+                ? trim($validated['Other_Purpose'])
+                : $category)
+            ->implode(', ');
 
         app(BookingPolicy::class)->validateFutureStart($validated['Proposed_Date'], $validated['Proposed_Start_Time'], 'Proposed_Start_Time');
 
@@ -223,5 +237,4 @@ class WaitingListController extends Controller
                 'icon' => 'success',
             ]);
     }
-
 }

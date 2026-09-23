@@ -2,18 +2,16 @@
 
 namespace App\Livewire\Users;
 
-use App\Actions\Lifecycle\ArchiveRecord;
-use App\Actions\Lifecycle\RestoreRecord;
-use App\Actions\Users\AssignFacilities;
 use App\Actions\Users\CreateUser;
 use App\Actions\Users\UpdateUser;
 use App\Livewire\Forms\UserForm;
 use App\Livewire\Queries\UserListQuery;
+use App\Livewire\Users\Concerns\ManagesUserAssignments;
+use App\Livewire\Users\Concerns\ManagesUserInvitations;
+use App\Livewire\Users\Concerns\ManagesUserStatus;
 use App\Models\User;
-use App\Services\UserManagementService;
 use App\Support\Ui;
 use Illuminate\Contracts\View\View;
-use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -26,6 +24,9 @@ use Livewire\WithPagination;
 #[Layout('components.layouts.app')]
 class UserManagement extends Component
 {
+    use ManagesUserAssignments;
+    use ManagesUserInvitations;
+    use ManagesUserStatus;
     use WithFileUploads, WithPagination;
 
     public $editingId = null;
@@ -87,35 +88,6 @@ class UserManagement extends Component
         abort_unless(auth()->user()?->isSuperAdmin(), 403);
         $this->archiveOnly = request()->boolean('archive');
         $this->showArchivedModal = $this->archiveOnly;
-    }
-
-    public function resendInvitation(int $userId): void
-    {
-        $user = $this->managedUser($userId);
-        if ($user->email_verified_at) {
-            Ui::toast(text: 'This email is already verified.', variant: 'info');
-
-            return;
-        }
-
-        $key = 'managed-user-invitation:'.auth()->id().':'.$user->id;
-        if (RateLimiter::tooManyAttempts($key, 3)) {
-            Ui::toast(text: 'Too many resend attempts. Try again later.', variant: 'danger');
-
-            return;
-        }
-
-        app(UserManagementService::class)->resendInvitation($user);
-        RateLimiter::hit($key, 3600);
-        Ui::toast(text: 'New invitation sent; the previous link is invalid.', variant: 'success');
-    }
-
-    public function revokeInvitation(int $userId): void
-    {
-        $user = $this->managedUser($userId);
-        abort_if($user->email_verified_at, 409, 'This account is already verified.');
-        app(UserManagementService::class)->revokeInvitation($user);
-        Ui::toast(text: 'Invitation revoked.', variant: 'success');
     }
 
     /*
@@ -387,235 +359,17 @@ class UserManagement extends Component
         return $digits;
     }
 
-    public function delete(int $userId): void
-    {
-        $user = $this->managedUser($userId);
-
-        if ($user->id === auth()->id()) {
-            Ui::toast(
-                text: 'You cannot archive your own account.',
-                variant: 'danger'
-            );
-
-            return;
-        }
-
-        app(ArchiveRecord::class)->handle($user);
-
-        Ui::toast(
-            text: 'User moved to archived records.',
-            variant: 'success'
-        );
-
-        $this->dispatch('swal', [
-            'title' => 'User archived',
-            'text' => 'The user can be restored from Archived Users.',
-            'icon' => 'success',
-        ]);
-
-        // Keep the administrator on the current paginated table after archiving.
-    }
-
-    public function requestToggleActive(int $userId): void
-    {
-        $user = $this->managedUser($userId);
-
-        if (! $user->email_verified_at && ! $user->is_active) {
-            Ui::toast(text: 'This account must complete its email invitation before it can be activated.', variant: 'danger');
-
-            return;
-        }
-
-        if ($user->id === auth()->id()) {
-            Ui::toast(
-                text: 'You cannot deactivate your own account.',
-                variant: 'danger'
-            );
-
-            return;
-        }
-
-        $this->pendingStatusUserId = $user->id;
-        $this->pendingStatusUserName = $user->name;
-        $this->pendingStatusWillActivate = ! $user->is_active;
-        $this->deactivationConfirmation = '';
-        $this->resetValidation('deactivationConfirmation');
-        $this->showQuickStatusConfirmation = true;
-    }
-
-    public function confirmToggleActive(): void
-    {
-        $user = $this->managedUser((int) $this->pendingStatusUserId);
-
-        if ($user->id === auth()->id()) {
-            $this->showQuickStatusConfirmation = false;
-
-            Ui::toast(text: 'You cannot deactivate your own account.', variant: 'danger');
-
-            return;
-        }
-
-        if (! $user->email_verified_at && ! $user->is_active) {
-            $this->showQuickStatusConfirmation = false;
-            Ui::toast(text: 'This account must complete its email invitation before it can be activated.', variant: 'danger');
-
-            return;
-        }
-
-        if ($user->is_active) {
-            $this->validate([
-                'deactivationConfirmation' => ['required', Rule::in(['DEACTIVATE'])],
-            ], [
-                'deactivationConfirmation.required' => 'Type DEACTIVATE to confirm.',
-                'deactivationConfirmation.in' => 'Type DEACTIVATE exactly to confirm.',
-            ]);
-        }
-
-        $user = app(UserManagementService::class)->toggleActive($user);
-
-        Ui::toast(
-            text: $user->is_active
-                ? 'User activated.'
-                : 'User deactivated.',
-            variant: 'success'
-        );
-
-        $this->dispatch('swal', [
-            'title' => $user->is_active ? 'Account activated' : 'Account deactivated',
-            'text' => $user->is_active
-                ? "{$user->name} can now access the system."
-                : "{$user->name} can no longer access the system.",
-            'icon' => 'success',
-        ]);
-
-        $this->showQuickStatusConfirmation = false;
-        $this->pendingStatusUserId = null;
-        $this->deactivationConfirmation = '';
-    }
-
     /*
     |--------------------------------------------------------------------------
     | Archived users
     |--------------------------------------------------------------------------
     */
 
-    public function openArchivedUsers(): void
-    {
-        $this->resetPage('archivedUsersPage');
-        $this->showArchivedModal = true;
-    }
-
-    public function restoreUser(int $userId): void
-    {
-        $user = $this->managedArchivedUser($userId);
-        app(RestoreRecord::class)->handle($user);
-
-        Ui::toast(
-            text: 'User restored successfully!',
-            variant: 'success'
-        );
-
-        $this->dispatch('swal', [
-            'title' => 'User restored',
-            'text' => 'The user account is active in User Management again.',
-            'icon' => 'success',
-        ]);
-
-        $this->resetPage('usersPage');
-        $this->resetPage('archivedUsersPage');
-    }
-
-    public function forceDeleteUser(int $userId): void
-    {
-        $user = $this->managedArchivedUser($userId);
-
-        /*
-         * Remove facility assignments before permanent deletion.
-         * This prevents pivot records from remaining in the database.
-         */
-        app(UserManagementService::class)->permanentlyDelete($user);
-
-        Ui::toast(
-            text: 'User permanently deleted.',
-            variant: 'success'
-        );
-
-        $this->dispatch('swal', [
-            'title' => 'User permanently deleted',
-            'text' => 'This account can no longer be restored.',
-            'icon' => 'success',
-        ]);
-
-        $this->resetPage('archivedUsersPage');
-    }
-
     /*
     |--------------------------------------------------------------------------
     | Facility assignment
     |--------------------------------------------------------------------------
     */
-
-    public function openAssignments(int $userId): void
-    {
-        $user = $this->managedUser($userId);
-
-        if ($user->user_type !== 'admin') {
-            Ui::toast(
-                text: 'Facility assignment is only available for Office Admin accounts.',
-                variant: 'info'
-            );
-
-            return;
-        }
-
-        $this->selectedAdminId = $user->id;
-
-        $this->assignedFacilityIds = $user->facilities()
-            ->pluck('facilities.FID')
-            ->map(fn ($id) => (int) $id)
-            ->toArray();
-
-        $this->showAssignmentModal = true;
-    }
-
-    public function saveAssignments(): void
-    {
-        if (! $this->selectedAdminId) {
-            return;
-        }
-
-        $admin = $this->managedUser((int) $this->selectedAdminId);
-
-        if ($admin->user_type !== 'admin') {
-            Ui::toast(
-                text: 'Only Office Admin accounts can be assigned facilities.',
-                variant: 'danger'
-            );
-
-            return;
-        }
-
-        $validated = $this->validate([
-            'assignedFacilityIds' => ['array'],
-            'assignedFacilityIds.*' => ['integer', 'distinct', Rule::exists('facilities', 'FID')->whereNull('deleted_at')],
-        ]);
-
-        $facilityIds = array_values(array_unique(array_map(
-            'intval',
-            $validated['assignedFacilityIds'],
-        )));
-
-        app(AssignFacilities::class)->handle($admin, $facilityIds);
-
-        Ui::toast(
-            text: 'Facility assigned successfully.',
-            variant: 'success'
-        );
-
-        $this->showAssignmentModal = false;
-        $this->selectedAdminId = null;
-        $this->assignedFacilityIds = [];
-    }
 
     /*
     |--------------------------------------------------------------------------

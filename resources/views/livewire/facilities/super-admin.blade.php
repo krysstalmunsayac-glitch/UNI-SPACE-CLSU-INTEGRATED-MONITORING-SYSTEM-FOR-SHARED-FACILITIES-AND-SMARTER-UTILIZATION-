@@ -1,4 +1,4 @@
-<div class="w-full" @if (! $showModal && ! $showStatusConfirmation && ! $showCreateConfirmation) wire:poll.15s @endif>
+<div class="w-full">
     @if ($archiveOnly)
         <div class="mx-auto max-w-7xl">
             <x-ui::card>

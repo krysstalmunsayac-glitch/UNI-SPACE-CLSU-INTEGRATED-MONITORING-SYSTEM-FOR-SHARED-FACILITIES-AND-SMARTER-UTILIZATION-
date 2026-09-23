@@ -4,6 +4,7 @@ use App\Models\PendingRegistration;
 use App\Models\User;
 use App\Notifications\VerifyPendingRegistration;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
@@ -109,12 +110,11 @@ new #[Layout('components.layouts.auth')] class extends Component
         $digits = (string) preg_replace('/\D+/', '', $this->clsu_id);
 
         if ($this->account_type === 'staff') {
-            $digits = substr($digits, 0, 10);
-            $this->clsu_id = match (true) {
-                strlen($digits) === 6 => substr($digits, 0, 2).'-'.substr($digits, 2),
-                strlen($digits) > 8 => substr($digits, 0, 8).'-'.substr($digits, 8),
-                default => $digits,
-            };
+            $digits = substr($digits, 0, 11);
+            $prefixLength = strlen($digits) === 11 ? 9 : 8;
+            $this->clsu_id = strlen($digits) > 8
+                ? substr($digits, 0, $prefixLength).'-'.substr($digits, $prefixLength)
+                : $digits;
 
             return;
         }
@@ -156,7 +156,7 @@ new #[Layout('components.layouts.auth')] class extends Component
                 'email.external_email' => 'External users must use a non-CLSU email address.',
                 'clsu_id.required' => 'Enter your unique CLSU ID.',
                 'clsu_id.regex' => $this->account_type === 'staff'
-                    ? 'Enter a valid staff ID in the format 09876543-16 or 22-1234.'
+                    ? 'Enter a valid 10- or 11-digit staff ID in the format 09876543-16 or 123456789-01.'
                     : 'Enter a valid student ID in the format 22-1234.',
                 'clsu_id.unique' => 'This CLSU ID is already associated with an account or pending registration.',
             ]);
@@ -222,7 +222,7 @@ new #[Layout('components.layouts.auth')] class extends Component
             'account_type.required' => 'Select whether you are staff, a CLSU student, or an external user.',
             'clsu_id.required' => 'Enter your unique CLSU ID.',
             'clsu_id.regex' => $this->account_type === 'staff'
-                ? 'Enter a valid staff ID in the format 00000000-00 or 00-0000.'
+                ? 'Enter a valid 10- or 11-digit staff ID in the format 00000000-00 or 000000000-00.'
                 : 'Enter a valid student ID in the format 00-0000.',
             'clsu_id.unique' => 'This CLSU ID is already associated with an account or pending registration.',
             'contact_number.regex' => 'Enter a valid 11-digit PH mobile number starting with 09.',
@@ -258,8 +258,22 @@ new #[Layout('components.layouts.auth')] class extends Component
 
         session()->put('pending_registration_token', $token);
 
-        Notification::route('mail', $validated['email'])
-            ->notify(new VerifyPendingRegistration($pin, $token));
+        try {
+            Notification::route('mail', $validated['email'])
+                ->notify(new VerifyPendingRegistration($pin, $token));
+        } catch (\Throwable $exception) {
+            PendingRegistration::query()->where('token', $token)->delete();
+            session()->forget('pending_registration_token');
+
+            Log::error('Registration verification PIN could not be sent.', [
+                'email' => $validated['email'],
+                'exception' => $exception,
+            ]);
+
+            throw ValidationException::withMessages([
+                'email' => 'We could not send your verification PIN. Please try again in a moment.',
+            ]);
+        }
 
         $this->redirect(route('registration.pin', $token, absolute: false), navigate: true);
     }
@@ -377,8 +391,8 @@ new #[Layout('components.layouts.auth')] class extends Component
             @if ($this->isInstitutionalAccount())
                 <div class="grid gap-2" wire:key="clsu-id-field">
                     @if ($account_type === 'staff')
-                        <x-ui::input wire:model="clsu_id" x-on:input="const digits = $event.target.value.replace(/\D/g, '').slice(0, 10); $event.target.value = digits.length === 6 ? digits.replace(/^(\d{2})(\d{4})$/, '$1-$2') : digits.replace(/^(\d{8})(\d)/, '$1-$2')" id="clsu_id" label="{{ __('Staff ID') }}" type="text" name="clsu_id" required maxlength="11" inputmode="numeric" pattern="(?:[0-9]{8}-[0-9]{2}|[0-9]{2}-[0-9]{4})" title="Use the staff ID format 09876543-16 or 22-1234." placeholder="09876543-16 or 22-1234" />
-                        <p class="text-xs font-semibold text-emerald-900/60 dark:text-zinc-400">Staff ID: use either 09876543-16 or the six-digit format 22-1234.</p>
+                        <x-ui::input wire:model="clsu_id" x-on:input="const digits = $event.target.value.replace(/\D/g, '').slice(0, 11); $event.target.value = digits.length === 11 ? digits.replace(/^(\d{9})(\d{2})$/, '$1-$2') : digits.replace(/^(\d{8})(\d)/, '$1-$2')" id="clsu_id" label="{{ __('Staff ID') }}" type="text" name="clsu_id" required maxlength="12" inputmode="numeric" pattern="(?:[0-9]{8}-[0-9]{2}|[0-9]{9}-[0-9]{2})" title="Use a 10- or 11-digit staff ID, such as 09876543-16 or 123456789-01." placeholder="09876543-16 or 123456789-01" />
+                        <p class="text-xs font-semibold text-emerald-900/60 dark:text-zinc-400">Staff ID: enter 10 or 11 digits; the hyphen is inserted before the final two digits.</p>
                     @else
                         <x-ui::input wire:model="clsu_id" x-on:input="$event.target.value = $event.target.value.replace(/\D/g, '').slice(0, 6).replace(/^(\d{2})(\d)/, '$1-$2')" id="clsu_id" label="{{ __('Student ID') }}" type="text" name="clsu_id" required maxlength="7" inputmode="numeric" pattern="[0-9]{2}-[0-9]{4}" title="Use the student ID format 22-1234." placeholder="22-1234" />
                         <p class="text-xs font-semibold text-emerald-900/60 dark:text-zinc-400">Student ID: two digits, a hyphen, then four digits.</p>

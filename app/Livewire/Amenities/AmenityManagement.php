@@ -4,9 +4,7 @@ namespace App\Livewire\Amenities;
 
 use App\Actions\Amenities\SaveAmenity;
 use App\Actions\Amenities\ToggleAmenityStatus;
-use App\Actions\Lifecycle\ArchiveRecord;
-use App\Actions\Lifecycle\PermanentlyDeleteRecord;
-use App\Actions\Lifecycle\RestoreRecord;
+use App\Livewire\Amenities\Concerns\ManagesAmenityLifecycle;
 use App\Livewire\Queries\AmenityListQuery;
 use App\Models\Amenity;
 use App\Support\Ui;
@@ -21,6 +19,7 @@ use Livewire\WithPagination;
 #[Layout('components.layouts.app')]
 class AmenityManagement extends Component
 {
+    use ManagesAmenityLifecycle;
     use WithPagination;
 
     public $editingId = null;
@@ -93,7 +92,7 @@ class AmenityManagement extends Component
 
     public function sort($column): void
     {
-        if (! in_array($column, ['name', 'Status', 'inventory_quantity', 'current_usage_quantity'], true)) {
+        if (! in_array($column, ['name', 'Status', 'inventory_quantity'], true)) {
             return;
         }
 
@@ -240,46 +239,6 @@ class AmenityManagement extends Component
         $this->showStatusConfirmation = false;
         $this->pendingStatusId = null;
         $this->deactivationConfirmation = '';
-    }
-
-    public function delete(int $amenityId): void
-    {
-        $amenity = $this->getScopedAmenity($amenityId);
-        app(ArchiveRecord::class)->handle($amenity);
-
-        Ui::toast(text: 'Amenity archived successfully!', variant: 'success');
-        $this->dispatch(
-            'swal',
-            [
-                'title' => 'Amenity archived',
-                'text' => 'Amenity archived successfully!',
-                'icon' => 'success',
-            ]
-        );
-    }
-
-    public function openArchivedRecords(): void
-    {
-        $this->resetPage('archivedAmenitiesPage');
-        $this->showArchivedModal = true;
-    }
-
-    public function restore(int $amenityId): void
-    {
-        $amenity = $this->getScopedAmenity($amenityId, withTrashed: true);
-        app(RestoreRecord::class)->handle($amenity);
-
-        Ui::toast(text: 'Amenity restored successfully!', variant: 'success');
-        $this->dispatch('$refresh');
-    }
-
-    public function forceDelete(int $amenityId): void
-    {
-        $amenity = $this->getScopedAmenity($amenityId, withTrashed: true);
-        app(PermanentlyDeleteRecord::class)->handle($amenity);
-
-        Ui::toast(text: 'Amenity permanently deleted.', variant: 'danger');
-        $this->dispatch('$refresh');
     }
 
     #[Computed]

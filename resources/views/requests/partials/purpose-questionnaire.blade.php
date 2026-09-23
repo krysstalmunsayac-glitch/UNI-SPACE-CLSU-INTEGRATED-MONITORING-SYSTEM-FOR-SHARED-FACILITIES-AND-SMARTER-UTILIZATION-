@@ -1,28 +1,7 @@
 @php
-    $purposeOptions = [
-        'Meeting or Conference',
-        'Seminar or Workshop',
-        'Training Session',
-        'Class or Educational Activity',
-        'Student Organization Event',
-        'Club Meeting',
-        'Sports or Recreational Activity',
-        'Cultural or Arts Program',
-        'Religious Activity',
-        'Community Outreach Program',
-        'Birthday Celebration',
-        'Wedding Reception or Ceremony',
-        'Family Gathering or Reunion',
-        'Corporate Event',
-        'Product Launch or Promotion',
-        'Exhibition or Fair',
-        'Concert or Performance',
-        'Graduation or Recognition Ceremony',
-        'Health or Medical Mission',
-        'Government or Public Service Activity',
-        'Photo or Video Shoot',
-        'Other',
-    ];
+    $purposeOptions = \App\Models\FacilityRequest::PURPOSE_OPTIONS;
+    $selectedPurposes = old('Purpose_Categories', $selectedPurposes ?? []);
+    $otherPurposeValue = old('Other_Purpose', $otherPurpose ?? '');
 @endphp
 
 <section class="sm:col-span-2 space-y-5 rounded-xl border border-emerald-900/10 bg-emerald-50/50 p-4 dark:border-white/10 dark:bg-zinc-900/60">
@@ -39,7 +18,7 @@
                     name="Purpose_Categories[]"
                     value="{{ $option }}"
                     label="{{ $option }}"
-                    :checked="in_array($option, old('Purpose_Categories', []), true)"
+                    :checked="in_array($option, $selectedPurposes, true)"
                 />
             @endforeach
         </div>
@@ -50,7 +29,7 @@
     <x-ui::input
         name="Other_Purpose"
         label="Other purpose"
-        value="{{ old('Other_Purpose') }}"
+        value="{{ $otherPurposeValue }}"
         placeholder="Complete this only when Other is selected"
         maxlength="150"
     />

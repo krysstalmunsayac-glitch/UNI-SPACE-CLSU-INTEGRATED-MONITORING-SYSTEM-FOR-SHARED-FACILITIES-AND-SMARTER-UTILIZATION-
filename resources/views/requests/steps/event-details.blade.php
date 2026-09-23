@@ -1,7 +1,7 @@
                             {{-- STEP 1: Event details --}}
                             <div x-ref="eventDetails" x-show="step === 1" x-cloak class="space-y-4">
                                 <x-ui::heading size="lg">Tell us about your event</x-ui::heading>
-                                <p class="text-sm text-emerald-900/70 dark:text-zinc-300">Add a clear event name and a short description so the facility team can review your request.</p>
+                                <p class="text-sm text-emerald-900/70 dark:text-zinc-300">Add a clear event name, explain the purpose of your request, and provide the details the facility team needs for review.</p>
 
                                 @if ($guestBooking)
                                     <div class="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-800 dark:bg-emerald-950/20">
@@ -55,12 +55,12 @@
                                     </div>
 
                                     <div>
-                                        <x-ui::select label="Is this event connected to CLSU?" name="Event_Scope" required>
-                                            <x-ui::select.option value="">Choose the event purpose</x-ui::select.option>
+                                        <x-ui::select label="Event scope" name="Event_Scope" required>
+                                            <x-ui::select.option value="">Choose an event scope</x-ui::select.option>
                                             <x-ui::select.option value="Internal" :selected="old('Event_Scope') === 'Internal'">Yes — official CLSU-related event</x-ui::select.option>
                                             <x-ui::select.option value="External" :selected="old('Event_Scope') === 'External'">No — personal or non-CLSU event</x-ui::select.option>
                                         </x-ui::select>
-                                        <p class="mt-1 text-xs leading-5 text-zinc-500 dark:text-zinc-400">Choose based on the event purpose. A personal birthday is non-CLSU even when requested by a CLSU student or employee.</p>
+                                        <p class="mt-1 text-xs leading-5 text-zinc-500 dark:text-zinc-400">A personal event is non-CLSU even when requested by a CLSU student or employee.</p>
                                         @error('Event_Scope') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                                     </div>
 
@@ -80,16 +80,21 @@
                                     </div>
                                 </div>
 
-                                <div>
+                                <div class="grid gap-4 sm:grid-cols-2">
+                                    @include('requests.partials.purpose-questionnaire')
+
+                                    <div class="sm:col-span-2">
                                     <x-ui::textarea
-                                        label="Event description"
-                                        name="Description"
+                                        label="Event Description"
+                                        name="Request_Details"
                                         rows="4"
                                         required
                                         minlength="5"
                                         maxlength="2000"
-                                    >{{ old('Description') }}</x-ui::textarea>
-                                    @error('Description') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
+                                        placeholder="Describe the event, activity, setup, or other important details"
+                                    >{{ old('Request_Details') }}</x-ui::textarea>
+                                    @error('Request_Details') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
+                                    </div>
                                 </div>
 
                                 <div class="flex justify-end pt-2">

@@ -114,6 +114,7 @@ class RequestListQuery
                 ->orWhere('Guest_Name', 'like', $term)
                 ->orWhere('Guest_Organization', 'like', $term)
                 ->orWhere('Purpose', 'like', $term)
+                ->orWhere('Request_Details', 'like', $term)
                 ->orWhere('Status', 'like', $term)
                 ->orWhereHas('user', fn (Builder $userQuery) => $userQuery->where('name', 'like', $term))
                 ->orWhereHas('facility', fn (Builder $facilityQuery) => $facilityQuery->where('Facility_Name', 'like', $term));
@@ -126,7 +127,7 @@ class RequestListQuery
         return [
             'user:id,name,email',
             'creator:id,name',
-            'event:EID,Event_Scope',
+            'event:EID,Event_Scope,Description',
             'facility:FID,Facility_Name,Price',
         ];
     }

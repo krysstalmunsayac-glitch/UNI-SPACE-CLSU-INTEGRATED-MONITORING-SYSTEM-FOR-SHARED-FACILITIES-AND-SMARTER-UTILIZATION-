@@ -174,15 +174,16 @@ class DashboardController extends Controller
             ->whereHas('facility.assignedAdmins', fn ($query) => $query->where('users.id', $user?->id));
         $requestMetricsQuery = (clone $requestScope)
             ->whereBetween('Created_at', [$dateFrom, $dateTo]);
-        $facilityQuery = Facility::query()->whereHas('assignedAdmins', fn ($query) => $query->where('users.id', $user?->id));
-        $facilities = (clone $facilityQuery)->orderBy('Facility_Name')->get();
+        $facilities = Facility::query()
+            ->whereHas('assignedAdmins', fn ($query) => $query->where('users.id', $user?->id))
+            ->orderBy('Facility_Name')
+            ->get();
 
         $requestMetrics = $this->analytics->requestDashboardMetrics($requestMetricsQuery, $dateFrom, $dateTo);
         $responseRateMetrics = $this->analytics->responseRateMetrics($requestMetricsQuery);
         $operationalAnalytics = $this->analytics->operationalAnalytics($requestScope, $facilities, $dateFrom, $dateTo);
 
         return view('dashboards.office-admin', [
-            'facilityCount' => $facilityQuery->count(),
             'rangeRequests' => (clone $requestMetricsQuery)->count(),
             'analyticsDateFrom' => $dateFrom->toDateString(),
             'analyticsDateTo' => $dateTo->toDateString(),

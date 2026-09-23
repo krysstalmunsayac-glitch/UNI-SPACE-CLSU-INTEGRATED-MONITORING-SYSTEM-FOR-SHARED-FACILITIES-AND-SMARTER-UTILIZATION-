@@ -175,6 +175,10 @@ class RequestWorkflowService
             ])->values()->all();
         $request->update($data);
 
+        if (array_key_exists('Request_Details', $data) && $request->event) {
+            $request->event->update(['Description' => $data['Request_Details']]);
+        }
+
         if ($data['Status'] !== $previousStatus) {
             $this->notifyStatusChange($request, $previousStatus);
         }

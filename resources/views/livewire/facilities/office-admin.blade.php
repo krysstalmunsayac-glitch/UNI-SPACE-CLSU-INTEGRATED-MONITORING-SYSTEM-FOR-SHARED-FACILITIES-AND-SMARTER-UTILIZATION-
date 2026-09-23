@@ -1,4 +1,4 @@
-<div class="w-full" @if (! $showModal && ! $showStatusConfirmation) wire:poll.15s @endif>
+<div class="w-full">
     @include('livewire.facilities.components.office-admin.page-header')
     @include('livewire.facilities.components.office-admin.facilities-grid')
     @if ($showModal)

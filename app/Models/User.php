@@ -18,7 +18,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public const STUDENT_ID_REGEX = '/^\d{2}-\d{4}$/';
 
-    public const STAFF_ID_REGEX = '/^(?:\d{8}-\d{2}|\d{2}-\d{4})$/';
+    public const STAFF_ID_REGEX = '/^(?:\d{8}-\d{2}|\d{9}-\d{2})$/';
 
     public const CLSU_EMAIL_DOMAINS = ['clsu.edu.ph', 'clsu2.edu.ph'];
 
@@ -51,6 +51,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'ImageID',
         'user_type',
         'is_active',
+        'self_deleted_at',
     ];
 
     /**
@@ -77,6 +78,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'is_active' => 'boolean',
         'privacy_consent' => 'boolean',
         'privacy_consented_at' => 'datetime',
+        'self_deleted_at' => 'datetime',
     ];
 
     public function invitationStatus(): string

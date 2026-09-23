@@ -7,7 +7,7 @@
 <body class="min-h-screen bg-white font-sans text-[#1e6031] antialiased dark:bg-zinc-950 dark:text-zinc-100">
     @php
         $navLink = 'border-b-2 border-transparent py-5 transition hover:border-emerald-700 hover:text-emerald-700 dark:hover:border-emerald-300 dark:hover:text-emerald-300';
-        $navActive = 'border-white text-white';
+        $navActive = 'site-nav-active border-white text-white';
         $mobileNavLink = 'transition hover:text-emerald-700 dark:hover:text-emerald-300';
         $mobileNavActive = 'bg-white/10 text-white';
         $isEndUser = auth()->check() && auth()->user()->hasrole('user');
@@ -31,6 +31,12 @@
 
         .site-header .navigation-typeface > a:hover,
         .site-header .navigation-typeface > a:focus-visible {
+            border-color: #fff !important;
+            color: #fff !important;
+        }
+
+        .site-header .navigation-typeface > a.site-nav-active,
+        .site-header[data-transparent="true"] .navigation-typeface > a.site-nav-active {
             border-color: #fff !important;
             color: #fff !important;
         }
@@ -371,6 +377,5 @@
 
     @stack('scripts')
     @livewireScripts
-    @include('partials.site-auto-refresh')
 </body>
 </html>

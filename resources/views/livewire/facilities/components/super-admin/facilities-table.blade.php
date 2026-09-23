@@ -13,13 +13,13 @@
                         class="overflow-hidden! rounded-2xl! p-0! shadow-xl!"
                         style="width: 24rem; max-width: calc(100vw - 2rem); max-height: min(22rem, calc(100vh - 2rem));"
                     >
-                        <div x-data="{ facilitySearch: '' }" class="flex max-h-[22rem] flex-col overflow-hidden">
+                        <div data-facility-picker class="flex max-h-[22rem] flex-col overflow-hidden">
                             <div class="border-b border-zinc-200 bg-white p-3 dark:border-zinc-700 dark:bg-zinc-800">
                                 <label class="sr-only" for="request-facility-search">Search facilities</label>
                                 <input
                                     id="request-facility-search"
-                                    x-model="facilitySearch"
                                     x-on:click.stop
+                                    oninput="const term = this.value.trim().toLowerCase(); this.closest('[data-facility-picker]').querySelectorAll('[data-facility-option]').forEach((option) => { const matches = term === '' || option.dataset.searchText.includes(term); if (matches) option.style.removeProperty('display'); else option.style.setProperty('display', 'none', 'important'); });"
                                     type="search"
                                     placeholder="Search facilities..."
                                     class="h-11 w-full rounded-xl border border-zinc-300 bg-white px-3 text-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/15 dark:border-zinc-600 dark:bg-zinc-900"
@@ -27,12 +27,15 @@
                             </div>
                             <div class="min-h-0 flex-1 overflow-y-auto p-2">
                                 @foreach ($this->requestableFacilities as $requestableFacility)
+                                    <div
+                                        data-facility-option
+                                        data-search-text="{{ strtolower($requestableFacility->Facility_Name.' '.$requestableFacility->Office) }}"
+                                    >
                                     @if ($requestableFacility->Status === 'Available')
                                         <x-ui::menu.item
                                             icon="calendar-days"
                                             href="{{ route('admin.requests.create', $requestableFacility) }}"
                                             class="min-w-0! rounded-xl! py-2.5!"
-                                            x-show="facilitySearch === '' || @js(strtolower($requestableFacility->Facility_Name.' '.$requestableFacility->Office)).includes(facilitySearch.toLowerCase())"
                                         >
                                             <span class="block min-w-0 whitespace-normal">
                                                 <span class="block break-words font-semibold leading-5">{{ $requestableFacility->Facility_Name }}</span>
@@ -46,7 +49,6 @@
                                             type="button"
                                             disabled
                                             class="flex min-h-9 w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm opacity-60"
-                                            x-show="facilitySearch === '' || @js(strtolower($requestableFacility->Facility_Name.' '.$requestableFacility->Office)).includes(facilitySearch.toLowerCase())"
                                         >
                                             <x-ui::icon.calendar-days class="size-5 shrink-0" />
                                             <span class="block min-w-0 whitespace-normal">
@@ -57,6 +59,7 @@
                                             </span>
                                         </button>
                                     @endif
+                                    </div>
                                 @endforeach
                             </div>
                         </div>

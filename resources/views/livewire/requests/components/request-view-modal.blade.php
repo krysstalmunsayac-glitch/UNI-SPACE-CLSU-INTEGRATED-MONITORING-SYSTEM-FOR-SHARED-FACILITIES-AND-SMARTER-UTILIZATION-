@@ -1,38 +1,47 @@
 {{-- View Modal (read-only) --}}
 <x-ui::modal
     wire:model.self="showViewModal"
-    class="!flex !max-h-[94vh] !w-[96vw] !max-w-6xl !flex-col !overflow-hidden !rounded-2xl !bg-zinc-100 !p-0 dark:!bg-zinc-900"
+    class="!flex !max-h-[95vh] !w-[96vw] !max-w-7xl !flex-col !overflow-hidden !rounded-3xl !bg-zinc-100 !p-0 shadow-2xl dark:!bg-zinc-900"
 >
-    <div class="min-h-0 flex-1 overflow-y-auto p-3 sm:p-6">
-        <article class="mx-auto w-full max-w-5xl bg-white px-5 py-6 text-zinc-900 shadow-xl ring-1 ring-black/5 dark:bg-zinc-950 dark:text-white sm:px-8 sm:py-8">
-            <header class="flex flex-col gap-4 border-b-2 border-emerald-700 pb-5 sm:flex-row sm:items-end sm:justify-between">
+    <div class="min-h-0 flex-1 overflow-y-auto p-2 sm:p-4 lg:p-5">
+        <article class="mx-auto w-full max-w-6xl overflow-hidden rounded-2xl bg-white text-zinc-900 shadow-sm ring-1 ring-black/5 dark:bg-zinc-950 dark:text-zinc-100 dark:ring-white/10">
+            <div class="border-b border-emerald-100 bg-gradient-to-r from-white via-emerald-50/40 to-white px-5 py-3 dark:border-emerald-950 dark:from-zinc-950 dark:via-emerald-950/20 dark:to-zinc-950 sm:px-8">
+                <img src="{{ asset('images/clsu-letterhead-header.png') }}" alt="Central Luzon State University letterhead" class="mx-auto block h-auto max-h-28 w-full object-contain sm:max-h-32">
+            </div>
+            <div class="px-5 py-5 sm:px-8 sm:py-6">
+            <header class="flex flex-col gap-4 rounded-2xl bg-zinc-50 px-5 py-4 ring-1 ring-zinc-200 sm:flex-row sm:items-center sm:justify-between dark:bg-zinc-900/70 dark:ring-zinc-800">
                 <div>
                     <p class="text-[11px] font-black uppercase tracking-[0.28em] text-emerald-700 dark:text-emerald-300">Siel Space</p>
-                    <h2 class="mt-1 text-2xl font-black tracking-tight text-zinc-950 dark:text-white">Facility Reservation Request</h2>
+                    <h2 class="mt-1 text-xl font-black tracking-tight text-zinc-950 sm:text-2xl dark:text-white">Facility Reservation Request</h2>
                     <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Complete request record · Read-only</p>
                 </div>
-                <div class="flex items-center gap-3 sm:flex-col sm:items-end sm:gap-1">
-                    <span class="text-xs font-bold uppercase tracking-wider text-zinc-400">Request ID</span>
-                    <span class="text-xl font-black text-emerald-800 dark:text-emerald-300">#{{ $viewingId }}</span>
+                <div class="flex shrink-0 items-center gap-3 rounded-xl bg-white px-4 py-3 shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-950 dark:ring-zinc-700">
+                    <span class="flex size-10 items-center justify-center rounded-lg bg-emerald-700 text-sm font-black text-white">#</span>
+                    <div>
+                        <span class="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">Request ID</span>
+                        <span class="text-xl font-black text-emerald-800 dark:text-emerald-300">{{ $viewingId }}</span>
+                    </div>
                 </div>
             </header>
 
-            <section class="mt-6 overflow-hidden rounded-xl border border-emerald-200 bg-emerald-50/60 dark:border-emerald-900/50 dark:bg-emerald-950/20">
+            <section class="mt-5 overflow-hidden rounded-2xl border border-emerald-200 bg-emerald-50/60 dark:border-emerald-900/50 dark:bg-emerald-950/20">
                 <div class="border-b border-emerald-200 px-5 py-2.5 dark:border-emerald-900/50">
                     <h3 class="text-[11px] font-black uppercase tracking-[0.2em] text-emerald-800 dark:text-emerald-300">Requester information</h3>
                 </div>
-                <div class="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
-                    <span class="flex size-12 shrink-0 items-center justify-center rounded-full bg-emerald-700 text-lg font-black text-white shadow-sm">
-                        {{ \Illuminate\Support\Str::of($Requester_Name ?: 'Unknown')->substr(0, 1)->upper() }}
-                    </span>
-                    <div class="min-w-0 flex-1">
-                        <p class="text-base font-black text-emerald-950 dark:text-white">{{ $Requester_Name ?? 'Unknown user' }}</p>
-                        <p class="break-all text-sm text-emerald-800/70 dark:text-emerald-100/70">{{ $Requester_Email ?? 'No email available' }}</p>
-                        @if ($Is_Guest_Booking)
-                            <p class="mt-1 text-xs font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Guest booking</p>
-                        @endif
+                <div class="grid gap-5 p-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)] md:items-center">
+                    <div class="flex min-w-0 items-center gap-4">
+                        <span class="flex size-12 shrink-0 items-center justify-center rounded-full bg-emerald-700 text-lg font-black text-white shadow-sm">
+                            {{ \Illuminate\Support\Str::of($Requester_Name ?: 'Unknown')->substr(0, 1)->upper() }}
+                        </span>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-base font-black text-emerald-950 dark:text-white">{{ $Requester_Name ?? 'Unknown user' }}</p>
+                            <p class="break-all text-sm text-emerald-800/70 dark:text-emerald-100/70">{{ $Requester_Email ?? 'No email available' }}</p>
+                            @if ($Is_Guest_Booking)
+                                <p class="mt-1 text-xs font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Guest booking</p>
+                            @endif
+                        </div>
                     </div>
-                    <dl class="grid min-w-0 gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
+                    <dl class="grid min-w-0 gap-x-6 gap-y-3 border-t border-emerald-200 pt-4 text-sm sm:grid-cols-2 md:border-l md:border-t-0 md:pl-6 md:pt-0 dark:border-emerald-900/60">
                         <div>
                             <dt class="text-xs font-semibold text-zinc-500 dark:text-zinc-400">Contact</dt>
                             <dd class="font-medium">{{ $Requester_Contact ?: 'Not provided' }}</dd>
@@ -59,7 +68,7 @@
                 </div>
             </section>
 
-            <section class="mt-6">
+            <section class="mt-5">
                 <div class="mb-3 flex items-center justify-between gap-4">
                     <h3 class="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">Reservation details</h3>
                     <x-ui::badge
@@ -108,12 +117,16 @@
                 </dl>
             </section>
 
-            <section class="mt-6 grid gap-4 sm:grid-cols-2">
-                <div class="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Purpose</h3>
+            <section class="mt-5 grid gap-4 sm:grid-cols-2">
+                <div class="rounded-xl border border-zinc-200 bg-zinc-50/60 p-4 dark:border-zinc-800 dark:bg-zinc-900/50">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Purpose of Request</h3>
                     <p class="mt-2 whitespace-pre-wrap text-sm font-medium">{{ $form->Purpose ?: '—' }}</p>
                 </div>
-                <div class="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
+                <div class="rounded-xl border border-zinc-200 bg-zinc-50/60 p-4 dark:border-zinc-800 dark:bg-zinc-900/50">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Event Description</h3>
+                    <p class="mt-2 whitespace-pre-wrap text-sm font-medium">{{ $form->Request_Details ?: '—' }}</p>
+                </div>
+                <div class="rounded-xl border border-zinc-200 bg-zinc-50/60 p-4 sm:col-span-2 dark:border-zinc-800 dark:bg-zinc-900/50">
                     <h3 class="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Purpose categories</h3>
                     <p class="mt-2 text-sm font-medium">
                         {{ $Purpose_Categories ? implode(', ', $Purpose_Categories) : '—' }}
@@ -198,30 +211,40 @@
                     </dl>
                 </section>
             @endif
+            </div>
+            <div class="border-t border-zinc-100 bg-white px-5 py-3 dark:border-zinc-800 dark:bg-zinc-950 sm:px-8">
+                <img src="{{ asset('images/clsu-letterhead-footer.jpg') }}" alt="Central Luzon State University footer" class="mx-auto block h-auto max-h-16 w-full object-contain">
+            </div>
         </article>
     </div>
 
-    <footer class="flex shrink-0 flex-wrap gap-2 border-t border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-950 sm:px-6">
-        @if (! $viewingArchived && $form->Status === 'Pending' && $viewingId)
-            <x-ui::button wire:click="approve({{ $viewingId }})" data-ui-confirm="Approve this request?" variant="primary" icon="check" class="flex-1">
-                Approve
-            </x-ui::button>
-        @endif
-        @if (! $viewingArchived && $form->Status === 'Approved' && $viewingId)
-            <x-ui::button
-                wire:click="openCancelModal({{ $viewingId }}); $set('showViewModal', false)"
-                variant="danger"
-                icon="x-mark"
-                class="flex-1"
-            >
-                Cancel
-            </x-ui::button>
-        @elseif (! $viewingArchived && $form->Status === 'Pending' && $viewingId)
-            <x-ui::button wire:click="openRejectModal({{ $viewingId }}); $set('showViewModal', false)" variant="danger" icon="x-mark" class="flex-1">
-                Reject
-            </x-ui::button>
-        @endif
-        <x-ui::button wire:click="$set('showViewModal', false)" variant="ghost" class="flex-1">Close</x-ui::button>
+    <footer class="flex shrink-0 flex-col gap-3 border-t border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <div class="hidden sm:block">
+            <p class="text-xs font-bold text-zinc-700 dark:text-zinc-200">Request #{{ $viewingId }}</p>
+            <p class="text-xs text-zinc-500">Review the complete record before taking action.</p>
+        </div>
+        <div class="flex flex-1 flex-wrap gap-2 sm:flex-initial sm:justify-end">
+            @if (! $viewingArchived && $form->Status === 'Pending' && $viewingId)
+                <x-ui::button wire:click="approve({{ $viewingId }})" data-ui-confirm="Approve this request?" variant="primary" icon="check" class="min-w-32 flex-1 sm:flex-none">
+                    Approve
+                </x-ui::button>
+            @endif
+            @if (! $viewingArchived && $form->Status === 'Approved' && $viewingId)
+                <x-ui::button
+                    wire:click="openCancelModal({{ $viewingId }}); $set('showViewModal', false)"
+                    variant="danger"
+                    icon="x-mark"
+                    class="min-w-32 flex-1 sm:flex-none"
+                >
+                    Cancel
+                </x-ui::button>
+            @elseif (! $viewingArchived && $form->Status === 'Pending' && $viewingId)
+                <x-ui::button wire:click="openRejectModal({{ $viewingId }}); $set('showViewModal', false)" variant="danger" icon="x-mark" class="min-w-32 flex-1 sm:flex-none">
+                    Reject
+                </x-ui::button>
+            @endif
+            <x-ui::button wire:click="$set('showViewModal', false)" variant="ghost" class="min-w-24 flex-1 sm:flex-none">Close</x-ui::button>
+        </div>
     </footer>
 </x-ui::modal>
 

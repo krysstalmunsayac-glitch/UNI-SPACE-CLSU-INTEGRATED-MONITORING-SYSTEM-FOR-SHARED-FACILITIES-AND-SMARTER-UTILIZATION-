@@ -174,31 +174,48 @@
                     <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Upload up to five clear images of the space.</p>
                 </div>
 
-                @if ($editingId && $existingImages)
+                @if ($editingId && ($legacyImageUrl || $existingImages))
                     <p class="mb-3 text-xs text-zinc-500">Remove individual images or upload replacements. Changes are applied when you click Update.</p>
                     <div class="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                        @if ($legacyImageUrl)
+                            <div class="group relative" wire:key="legacy-facility-image">
+                                <img src="{{ $legacyImageUrl }}" class="h-24 w-full rounded-lg object-cover ring-1 ring-zinc-200" alt="Current facility image" />
+                                <span class="absolute bottom-1 left-1 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">Current</span>
+                                @if (! $viewMode)
+                                    <button
+                                        type="button"
+                                        wire:click="removeLegacyImage"
+                                        class="absolute right-1 top-1 flex size-7 items-center justify-center rounded-full bg-red-600 text-sm font-bold text-white shadow transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-yellow-300"
+                                        aria-label="Remove current image"
+                                        title="Remove image"
+                                    >&times;</button>
+                                @endif
+                            </div>
+                        @endif
                         @foreach ($existingImages as $existingImage)
                             <div class="group relative" wire:key="existing-facility-image-{{ $existingImage['id'] }}">
                                 <img src="{{ asset('storage/'.ltrim($existingImage['path'], '/')) }}" class="h-24 w-full rounded-lg object-cover" alt="Current facility image" />
+                                @if (! $viewMode)
                                 <button
                                     type="button"
                                     wire:click="removeExistingImage({{ $existingImage['id'] }})"
                                     class="absolute right-1 top-1 flex size-7 items-center justify-center rounded-full bg-red-600 text-sm font-bold text-white shadow transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-yellow-300"
                                     aria-label="Remove current image"
                                     title="Remove image"
-                                >×</button>
+                                >&times;</button>
+                                @endif
                             </div>
                         @endforeach
                     </div>
                 @endif
 
-                <input
-                    type="file"
-                    wire:model="images"
-                    multiple
-                    accept="image/*"
-                    class="w-full rounded-lg border border-zinc-300 bg-white p-3 text-sm dark:border-zinc-700 dark:bg-zinc-800"
-                />
+                @if (! $viewMode && ! $legacyImageUrl && empty($existingImages) && empty($images))
+                    <label class="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-emerald-300 bg-white px-5 py-6 text-center transition hover:border-emerald-500 hover:bg-emerald-50/60 dark:border-emerald-800 dark:bg-zinc-900 dark:hover:bg-emerald-950/20">
+                        <span class="font-bold text-emerald-800 dark:text-emerald-300">Choose facility photos</span>
+                        <span class="mt-1 text-xs text-zinc-500">JPG, PNG, or WebP · up to 5 MB each · maximum 5 photos</span>
+                        <input type="file" wire:model="images" multiple accept="image/jpeg,image/png,image/webp" class="sr-only" />
+                    </label>
+                @endif
 
                 <div wire:loading wire:target="images" class="mt-2 text-sm text-zinc-500">Uploading...</div>
                 @error('images') <span class="mt-2 block text-sm text-red-600">{{ $message }}</span> @enderror
@@ -215,10 +232,21 @@
                                     class="absolute right-1 top-1 flex size-7 items-center justify-center rounded-full bg-red-600 text-sm font-bold text-white shadow transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-yellow-300"
                                     aria-label="Remove new image"
                                     title="Remove image"
-                                >×</button>
+                                >&times;</button>
                             </div>
                         @endforeach
                     </div>
+
+                @endif
+
+                @php
+                    $visiblePhotoCount = count($existingImages) + count($images) + ($legacyImageUrl ? 1 : 0);
+                @endphp
+                @if (! $viewMode && $visiblePhotoCount > 0 && $visiblePhotoCount < 5)
+                    <label class="mt-4 inline-flex cursor-pointer items-center rounded-lg border border-emerald-300 bg-white px-4 py-2 text-sm font-bold text-emerald-800 transition hover:border-emerald-500 hover:bg-emerald-50 dark:border-emerald-800 dark:bg-zinc-900 dark:text-emerald-300 dark:hover:bg-emerald-950/20">
+                        Choose more photos
+                        <input type="file" wire:model="images" multiple accept="image/jpeg,image/png,image/webp" class="sr-only" />
+                    </label>
                 @endif
             </section>
         </fieldset>

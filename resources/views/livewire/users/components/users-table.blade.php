@@ -184,7 +184,7 @@
 
                                     @if (! $user->email_verified_at)
                                         <x-ui::menu.item
-                                            icon="envelope"
+                                            icon="paper-airplane"
                                             wire:click="resendInvitation({{ $user->id }})"
                                             wire:loading.attr="disabled"
                                             wire:target="resendInvitation({{ $user->id }})"
@@ -193,7 +193,7 @@
                                         </x-ui::menu.item>
 
                                         <x-ui::menu.item
-                                            icon="x-circle"
+                                            icon="x-mark"
                                             wire:click="revokeInvitation({{ $user->id }})"
                                             wire:loading.attr="disabled"
                                             wire:target="revokeInvitation({{ $user->id }})"

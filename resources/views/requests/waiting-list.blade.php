@@ -172,8 +172,8 @@
                                     </select>
                                 </div>
                                 <div class="lg:col-span-2">
-                                    <label class="mb-2 block text-sm font-medium text-emerald-900 dark:text-zinc-300" for="Description_{{ $request->RID }}">Description</label>
-                                    <textarea id="Description_{{ $request->RID }}" name="Description" rows="4" class="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-sm shadow-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900">{{ old('Description', $request->event?->Description) }}</textarea>
+                                    <label class="mb-2 block text-sm font-medium text-emerald-900 dark:text-zinc-300" for="Request_Details_{{ $request->RID }}">Event Description</label>
+                                    <textarea id="Request_Details_{{ $request->RID }}" name="Request_Details" rows="4" class="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-sm shadow-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900">{{ old('Request_Details', $request->Request_Details ?? $request->event?->Description) }}</textarea>
                                 </div>
                                 <div>
                                     <label class="mb-2 block text-sm font-medium text-emerald-900 dark:text-zinc-300" for="Proposed_Date_{{ $request->RID }}">Proposed date</label>
@@ -191,10 +191,10 @@
                                     <label class="mb-2 block text-sm font-medium text-emerald-900 dark:text-zinc-300" id="Proposed_End_Time_{{ $request->RID }}-label" for="Proposed_End_Time_{{ $request->RID }}">End time</label>
                                     <x-ui::time-select id="Proposed_End_Time_{{ $request->RID }}" aria-labelledby="Proposed_End_Time_{{ $request->RID }}-label" name="Proposed_End_Time" :value="old('Proposed_End_Time', data_get($request->Daily_Schedules, '0.end', $request->Proposed_End_Time?->format('H:i')))" :options="app(\App\Services\FacilityAvailabilityService::class)->endSlots()" />
                                 </div>
-                                <div>
-                                    <label class="mb-2 block text-sm font-medium text-emerald-900 dark:text-zinc-300" for="Purpose_{{ $request->RID }}">Purpose</label>
-                                    <input id="Purpose_{{ $request->RID }}" name="Purpose" value="{{ old('Purpose', $request->Purpose) }}" class="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-sm shadow-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900" />
-                                </div>
+                                @include('requests.partials.purpose-questionnaire', [
+                                    'selectedPurposes' => $request->selectablePurposeCategories(),
+                                    'otherPurpose' => $request->selectableOtherPurpose(),
+                                ])
                                 <div>
                                     <label class="mb-2 block text-sm font-medium text-emerald-900 dark:text-zinc-300" for="Capacity_{{ $request->RID }}">Expected Number of Attendees</label>
                                     <input id="Capacity_{{ $request->RID }}" name="Capacity" type="number" min="1" max="{{ $request->facility?->Capacity ?? 100000 }}" value="{{ old('Capacity', $request->Capacity) }}" required class="w-full rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-sm shadow-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/10 dark:border-white/10 dark:bg-zinc-900" />

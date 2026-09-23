@@ -1,7 +1,6 @@
 <x-layouts.app>
     @php
         $summaryCards = [
-            ['label' => 'Assigned Facilities', 'value' => $facilityCount ?? 0, 'note' => 'Spaces under your office', 'tone' => 'slate'],
             ['label' => 'Total Requests', 'value' => $rangeRequests ?? 0, 'note' => 'Submitted in selected dates', 'tone' => 'slate'],
             ['label' => 'Pending', 'value' => $dashboardStatusCounts['Pending'] ?? 0, 'note' => 'Awaiting review', 'tone' => 'amber'],
             ['label' => 'Approved', 'value' => $dashboardStatusCounts['Approved'] ?? 0, 'note' => 'Approved in selected dates', 'tone' => 'emerald'],

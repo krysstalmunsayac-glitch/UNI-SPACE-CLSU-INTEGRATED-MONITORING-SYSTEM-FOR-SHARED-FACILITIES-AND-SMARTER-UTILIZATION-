@@ -3,11 +3,12 @@
 use App\Models\PendingRegistration;
 use App\Models\User;
 use App\Notifications\VerifyPendingRegistration;
-use Illuminate\Auth\Event\Registered;
-use Illuminate\Auth\Event\Verified;
+use Illuminate\Auth\Events\Registered;
+use Illuminate\Auth\Events\Verified;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Session;
@@ -123,8 +124,16 @@ new #[Layout('components.layouts.auth')] class extends Component
             return;
         }
 
-        event(new Registered($result));
-        event(new Verified($result));
+        try {
+            event(new Registered($result));
+            event(new Verified($result));
+        } catch (\Throwable $exception) {
+            Log::error('Post-registration event dispatch failed.', [
+                'user_id' => $result->getKey(),
+                'exception' => $exception,
+            ]);
+        }
+
         RateLimiter::clear($rateLimitKey);
         Auth::login($result);
         Session::regenerate();

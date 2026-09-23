@@ -227,7 +227,7 @@
                     </x-ui::table.row>
                 @empty
                     <x-ui::table.row>
-                        <x-ui::table.cell colspan="7" class="text-center py-8">
+                        <x-ui::table.cell colspan="10" class="text-center py-8">
                             No requests match your current search or status filter.
                         </x-ui::table.cell>
                     </x-ui::table.row>

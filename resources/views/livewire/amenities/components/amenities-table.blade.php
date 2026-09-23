@@ -29,16 +29,7 @@
                     :direction="$sortDirection"
                     wire:click="sort('inventory_quantity')"
                 >
-                    Available quantity
-                </x-ui::table.column>
-
-                <x-ui::table.column
-                    sortable
-                    :sorted="$sortBy === 'current_usage_quantity'"
-                    :direction="$sortDirection"
-                    wire:click="sort('current_usage_quantity')"
-                >
-                    Reserved units
+                    Configured quantity
                 </x-ui::table.column>
 
                 <x-ui::table.column
@@ -82,31 +73,9 @@
                                     role="tooltip"
                                     class="pointer-events-none absolute bottom-full left-1/2 z-40 mb-2 hidden w-64 -translate-x-1/2 rounded-lg bg-zinc-950 px-3 py-2 text-xs font-normal leading-5 text-white shadow-xl group-hover/tooltip:block group-focus/tooltip:block dark:bg-white dark:text-zinc-900"
                                 >
-                                    {{ $amenity->isPermanent() ? 'This amenity is permanently available at the assigned facility.' : 'Total inventory available during any overlapping reservation period.' }}
+                                    {{ $amenity->isPermanent() ? 'This amenity is permanently available at the assigned facility.' : 'Configured units. Bookings do not reduce this quantity.' }}
                                 </span>
                             </span>
-                        </x-ui::table.cell>
-
-                        <x-ui::table.cell>
-                            @if ($amenity->isPermanent())
-                                <span class="text-sm font-medium text-zinc-500">Not applicable</span>
-                            @else
-                            @php
-                                $currentUsage = (int) $amenity->current_usage_quantity;
-                                $atLimit = $currentUsage >= $amenity->inventory_quantity;
-                            @endphp
-                            <span class="group/tooltip relative inline-flex" tabindex="0">
-                                <x-ui::badge :color="$atLimit ? 'red' : ($currentUsage > 0 ? 'amber' : 'green')">
-                                    {{ number_format($currentUsage) }} / {{ number_format($amenity->inventory_quantity) }}
-                                </x-ui::badge>
-                                <span
-                                    role="tooltip"
-                                    class="pointer-events-none absolute bottom-full left-1/2 z-40 mb-2 hidden w-64 -translate-x-1/2 rounded-lg bg-zinc-950 px-3 py-2 text-xs font-normal leading-5 text-white shadow-xl group-hover/tooltip:block group-focus/tooltip:block dark:bg-white dark:text-zinc-900"
-                                >
-                                    Total units across pending or approved requests (all dates).
-                                </span>
-                            </span>
-                            @endif
                         </x-ui::table.cell>
 
                         <x-ui::table.cell class="min-w-32 whitespace-nowrap">
@@ -168,7 +137,7 @@
                     </x-ui::table.row>
                 @empty
                     <x-ui::table.row>
-                        <x-ui::table.cell colspan="7" class="text-center py-8">
+                        <x-ui::table.cell colspan="6" class="text-center py-8">
                             No amenities found.
                         </x-ui::table.cell>
                     </x-ui::table.row>

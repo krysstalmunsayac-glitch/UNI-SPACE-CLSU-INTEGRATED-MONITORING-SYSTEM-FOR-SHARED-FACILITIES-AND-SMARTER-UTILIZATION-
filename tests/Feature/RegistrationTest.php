@@ -35,16 +35,27 @@ it('accepts the staff ID format and sends a PIN to a clsu.edu.ph address', funct
     Notification::assertSentOnDemand(VerifyPendingRegistration::class);
 });
 
-it('accepts the six-digit ID format for staff', function () {
+it('accepts an eleven-digit staff ID', function () {
     Notification::fake();
 
-    validRegistration('staff', '221234', 'staff@clsu.edu.ph')
+    validRegistration('staff', '12345678901', 'faculty11@clsu.edu.ph')
         ->call('register')
         ->assertHasNoErrors()
         ->assertRedirect();
 
-    expect(PendingRegistration::query()->where('email', 'staff@clsu.edu.ph')->value('clsu_id'))
-        ->toBe('22-1234');
+    expect(PendingRegistration::query()->where('email', 'faculty11@clsu.edu.ph')->value('clsu_id'))
+        ->toBe('123456789-01');
+});
+
+it('rejects the six-digit ID format for staff', function () {
+    Notification::fake();
+
+    validRegistration('staff', '221234', 'staff@clsu.edu.ph')
+        ->call('register')
+        ->assertHasErrors(['clsu_id']);
+
+    expect(PendingRegistration::query()->where('email', 'staff@clsu.edu.ph')->exists())
+        ->toBeFalse();
 });
 
 it('accepts a clsu2.edu.ph email address for staff', function () {
