@@ -44,7 +44,9 @@ class RequestStatusUpdated extends Notification
                     : null,
                 'actionUrl' => $notifiable instanceof AnonymousNotifiable
                     ? url('/')
-                    : route('requests.waiting.index'),
+                    : route('login', [
+                        'redirect' => route('dashboard', ['request' => $this->request->RID], absolute: false).'#requests',
+                    ]),
             ]);
     }
 

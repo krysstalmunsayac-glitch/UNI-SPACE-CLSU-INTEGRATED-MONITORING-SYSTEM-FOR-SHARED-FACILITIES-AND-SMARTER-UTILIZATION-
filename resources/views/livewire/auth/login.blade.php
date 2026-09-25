@@ -23,6 +23,18 @@ new #[Layout('components.layouts.auth')] class extends Component
     public bool $remember = false;
 
     /**
+     * Remember a safe destination supplied by an email link before signing in.
+     */
+    public function mount(): void
+    {
+        $redirect = request()->query('redirect');
+
+        if ($safeRedirect = $this->safeIntendedUrl($redirect)) {
+            Session::put('url.intended', $safeRedirect);
+        }
+    }
+
+    /**
      * Handle an incoming authentication request.
      */
     public function login(): void
