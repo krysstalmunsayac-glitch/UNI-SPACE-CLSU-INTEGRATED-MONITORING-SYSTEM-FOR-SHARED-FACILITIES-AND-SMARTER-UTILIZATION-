@@ -22,8 +22,9 @@ trait ManagesRequestLifecycle
             return;
         }
 
-        if (! $request->Proposed_Date->isAfter(today())) {
-            Ui::toast(text: 'Outdated booking requests cannot be approved.', variant: 'warning');
+        if ($request->scheduledEndAt()?->lte(now())) {
+            FacilityRequest::markPastRequestsAsEnded();
+            Ui::toast(text: 'This request has expired because its scheduled event time has already passed.', variant: 'warning');
 
             return;
         }
