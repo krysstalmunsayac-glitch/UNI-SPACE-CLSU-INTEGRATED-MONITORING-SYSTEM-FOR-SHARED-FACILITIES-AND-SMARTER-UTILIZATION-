@@ -58,3 +58,30 @@ it('does not restore a self-deleted account after 90 days', function () {
     expect(auth()->check())->toBeFalse()
         ->and($user->fresh()->trashed())->toBeTrue();
 });
+
+it('returns an external user to their intended protected page after sign in', function () {
+    $user = recoverableExternalUser();
+    $feedbackUrl = '/dashboard/requests/123/feedback';
+
+    $this->withSession(['url.intended' => $feedbackUrl]);
+
+    Volt::test('auth.login')
+        ->set('email', $user->email)
+        ->set('password', 'password')
+        ->call('login')
+        ->assertHasNoErrors()
+        ->assertRedirect($feedbackUrl);
+});
+
+it('does not redirect a signed-in user to an external intended URL', function () {
+    $user = recoverableExternalUser();
+
+    $this->withSession(['url.intended' => 'https://malicious.example/phishing']);
+
+    Volt::test('auth.login')
+        ->set('email', $user->email)
+        ->set('password', 'password')
+        ->call('login')
+        ->assertHasNoErrors()
+        ->assertRedirect(route('dashboard', absolute: false));
+});

@@ -6,100 +6,62 @@ use App\Models\Facility;
 use App\Models\User;
 use Livewire\Livewire;
 
-it('shows validation instead of a server error for active and archived duplicate brand names', function (bool $archiveExisting) {
+it('allows the same amenity name for different facilities', function () {
     $administrator = User::factory()->create(['user_type' => 'super_admin', 'is_active' => true]);
-    $facility = Facility::query()->create(['Facility_Name' => 'Duplicate Brand Test Hall', 'Status' => 'Available']);
+    $firstFacility = Facility::query()->create(['Facility_Name' => 'First Amenity Hall', 'Status' => 'Available']);
+    $secondFacility = Facility::query()->create(['Facility_Name' => 'Second Amenity Hall', 'Status' => 'Available']);
+
     $existingAmenity = Amenity::query()->create([
         'created_by' => $administrator->id,
-        'name' => 'Shared Projector',
-        'brand_name' => 'CLSU-PROJECTOR-001',
+        'name' => 'Projector',
         'Status' => 'Available',
         'inventory_type' => 'countable',
-        'inventory_quantity' => 2,
+        'inventory_quantity' => 1,
     ]);
-    $existingAmenity->facilities()->attach($facility->FID);
-
-    if ($archiveExisting) {
-        $existingAmenity->delete();
-    }
+    $existingAmenity->facilities()->attach($firstFacility->FID);
 
     $this->actingAs($administrator);
 
     Livewire::test(AmenityManagement::class)
         ->call('create')
-        ->set('name', 'Shared Projector')
-        ->set('brand_name', '  CLSU-PROJECTOR-001  ')
-        ->set('Description', 'Attempted duplicate brand.')
-        ->set('facilityIds', [$facility->FID])
+        ->set('name', 'Projector')
+        ->set('facilityIds', [$secondFacility->FID])
         ->call('save', true)
-        ->assertHasErrors(['brand_name']);
+        ->assertHasNoErrors();
 
-    expect(Amenity::withTrashed()->where('brand_name', 'CLSU-PROJECTOR-001')->count())->toBe(1);
-})->with(['active duplicate' => false, 'archived duplicate' => true]);
-
-it('rejects changing an amenity to another brand name but allows keeping its own brand name', function () {
-    $administrator = User::factory()->create(['user_type' => 'super_admin', 'is_active' => true]);
-    $facility = Facility::query()->create(['Facility_Name' => 'Rename Test Hall', 'Status' => 'Available']);
-    $firstAmenity = Amenity::query()->create([
-        'created_by' => $administrator->id,
-        'name' => 'Projector',
-        'brand_name' => 'CLSU-PROJECTOR-FIRST',
-        'Status' => 'Available',
-        'inventory_type' => 'countable',
-        'inventory_quantity' => 1,
-    ]);
-    $secondAmenity = Amenity::query()->create([
-        'created_by' => $administrator->id,
-        'name' => 'Projector',
-        'brand_name' => 'CLSU-PROJECTOR-SECOND',
-        'Status' => 'Available',
-        'inventory_type' => 'countable',
-        'inventory_quantity' => 1,
-    ]);
-    $firstAmenity->facilities()->attach($facility->FID);
-    $secondAmenity->facilities()->attach($facility->FID);
-
-    $this->actingAs($administrator);
-
-    Livewire::test(AmenityManagement::class)
-        ->call('edit', $secondAmenity->AID)
-        ->call('save')
-        ->assertHasNoErrors('brand_name')
-        ->call('edit', $secondAmenity->AID)
-        ->set('brand_name', 'CLSU-PROJECTOR-FIRST')
-        ->call('save')
-        ->assertHasErrors(['brand_name']);
-
-    expect($secondAmenity->fresh()->brand_name)->toBe('CLSU-PROJECTOR-SECOND');
+    expect(Amenity::query()->where('name', 'Projector')->count())->toBe(2);
 });
 
-it('allows duplicate amenity names in the same facility when brand names are unique', function () {
+it('keeps amenity editing functional after an amenity with the same name is archived', function () {
     $administrator = User::factory()->create(['user_type' => 'super_admin', 'is_active' => true]);
-    $facility = Facility::query()->create(['Facility_Name' => 'Duplicate Name Hall', 'Status' => 'Available']);
-    $firstAmenity = Amenity::query()->create([
+    $facility = Facility::query()->create(['Facility_Name' => 'Archived Amenity Hall', 'Status' => 'Available']);
+
+    $archivedAmenity = Amenity::query()->create([
         'created_by' => $administrator->id,
-        'name' => 'Portable Projector',
-        'brand_name' => 'CLSU-PROJECTOR-A',
+        'name' => 'Sound System',
         'Status' => 'Available',
         'inventory_type' => 'countable',
         'inventory_quantity' => 1,
     ]);
-    $firstAmenity->facilities()->attach($facility->FID);
+    $archivedAmenity->facilities()->attach($facility->FID);
+    $archivedAmenity->delete();
+
+    $activeAmenity = Amenity::query()->create([
+        'created_by' => $administrator->id,
+        'name' => 'Sound System',
+        'Status' => 'Available',
+        'inventory_type' => 'countable',
+        'inventory_quantity' => 1,
+    ]);
+    $activeAmenity->facilities()->attach($facility->FID);
 
     $this->actingAs($administrator);
 
     Livewire::test(AmenityManagement::class)
-        ->call('create')
-        ->set('name', 'Portable Projector')
-        ->set('brand_name', 'CLSU-PROJECTOR-B')
-        ->set('facilityIds', [$facility->FID])
-        ->call('save', true)
-        ->assertHasNoErrors(['name', 'brand_name']);
+        ->call('edit', $activeAmenity->AID)
+        ->set('Description', 'Updated without using the removed brand field.')
+        ->call('save')
+        ->assertHasNoErrors();
 
-    $duplicates = Amenity::query()->where('name', 'Portable Projector')->with('facilities')->orderBy('AID')->get();
-
-    expect($duplicates)->toHaveCount(2)
-        ->and($duplicates->pluck('brand_name')->all())->toBe(['CLSU-PROJECTOR-A', 'CLSU-PROJECTOR-B'])
-        ->and($duplicates[0]->facilities->modelKeys())->toBe([$facility->FID])
-        ->and($duplicates[1]->facilities->modelKeys())->toBe([$facility->FID]);
+    expect($activeAmenity->fresh()->Description)->toBe('Updated without using the removed brand field.');
 });

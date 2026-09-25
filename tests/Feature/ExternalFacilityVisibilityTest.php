@@ -25,7 +25,7 @@ it('shows unavailable facilities to external users without a booking action', fu
         ->assertDontSee('href="'.route('requests.create', ['facilitySlug' => Facility::query()->first()->slug]).'"', false);
 });
 
-it('shows only amenity names on the public facility page', function () {
+it('shows amenity names and configured quantities on the public facility page', function () {
     $facility = Facility::query()->create([
         'Facility_Name' => 'Public Amenity Display Hall',
         'Status' => 'Available',
@@ -41,7 +41,7 @@ it('shows only amenity names on the public facility page', function () {
     $this->get(route('facilities.show', $facility))
         ->assertOk()
         ->assertSee('Fixed Sound System')
-        ->assertDontSee('1 unit');
+        ->assertSee('1 unit');
 });
 
 it('shows the responsible office instead of the location on the request page', function () {

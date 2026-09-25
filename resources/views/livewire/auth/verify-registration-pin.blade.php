@@ -14,12 +14,14 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Locked;
 use Livewire\Volt\Component;
 
 new #[Layout('components.layouts.auth')] class extends Component
 {
     private const PENDING_REGISTRATION_MISSING = '__pending_registration_missing__';
 
+    #[Locked]
     public string $token = '';
 
     public string $pin = '';

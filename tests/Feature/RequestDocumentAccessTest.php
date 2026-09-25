@@ -54,6 +54,49 @@ it('allows an owner to download documents from an archived request', function ()
         ->assertHeader('content-type', 'application/pdf');
 });
 
+it('allows an owner to give feedback for an archived completed reservation', function () {
+    $user = User::factory()->create([
+        'user_type' => 'user',
+        'is_active' => true,
+    ]);
+    $facility = Facility::query()->create([
+        'Facility_Name' => 'Archived Feedback Hall',
+        'Status' => 'Available',
+    ]);
+    $facilityRequest = FacilityRequest::query()->create([
+        'User_ID' => $user->id,
+        'Facility_ID' => $facility->FID,
+        'Proposed_Date' => today()->subDay()->toDateString(),
+        'Proposed_Start_Time' => '09:00',
+        'Proposed_End_Time' => '11:00',
+        'Status' => 'Ended',
+        'Purpose' => 'Archived feedback access test',
+    ]);
+
+    // Archiving the facility also archives its linked request.
+    $facility->delete();
+
+    $this->actingAs($user)
+        ->get(route('requests.feedback.create', $facilityRequest->RID))
+        ->assertOk()
+        ->assertSee('Rate your facility');
+
+    $this->post(route('requests.feedback.store', $facilityRequest->RID), [
+        'Rating' => 5,
+        'Reservation_Frequency' => 'First time',
+        'Purpose_Importance' => 'Very Important',
+        'Requirements_Met' => 'Yes, completely',
+        'Reserve_Again' => 'Definitely Yes',
+        'Comment' => 'The archived reservation remains available for feedback.',
+    ])->assertRedirect(route('dashboard').'#requests');
+
+    $this->assertDatabaseHas('feedbacks', [
+        'User_ID' => $user->id,
+        'Request_ID' => $facilityRequest->RID,
+        'Rating' => 5,
+    ]);
+});
+
 it('keeps archived request documents private from unrelated users', function () {
     Storage::fake('local');
 

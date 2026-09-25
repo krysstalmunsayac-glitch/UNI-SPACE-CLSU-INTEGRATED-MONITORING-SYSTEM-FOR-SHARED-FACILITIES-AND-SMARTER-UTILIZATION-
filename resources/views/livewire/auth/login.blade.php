@@ -65,7 +65,10 @@ new #[Layout('components.layouts.auth')] class extends Component
         RateLimiter::clear($this->throttleKey());
         Session::regenerate();
 
-        Session::forget('url.intended');
+        // Preserve the protected page that sent an external user to sign in
+        // (for example, an archived reservation's feedback link from email).
+        // Management accounts always return to their assigned dashboard.
+        $intendedUrl = Session::pull('url.intended');
 
         $dashboard = match (Auth::user()->user_type) {
             'super_admin' => route('dashboard.super-admin', absolute: false),
@@ -84,7 +87,34 @@ new #[Layout('components.layouts.auth')] class extends Component
 
         // Use a full-page redirect so account switches do not reuse stale
         // Livewire navigation state from the previously authenticated user.
-        $this->redirect($dashboard);
+        $this->redirect(
+            Auth::user()->user_type === 'user' && ($safeIntendedUrl = $this->safeIntendedUrl($intendedUrl))
+                ? $safeIntendedUrl
+                : $dashboard,
+        );
+    }
+
+    /**
+     * Only return users to a path on this application after authentication.
+     * Session data should never be trusted as a destination for an external URL.
+     */
+    private function safeIntendedUrl(mixed $url): ?string
+    {
+        if (! is_string($url) || blank($url)) {
+            return null;
+        }
+
+        $parts = parse_url($url);
+
+        if ($parts === false) {
+            return null;
+        }
+
+        if (! isset($parts['host'])) {
+            return str_starts_with($url, '/') && ! str_starts_with($url, '//') ? $url : null;
+        }
+
+        return hash_equals(request()->getHost(), $parts['host']) ? $url : null;
     }
 
     /**
