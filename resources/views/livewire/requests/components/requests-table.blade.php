@@ -6,13 +6,12 @@
             </div>
         </div>
 
-        <div class="mb-4 grid gap-2 rounded-xl bg-zinc-50 p-3 text-xs text-zinc-600 sm:grid-cols-2 lg:grid-cols-6 dark:bg-zinc-900 dark:text-zinc-300">
+        <div class="mb-4 grid gap-2 rounded-xl bg-zinc-50 p-3 text-xs text-zinc-600 sm:grid-cols-2 lg:grid-cols-5 dark:bg-zinc-900 dark:text-zinc-300">
             <span class="flex min-h-14 flex-col justify-center rounded-lg border border-blue-100 bg-white px-3 py-2 dark:border-blue-900/40 dark:bg-zinc-950"><strong class="text-blue-700 dark:text-blue-300">Pending</strong><span>Waiting for review</span></span>
             <span class="flex min-h-14 flex-col justify-center rounded-lg border border-amber-100 bg-white px-3 py-2 dark:border-amber-900/40 dark:bg-zinc-950"><strong class="text-amber-700 dark:text-amber-300">Awaiting Payment</strong><span>Payment required</span></span>
             <span class="flex min-h-14 flex-col justify-center rounded-lg border border-orange-100 bg-white px-3 py-2 dark:border-orange-900/40 dark:bg-zinc-950"><strong class="text-orange-700 dark:text-orange-300">Needs Revision</strong><span>User must update details</span></span>
             <span class="flex min-h-14 flex-col justify-center rounded-lg border border-emerald-100 bg-white px-3 py-2 dark:border-emerald-900/40 dark:bg-zinc-950"><strong class="text-emerald-700 dark:text-emerald-300">Approved</strong><span>Added to the schedule</span></span>
             <span class="flex min-h-14 flex-col justify-center rounded-lg border border-red-100 bg-white px-3 py-2 dark:border-red-900/40 dark:bg-zinc-950"><strong class="text-red-700 dark:text-red-300">Rejected</strong><span>Request not accepted</span></span>
-            <span class="flex min-h-14 flex-col justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-zinc-950"><strong class="text-slate-700 dark:text-slate-300">Expired</strong><span>Schedule time passed</span></span>
         </div>
 
         <x-ui::table :paginate="$this->requests" class="request-data-table">
