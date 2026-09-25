@@ -326,7 +326,7 @@
                 <a href="{{ route('home') }}#map" x-on:click="mobileMenuOpen = false; setActive('map')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'map' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">Map</a>
                 <a href="{{ route('home') }}#help" x-on:click="mobileMenuOpen = false; setActive('help')" class="rounded-lg px-3 py-2.5 {{ $mobileNavLink }}" x-bind:class="activeSection === 'help' ? @js('bg-emerald-50 '.$mobileNavActive) : ''">Help</a>
                 <div class="mt-2 grid grid-cols-2 gap-3">
-                    <a href="{{ route('login') }}" class="rounded-xl border border-emerald-700 px-4 py-3 text-center font-bold text-emerald-800 transition hover:bg-emerald-700 hover:text-white dark:border-emerald-300 dark:text-emerald-200 dark:hover:bg-emerald-300 dark:hover:text-emerald-950">Sign In</a>
+                    <a href="{{ route('login') }}" class="rounded-xl border border-white bg-white px-4 py-3 text-center font-bold text-emerald-800 transition hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-white/70">Sign In</a>
                     <a href="{{ route('register') }}" class="rounded-xl bg-emerald-700 px-4 py-3 text-center font-bold text-white transition hover:bg-emerald-800 dark:bg-emerald-400 dark:text-emerald-950 dark:hover:bg-emerald-300">Sign Up</a>
                 </div>
             @endauth
