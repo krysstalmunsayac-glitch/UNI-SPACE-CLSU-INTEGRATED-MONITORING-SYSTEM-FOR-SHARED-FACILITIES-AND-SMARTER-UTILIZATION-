@@ -138,11 +138,11 @@
                                 <div class="rounded-xl bg-emerald-50 p-4 dark:bg-zinc-900">
                                     <p class="text-xs font-black uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Progress</p>
                                     <div class="mt-4 flex items-center gap-2 text-sm font-bold">
-                                        <span class="rounded-full bg-emerald-600 px-3 py-1 text-white">Submitted</span>
+                                        <span class="select-none rounded-full bg-emerald-600 px-3 py-1 text-white">Submitted</span>
                                         <span class="h-0.5 flex-1 bg-emerald-300"></span>
-                                        <span class="rounded-full {{ $isExpired ? 'bg-slate-200 text-slate-600' : ($isApproved || $isRejected || $isEnded ? 'bg-emerald-600 text-white' : 'bg-yellow-400 text-emerald-950') }} px-3 py-1">Review</span>
+                                        <span class="select-none rounded-full {{ $isExpired ? 'bg-slate-200 text-slate-700' : ($isApproved || $isRejected || $isEnded ? 'bg-emerald-600 text-white' : 'bg-yellow-400 text-emerald-950') }} px-3 py-1">Review</span>
                                         <span class="h-0.5 flex-1 {{ $isApproved || $isEnded ? 'bg-emerald-300' : ($isRejected ? 'bg-rose-300' : 'bg-zinc-200') }}"></span>
-                                        <span class="rounded-full {{ $isApproved ? 'bg-emerald-600 text-white' : ($isEnded ? 'bg-slate-700 text-white' : ($isRejected ? 'bg-rose-600 text-white' : ($isCancelled ? 'bg-zinc-600 text-white' : ($isExpired ? 'bg-slate-500 text-white' : 'bg-zinc-200 text-zinc-600')))) }} px-3 py-1">
+                                        <span class="select-none rounded-full {{ $isApproved ? 'bg-emerald-600 text-white' : ($isEnded ? 'bg-slate-700 text-white' : ($isRejected ? 'bg-rose-600 text-white' : ($isCancelled ? 'bg-zinc-600 text-white' : ($isExpired ? 'bg-rose-700 text-white' : 'bg-zinc-200 text-zinc-600')))) }} px-3 py-1">
                                             {{ $isEnded ? 'Completed' : ($isRejected ? 'Rejected' : ($isCancelled ? 'Cancelled' : ($isExpired ? 'Expired' : 'Decision'))) }}
                                         </span>
                                     </div>
