@@ -1,7 +1,7 @@
 <?php
 
-use App\Http\Controllers\FacilityRequestController;
 use App\Http\Controllers\EventRequestController;
+use App\Http\Controllers\FacilityRequestController;
 use App\Http\Controllers\WaitingListController;
 use App\Http\Middleware\PreventBackHistory;
 use Illuminate\Support\Facades\Route;
@@ -12,12 +12,16 @@ Route::middleware([
     'user.pages',
     PreventBackHistory::class,
 ])->group(function () {
+    Route::get('reserve/{facilitySlug}', [FacilityRequestController::class, 'showRequest'])
+        ->where('facilitySlug', '[A-Za-z0-9-]+')
+        ->name('requests.create');
+
     Route::prefix('requests')
         ->name('requests.')
         ->controller(FacilityRequestController::class)
         ->group(function () {
-            Route::get('create/{facility}', 'showRequest')
-                ->name('create');
+            Route::get('create/{facility}', 'redirectLegacyRequest')
+                ->name('create.legacy');
 
             Route::get('availability/{facility}', 'availability')
                 ->middleware('throttle:60,1')

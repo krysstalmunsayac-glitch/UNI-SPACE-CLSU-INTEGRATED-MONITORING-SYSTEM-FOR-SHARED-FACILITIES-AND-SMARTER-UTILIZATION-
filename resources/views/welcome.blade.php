@@ -46,10 +46,11 @@
             active: 0,
             slides: @js($heroSlidesForBrowser),
             total: {{ count($heroSlides) }},
-            currentSrc: @js($heroSlidesForBrowser[0]['image']),
-            currentAlt: @js($heroSlidesForBrowser[0]['alt']),
-            incomingSrc: null,
-            incomingAlt: '',
+            layerASrc: @js($heroSlidesForBrowser[0]['image']),
+            layerAAlt: @js($heroSlidesForBrowser[0]['alt']),
+            layerBSrc: null,
+            layerBAlt: '',
+            visibleLayer: 'a',
             transitioning: false,
             loadingIndex: null,
             timer: null,
@@ -63,24 +64,44 @@
             async show(index) {
                 if (index === this.active || this.transitioning || this.loadingIndex !== null) return;
                 this.loadingIndex = index;
-                const image = new Image();
-                image.src = this.slides[index].image;
-                try { await image.decode(); } catch { if (!image.complete) { this.loadingIndex = null; return; } }
-                this.incomingSrc = this.slides[index].image;
-                this.incomingAlt = this.slides[index].alt;
-                this.loadingIndex = null;
+                const nextSlide = this.slides[index];
+                const nextLayer = this.visibleLayer === 'a' ? 'b' : 'a';
+                if (nextLayer === 'a') {
+                    this.layerASrc = nextSlide.image;
+                    this.layerAAlt = nextSlide.alt;
+                } else {
+                    this.layerBSrc = nextSlide.image;
+                    this.layerBAlt = nextSlide.alt;
+                }
                 await this.$nextTick();
-                requestAnimationFrame(() => {
+                const nextImage = nextLayer === 'a' ? this.$refs.layerA : this.$refs.layerB;
+                try {
+                    if (typeof nextImage.decode === 'function') {
+                        await nextImage.decode();
+                    } else if (!nextImage.complete) {
+                        await new Promise((resolve, reject) => {
+                            nextImage.addEventListener('load', resolve, { once: true });
+                            nextImage.addEventListener('error', reject, { once: true });
+                        });
+                    }
+                } catch {
+                    this.loadingIndex = null;
+                    return;
+                }
+                if (!nextImage.complete || nextImage.naturalWidth === 0) {
+                    this.loadingIndex = null;
+                    return;
+                }
+                this.loadingIndex = null;
+                this.transitioning = true;
+                requestAnimationFrame(() => requestAnimationFrame(() => {
                     this.active = index;
-                    this.transitioning = true;
+                    this.visibleLayer = nextLayer;
                     window.setTimeout(() => {
-                        this.currentSrc = this.incomingSrc;
-                        this.currentAlt = this.incomingAlt;
                         this.transitioning = false;
-                        this.incomingSrc = null;
                         this.preload((index + 1) % this.total);
                     }, window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 800);
-                });
+                }));
             },
             goTo(index) { this.show(index); this.start(); },
             previous() { this.show((this.active - 1 + this.total) % this.total); this.start(); },
@@ -98,21 +119,24 @@
         aria-label="CLSU facility images"
     >
         <img
+            x-ref="layerA"
             src="{{ asset($heroSlides[0]['image']) }}"
-            x-bind:src="currentSrc"
+            x-bind:src="layerASrc"
             alt="{{ $heroSlides[0]['alt'] }}"
-            x-bind:alt="currentAlt"
-            class="home-hero-slide absolute inset-0 h-full w-full object-cover object-center"
+            x-bind:alt="layerAAlt"
+            x-bind:class="visibleLayer === 'a' ? 'opacity-100' : 'opacity-0'"
+            x-bind:aria-hidden="visibleLayer !== 'a'"
+            class="home-hero-slide absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-700 ease-in-out"
             decoding="async"
             fetchpriority="high"
         >
         <img
-            x-cloak
-            x-show="incomingSrc"
-            x-bind:src="incomingSrc"
-            x-bind:alt="incomingAlt"
-            x-bind:class="transitioning ? 'opacity-100' : 'opacity-0'"
-            class="home-hero-slide absolute inset-0 h-full w-full object-cover object-center opacity-0 transition-opacity duration-700 ease-in-out"
+            x-ref="layerB"
+            x-bind:src="layerBSrc"
+            x-bind:alt="layerBAlt"
+            x-bind:class="visibleLayer === 'b' ? 'opacity-100' : 'opacity-0'"
+            x-bind:aria-hidden="visibleLayer !== 'b'"
+            class="home-hero-slide absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-700 ease-in-out"
             decoding="async"
             aria-live="off"
         >
@@ -136,8 +160,7 @@
         </button>
         <div class="relative mx-auto flex min-h-[640px] w-full max-w-7xl items-center justify-center px-5 pb-24 pt-28 text-center sm:px-8 lg:h-[100svh] lg:min-h-0 lg:px-24 lg:pb-20 lg:pt-24">
             <div class="max-w-4xl">
-                <p class="text-xs font-black uppercase tracking-[.32em] text-yellow-400 sm:text-sm lg:text-base">Central Luzon State University</p>
-                <h1 class="mt-5 text-5xl font-black leading-[.9] tracking-[-.045em] text-white sm:text-7xl lg:text-8xl xl:text-9xl">SIEL SPACE</h1>
+                <h1 class="text-5xl font-black leading-[.9] tracking-[-.045em] text-white sm:text-7xl lg:text-8xl xl:text-9xl">SIEL SPACE</h1>
                 <p class="mx-auto mt-4 max-w-2xl text-base leading-7 text-white/85 sm:text-lg sm:leading-8">Find and reserve facilities across Central Luzon State University. View available spaces, check schedules, and manage facility requests in one place.</p>
                 <div class="mt-8 flex justify-center">
                     <a href="#facilities" class="inline-flex min-h-12 min-w-48 items-center justify-center rounded-xl bg-[#009639] px-8 py-3 font-bold text-white shadow-lg shadow-black/20 transition hover:-translate-y-0.5 hover:bg-emerald-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400 focus-visible:ring-offset-2 focus-visible:ring-offset-black/50">Book Facility</a>

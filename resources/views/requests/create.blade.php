@@ -164,7 +164,7 @@
                         let status = 'available';
                         for (const range of day.ranges || []) {
                             if (start < range.blocked_end && end > range.blocked_start) {
-                                if (range.status === 'approved') return 'approved';
+                                if (['approved', 'awaiting payment'].includes(range.status)) return 'reserved';
                                 status = 'pending';
                             }
                         }
@@ -174,15 +174,15 @@
                         if (!schedule?.start || !schedule?.end) return 'incomplete';
                         return this.slotStatus(schedule.date, schedule.start, schedule.end);
                     },
-                    hasApprovedConflict() { return this.dailySchedules.some(schedule => this.scheduleStatus(schedule) === 'approved'); },
+                    hasApprovedConflict() { return this.dailySchedules.some(schedule => this.scheduleStatus(schedule) === 'reserved'); },
                     hasPendingWarning() { return !this.hasApprovedConflict() && this.dailySchedules.some(schedule => this.scheduleStatus(schedule) === 'pending'); },
                     hasClosure() { return this.dailySchedules.some(schedule => this.scheduleStatus(schedule) === 'unavailable'); },
                     hasPastTime() { return this.dailySchedules.some(schedule => this.scheduleStatus(schedule) === 'past'); },
                     hasBlockingConflict() { return this.hasApprovedConflict() || this.hasClosure() || this.hasPastTime(); },
-                    sharedStartDisabled(slot) { return this.dailySchedules.some(schedule => ['approved', 'unavailable', 'past'].includes(this.slotStatus(schedule.date, slot, this.addMinutes(slot, 60)))); },
-                    sharedEndDisabled(slot) { return this.dailySchedules.some(schedule => ['approved', 'unavailable', 'past'].includes(this.slotStatus(schedule.date, this.sharedStartTime, slot))); },
+                    sharedStartDisabled(slot) { return this.dailySchedules.some(schedule => ['reserved', 'unavailable', 'past'].includes(this.slotStatus(schedule.date, slot, this.addMinutes(slot, 60)))); },
+                    sharedEndDisabled(slot) { return this.dailySchedules.some(schedule => ['reserved', 'unavailable', 'past'].includes(this.slotStatus(schedule.date, this.sharedStartTime, slot))); },
                     slotLabel(status) {
-                        return status === 'approved' ? ' — Already Booked'
+                        return status === 'reserved' ? ' — Reserved'
                             : status === 'past' ? ' — Time Elapsed'
                             : status === 'unavailable' ? ' — Unavailable'
                             : '';

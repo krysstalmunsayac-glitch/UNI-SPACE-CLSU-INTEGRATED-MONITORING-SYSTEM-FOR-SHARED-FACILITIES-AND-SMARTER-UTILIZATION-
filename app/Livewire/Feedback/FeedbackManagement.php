@@ -23,7 +23,7 @@ class FeedbackManagement extends Component
 
     public string $sortBy = 'Created_at';
 
-    public string $sortDirection = 'desc';
+    public string $sortDirection = 'asc';
 
     public bool $showViewModal = false;
 
@@ -146,6 +146,7 @@ class FeedbackManagement extends Component
         }
 
         return $query->orderBy($this->sortBy, $this->sortDirection)
+            ->orderBy('FID', $this->sortDirection)
             ->paginate(8, pageName: 'feedbackPage');
     }
 

@@ -9,9 +9,13 @@ use App\Models\Schedule;
 use App\Notifications\RequestAwaitingPayment;
 use App\Notifications\RequestNeedsRevision;
 use App\Notifications\RequestStatusUpdated;
+use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Validation\ValidationException;
+use Throwable;
 
 class RequestWorkflowService
 {
@@ -40,10 +44,12 @@ class RequestWorkflowService
             }
 
             if ($request->Facility_ID && $this->availability->conflicts(
-                $request->Facility_ID, $dailySchedules, $request->RID, true, ['Approved']
+                $request->Facility_ID, $dailySchedules, $request->RID, true, ['Awaiting Payment', 'Approved']
             )->isNotEmpty()) {
                 return null;
             }
+
+            $previousStatus = $request->Status;
 
             $rejectedRequests = $request->Facility_ID
                 ? $this->availability->conflicts($request->Facility_ID, $dailySchedules, $request->RID, true, ['Pending'])
@@ -70,12 +76,13 @@ class RequestWorkflowService
 
             return [
                 'approved' => $request->load(['facility', 'user']),
+                'previous_status' => $previousStatus,
                 'rejected' => $rejectedRequests->each->load(['facility', 'user']),
             ];
         }, 3);
 
         if ($result) {
-            $this->notifyStatusChange($result['approved'], 'Pending');
+            $this->notifyStatusChange($result['approved'], $result['previous_status']);
             foreach ($result['rejected'] as $rejectedRequest) {
                 $this->notifyStatusChange($rejectedRequest, 'Pending');
             }
@@ -86,20 +93,60 @@ class RequestWorkflowService
 
     public function requestPayment(FacilityRequest $request, array $payment): void
     {
-        abort_unless($request->canTransitionTo('Awaiting Payment'), 409);
-        $request->update([
-            'Status' => 'Awaiting Payment',
-            'Payment_Amount' => $payment['paymentAmount'],
-            'Payment_Deadline' => $payment['paymentDeadline'],
-            'Payment_Proof_Path' => null,
-            'Payment_Proof_Uploaded_At' => null,
-        ]);
+        $paymentDeadline = Carbon::parse($payment['paymentDeadline']);
 
-        if ($request->user) {
-            Notification::send($request->user, new RequestAwaitingPayment($request));
-        } elseif ($request->Is_Guest_Booking && $request->Guest_Email) {
-            Notification::route('mail', $request->Guest_Email)->notify(new RequestAwaitingPayment($request));
-        }
+        $request = DB::transaction(function () use ($request, $payment, $paymentDeadline): FacilityRequest {
+            if ($request->Facility_ID) {
+                Facility::query()->whereKey($request->Facility_ID)->lockForUpdate()->firstOrFail();
+            }
+
+            $request = FacilityRequest::query()->whereKey($request->RID)->lockForUpdate()->firstOrFail();
+            abort_unless($request->canTransitionTo('Awaiting Payment'), 409);
+
+            $eventStart = $request->scheduledStartAt();
+
+            if (! $eventStart || $paymentDeadline->lte(now()) || ! $paymentDeadline->lt($eventStart)) {
+                throw ValidationException::withMessages([
+                    'paymentDeadline' => 'The payment deadline must be after now and before the event starts.',
+                ]);
+            }
+
+            $dailySchedules = $request->Daily_Schedules ?? [[
+                'date' => $request->Proposed_Date->toDateString(),
+                'start' => $request->Proposed_Start_Time->format('H:i'),
+                'end' => $request->Proposed_End_Time->format('H:i'),
+            ]];
+
+            if ($request->Facility_ID && $this->availability->conflicts(
+                $request->Facility_ID,
+                $dailySchedules,
+                $request->RID,
+                true,
+                ['Awaiting Payment', 'Approved'],
+            )->isNotEmpty()) {
+                throw ValidationException::withMessages([
+                    'paymentRequestId' => 'Payment cannot be requested because this schedule is already reserved.',
+                ]);
+            }
+
+            $request->update([
+                'Status' => 'Awaiting Payment',
+                'Payment_Amount' => $payment['paymentAmount'],
+                'Payment_Deadline' => $paymentDeadline,
+                'Payment_Proof_Path' => null,
+                'Payment_Proof_Uploaded_At' => null,
+            ]);
+
+            return $request->load(['facility', 'user']);
+        }, 3);
+
+        $this->sendNotificationSafely($request, function () use ($request): void {
+            if ($request->user) {
+                Notification::send($request->user, new RequestAwaitingPayment($request));
+            } elseif ($request->Is_Guest_Booking && $request->Guest_Email) {
+                Notification::route('mail', $request->Guest_Email)->notify(new RequestAwaitingPayment($request));
+            }
+        }, 'awaiting payment');
     }
 
     public function reject(FacilityRequest $request, string $reasons): void
@@ -145,9 +192,11 @@ class RequestWorkflowService
             'Rejection_Reason' => null,
         ]);
 
-        if ($request->user) {
-            Notification::send($request->user, new RequestNeedsRevision($request));
-        }
+        $this->sendNotificationSafely($request, function () use ($request): void {
+            if ($request->user) {
+                Notification::send($request->user, new RequestNeedsRevision($request));
+            }
+        }, 'revision requested');
     }
 
     public function update(FacilityRequest $request, array $data): bool
@@ -218,10 +267,25 @@ class RequestWorkflowService
 
     private function notifyStatusChange(FacilityRequest $request, string $previousStatus, bool $includeGuest = false): void
     {
-        if ($request->user) {
-            Notification::send($request->user, new RequestStatusUpdated($request, $previousStatus));
-        } elseif ($includeGuest && $request->Is_Guest_Booking && $request->Guest_Email) {
-            Notification::route('mail', $request->Guest_Email)->notify(new RequestStatusUpdated($request, $previousStatus));
+        $this->sendNotificationSafely($request, function () use ($request, $previousStatus, $includeGuest): void {
+            if ($request->user) {
+                Notification::send($request->user, new RequestStatusUpdated($request, $previousStatus));
+            } elseif ($includeGuest && $request->Is_Guest_Booking && $request->Guest_Email) {
+                Notification::route('mail', $request->Guest_Email)->notify(new RequestStatusUpdated($request, $previousStatus));
+            }
+        }, "status changed from {$previousStatus} to {$request->Status}");
+    }
+
+    private function sendNotificationSafely(FacilityRequest $request, callable $send, string $context): void
+    {
+        try {
+            $send();
+        } catch (Throwable $exception) {
+            Log::warning('Request state changed, but its notification could not be delivered.', [
+                'request_id' => $request->RID,
+                'notification_context' => $context,
+                'exception' => $exception,
+            ]);
         }
     }
 }

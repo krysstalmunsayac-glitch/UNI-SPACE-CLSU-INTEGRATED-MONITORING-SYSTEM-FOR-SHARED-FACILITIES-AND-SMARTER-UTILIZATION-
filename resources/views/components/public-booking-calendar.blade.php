@@ -50,7 +50,7 @@
         <div class="booking-calendar-legend" aria-label="Reservation status colors">
             <span><i class="is-approved"></i>Approved</span>
             <span><i class="is-ongoing"></i>Ongoing</span>
-            <span><i class="is-ended"></i>Ended</span>
+            <span><i class="is-ended"></i>Completed</span>
         </div>
 
         <div class="booking-calendar-top">

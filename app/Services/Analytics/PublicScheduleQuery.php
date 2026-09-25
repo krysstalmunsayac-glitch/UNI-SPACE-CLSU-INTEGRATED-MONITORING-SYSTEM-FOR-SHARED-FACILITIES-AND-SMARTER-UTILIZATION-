@@ -27,11 +27,11 @@ class PublicScheduleQuery
                 $start = Carbon::parse($date.' '.Carbon::parse($schedule->Start_Time)->format('H:i:s'));
                 $end = Carbon::parse($date.' '.Carbon::parse($schedule->End_Time)->format('H:i:s'));
                 $status = $schedule->request?->Status === 'Ended' || $end->isPast()
-                    ? 'Ended'
+                    ? 'Completed'
                     : ($start->isPast() ? 'Ongoing' : 'Approved');
                 $colors = match ($status) {
                     'Ongoing' => ['background' => '#007a2f', 'border' => '#006b2b'],
-                    'Ended' => ['background' => '#737373', 'border' => '#525252'],
+                    'Completed' => ['background' => '#737373', 'border' => '#525252'],
                     default => ['background' => '#007a2f', 'border' => '#006b2b'],
                 };
 

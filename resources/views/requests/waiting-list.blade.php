@@ -40,7 +40,7 @@
                     // Step 3 is the decision itself.
                     $step3Done = $isApproved || $isEnded;
                     $step3Failed = $isRejected;
-                    $step3Label = $isEnded ? 'Event Ended' : ($isRejected ? 'Rejected' : 'Decision');
+                    $step3Label = $isEnded ? 'Completed' : ($isRejected ? 'Rejected' : 'Decision');
 
                     $lineToStep3 = $step2Done ? ($step3Failed ? 'bg-rose-300' : 'bg-emerald-400') : 'bg-zinc-200 dark:bg-zinc-700';
                 @endphp
@@ -125,7 +125,7 @@
                             <div>
                                 <p class="text-sm font-black uppercase tracking-[0.2em] text-yellow-600 dark:text-yellow-300">Request #{{ $request->RID }}</p>
                                 <h2 class="mt-2 text-xl font-black text-emerald-950 dark:text-white">{{ $request->facility?->Facility_Name ?? 'Facility request' }}</h2>
-                                <p class="mt-2 text-sm text-emerald-900/70 dark:text-zinc-300">Status: <span class="font-semibold">{{ $isEnded ? 'Event Ended' : $request->Status }}</span></p>
+                                <p class="mt-2 text-sm text-emerald-900/70 dark:text-zinc-300">Status: <span class="font-semibold">{{ $isEnded ? 'Completed' : $request->Status }}</span></p>
                             </div>
                             <div class="rounded-2xl border border-emerald-900/10 bg-emerald-50 px-4 py-3 text-sm text-emerald-900/70 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-300">
                                 <p><span class="font-semibold">Event:</span> {{ $request->event?->Event_Title ?? 'No linked event' }}</p>

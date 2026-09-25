@@ -23,9 +23,9 @@ class RequestFeedbackRequested extends Notification
         $requestReference = 'REQ-'.str_pad((string) $this->request->RID, 5, '0', STR_PAD_LEFT);
 
         return (new MailMessage)
-            ->subject("Your event for {$requestReference} has ended")
+            ->subject("Your event for {$requestReference} is completed")
             ->greeting('Hello '.($notifiable->name ?? 'there').',')
-            ->line('Your event has ended. You may optionally share feedback about the facility and your experience.')
+            ->line('Your event is completed. You may optionally share feedback about the facility and your experience.')
             ->line('Facility: '.($this->request->facility?->Facility_Name ?? 'N/A'))
             ->action('Rate your experience', route('requests.feedback.create', $this->request))
             ->line('Thank you for helping us improve our shared facilities.');
@@ -38,7 +38,7 @@ class RequestFeedbackRequested extends Notification
             'proposed_date' => $this->request->Proposed_Date?->format('M d, Y'),
             'proposed_end_date' => $this->request->Proposed_End_Date?->format('M d, Y'),
             'facility' => $this->request->facility?->Facility_Name,
-            'message' => 'Your event has ended. You may optionally rate the facility and share feedback.',
+            'message' => 'Your event is completed. You may optionally rate the facility and share feedback.',
             'status' => 'Ended',
             'action_url' => route('requests.feedback.create', $this->request),
         ];

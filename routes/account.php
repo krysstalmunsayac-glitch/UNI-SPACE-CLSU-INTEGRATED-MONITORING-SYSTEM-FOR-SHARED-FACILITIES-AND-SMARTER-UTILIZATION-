@@ -33,6 +33,10 @@ Route::middleware([
         ->middleware('throttle:30,1')
         ->name('requests.attachment.download');
 
+    Route::get('/requests/{requestModel}/attachment/view', [RequestDocumentController::class, 'viewAttachment'])
+        ->middleware('throttle:30,1')
+        ->name('requests.attachment.view');
+
     Route::post('/requests/{requestModel}/payment-proof', [RequestDocumentController::class, 'uploadPaymentProof'])
         ->middleware(['role:user', 'throttle:10,1'])
         ->name('requests.payment-proof.upload');
@@ -40,6 +44,10 @@ Route::middleware([
     Route::get('/requests/{requestModel}/payment-proof', [RequestDocumentController::class, 'downloadPaymentProof'])
         ->middleware('throttle:30,1')
         ->name('requests.payment-proof.download');
+
+    Route::get('/requests/{requestModel}/payment-proof/view', [RequestDocumentController::class, 'viewPaymentProof'])
+        ->middleware('throttle:30,1')
+        ->name('requests.payment-proof.view');
 
     Volt::route('/profile', 'settings.external-profile')
         ->middleware('role:user')

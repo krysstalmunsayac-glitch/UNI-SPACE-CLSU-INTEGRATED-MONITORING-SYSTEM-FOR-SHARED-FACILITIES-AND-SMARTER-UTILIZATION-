@@ -13,7 +13,8 @@
                         <x-ui::select.option value="">All statuses</x-ui::select.option>
                         <x-ui::select.option value="Cancelled">Cancelled</x-ui::select.option>
                         <x-ui::select.option value="Approved">Approved</x-ui::select.option>
-                        <x-ui::select.option value="Ended">Event Ended</x-ui::select.option>
+                        <x-ui::select.option value="Expired">Expired</x-ui::select.option>
+                        <x-ui::select.option value="Ended">Completed</x-ui::select.option>
                         <x-ui::select.option value="Rejected">Rejected</x-ui::select.option>
                     </x-ui::select>
                     <x-ui::select wire:model.live="archiveMonthFilter" label="Archived month" class="sm:w-44">
@@ -42,7 +43,7 @@
                             <div>
                                 <p class="font-medium text-gray-900 dark:text-white">Request #{{ $request->RID }}</p>
                                 <p class="text-sm text-gray-600 dark:text-gray-400">{{ $request->facility?->Facility_Name ?? 'Unassigned facility' }}</p>
-                                <p class="mt-1 text-xs font-semibold text-gray-500 dark:text-gray-400">{{ $request->Status }}</p>
+                                <p class="mt-1 text-xs font-semibold text-gray-500 dark:text-gray-400">{{ $request->Status === 'Ended' ? 'Completed' : $request->Status }}</p>
                             </div>
                             <div class="flex gap-2">
                                 <x-ui::button size="sm" variant="ghost" wire:click="restoreRequest({{ $request->RID }})">Restore</x-ui::button>

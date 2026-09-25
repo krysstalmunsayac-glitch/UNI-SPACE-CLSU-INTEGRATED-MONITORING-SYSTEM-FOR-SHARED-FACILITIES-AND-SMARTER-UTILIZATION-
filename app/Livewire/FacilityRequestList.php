@@ -49,7 +49,9 @@ class FacilityRequestList extends Component
     {
         return FacilityRequest::withTrashed()
             ->where('User_ID', Auth::id())
-            ->where(fn (Builder $query) => $query->whereNull('deleted_at')->orWhere('Status', 'Ended'))
+            ->where(fn (Builder $query) => $query
+                ->whereNull('deleted_at')
+                ->orWhereIn('Status', ['Expired', 'Ended']))
             ->with(['facility', 'event', 'feedback'])
             ->when($applyFilters && $this->requestStatus === 'Needs Revision', fn (Builder $query) => $query->where('Status', 'Pending')->whereNotNull('Review_Requested_At'))
             ->when($applyFilters && $this->requestStatus === 'Pending', fn (Builder $query) => $query->where('Status', 'Pending')->whereNull('Review_Requested_At'))
@@ -67,7 +69,7 @@ class FacilityRequestList extends Component
             $this->requestSort = 'latest';
         }
 
-        if (! in_array($this->requestStatus, ['', 'Pending', 'Needs Revision', 'Awaiting Payment', 'Approved', 'Rejected', 'Cancelled', 'Ended'], true)) {
+        if (! in_array($this->requestStatus, ['', 'Pending', 'Needs Revision', 'Awaiting Payment', 'Approved', 'Rejected', 'Cancelled', 'Expired', 'Ended'], true)) {
             $this->requestStatus = '';
         }
     }

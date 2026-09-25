@@ -15,6 +15,8 @@
                 : 'Rate upon inquiry');
         $isAvailable = $facility->Status === 'Available';
         $assignedOfficeAdmin = $facility->assignedAdmins->first();
+        $fixedAmenities = $facility->amenities->filter->isPermanent();
+        $additionalAmenities = $facility->amenities->reject->isPermanent();
     @endphp
 
     <main class="min-h-screen bg-zinc-100 pb-20 pt-10 text-zinc-950 sm:pt-14">
@@ -221,15 +223,36 @@
                         @endif
                     </dl>
 
-                    <div class="mt-7 border-t border-zinc-200 pt-6">
-                        <h2 class="text-sm font-black uppercase tracking-wide text-emerald-700">Amenity</h2>
-                        <div class="mt-3 flex flex-wrap gap-2">
-                            @forelse ($facility->amenities as $amenity)
-                                <span class="rounded-full border border-emerald-200 px-3 py-1.5 text-sm font-bold text-emerald-800">{{ $amenity->name }} — {{ $amenity->quantityLabel() }}</span>
-                            @empty
-                                <p class="text-sm text-zinc-500">No amenities listed.</p>
-                            @endforelse
-                        </div>
+                    <div class="mt-7 space-y-5 border-t border-zinc-200 pt-6">
+                        @if ($fixedAmenities->isNotEmpty())
+                            <section>
+                                <h2 class="text-sm font-black uppercase tracking-wide text-emerald-700">Fixed amenities</h2>
+                                <p class="mt-1 text-xs text-zinc-500">Built into the facility and automatically included.</p>
+                                <div class="mt-3 flex flex-wrap gap-2">
+                                    @foreach ($fixedAmenities as $amenity)
+                                        <span class="rounded-full border border-emerald-200 px-3 py-1.5 text-sm font-bold text-emerald-800">{{ $amenity->name }}</span>
+                                    @endforeach
+                                </div>
+                            </section>
+                        @endif
+
+                        @if ($additionalAmenities->isNotEmpty())
+                            <section>
+                                <h2 class="text-sm font-black uppercase tracking-wide text-emerald-700">Additional amenities</h2>
+                                <p class="mt-1 text-xs text-zinc-500">Optional items that may be requested during booking.</p>
+                                <div class="mt-3 flex flex-wrap gap-2">
+                                    @foreach ($additionalAmenities as $amenity)
+                                        <span class="rounded-full border border-emerald-200 px-3 py-1.5 text-sm font-bold text-emerald-800">
+                                            {{ $amenity->name }} — {{ $amenity->quantityLabel() }}
+                                        </span>
+                                    @endforeach
+                                </div>
+                            </section>
+                        @endif
+
+                        @if ($fixedAmenities->isEmpty() && $additionalAmenities->isEmpty())
+                            <p class="text-sm text-zinc-500">No amenities listed.</p>
+                        @endif
                     </div>
 
                     <div class="mt-7 grid gap-4 border-t border-zinc-200 pt-6">
@@ -238,7 +261,7 @@
                     </div>
 
                     @if ($isAvailable)
-                        <a href="{{ route('requests.create', $facility) }}" class="mt-8 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-emerald-700 px-6 py-3 font-black text-white transition hover:bg-emerald-800">
+                        <a href="{{ route('requests.create', ['facilitySlug' => $facility->slug]) }}" class="mt-8 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-emerald-700 px-6 py-3 font-black text-white transition hover:bg-emerald-800">
                             Book This Facility
                         </a>
                     @else

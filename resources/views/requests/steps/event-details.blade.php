@@ -42,7 +42,7 @@
 
                                 <div class="grid gap-4 sm:grid-cols-2">
                                     <div>
-                                        <x-ui::select label="What kind of event is this?" name="Type_Event" x-model="eventType" required>
+                                        <x-ui::select label="Event type" name="Type_Event" x-model="eventType" required>
                                             <x-ui::select.option value="">Choose an event type</x-ui::select.option>
                                             {{-- Adjust these to match your Type_Event enum/values --}}
                                             <x-ui::select.option value="Meeting" :selected="old('Type_Event') == 'Meeting'">Meeting</x-ui::select.option>

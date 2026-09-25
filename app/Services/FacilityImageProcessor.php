@@ -3,9 +3,11 @@
 namespace App\Services;
 
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use RuntimeException;
+use Throwable;
 
 class FacilityImageProcessor
 {
@@ -14,6 +16,24 @@ class FacilityImageProcessor
     private const WEBP_QUALITY = 80;
 
     public function store(UploadedFile $image): string
+    {
+        if (! $this->canCompress()) {
+            return $this->storeOriginal($image);
+        }
+
+        try {
+            return $this->compress($image);
+        } catch (Throwable $exception) {
+            Log::warning('Facility image compression failed; storing the original upload instead.', [
+                'name' => $image->getClientOriginalName(),
+                'error' => $exception->getMessage(),
+            ]);
+
+            return $this->storeOriginal($image);
+        }
+    }
+
+    private function compress(UploadedFile $image): string
     {
         $contents = file_get_contents($image->getRealPath());
         $source = $contents === false ? false : imagecreatefromstring($contents);
@@ -77,5 +97,24 @@ class FacilityImageProcessor
         } finally {
             imagedestroy($source);
         }
+    }
+
+    private function canCompress(): bool
+    {
+        return extension_loaded('gd')
+            && function_exists('imagecreatefromstring')
+            && function_exists('imagecreatetruecolor')
+            && function_exists('imagewebp');
+    }
+
+    private function storeOriginal(UploadedFile $image): string
+    {
+        $path = $image->store('facilities', 'public');
+
+        if (! is_string($path) || $path === '') {
+            throw new RuntimeException('The facility image could not be stored.');
+        }
+
+        return $path;
     }
 }

@@ -31,6 +31,12 @@
     @if ($showPaymentModal)
         @include('livewire.requests.components.request-payment-modal')
     @endif
+    @if ($showPaymentProofReplacementModal)
+        @include('livewire.requests.components.payment-proof-replacement-modal')
+    @endif
+    @if ($showPaymentProofPreview)
+        @include('livewire.requests.components.payment-proof-preview-modal')
+    @endif
     @if ($showModal)
         @include('livewire.requests.components.request-edit-modal')
     @endif

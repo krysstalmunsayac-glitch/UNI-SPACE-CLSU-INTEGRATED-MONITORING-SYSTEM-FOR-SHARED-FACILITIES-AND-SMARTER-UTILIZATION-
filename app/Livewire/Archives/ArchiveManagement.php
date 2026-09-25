@@ -50,7 +50,7 @@ class ArchiveManagement extends Component
             );
         }
 
-        if (in_array($this->archiveStatusFilter, ['Cancelled', 'Approved', 'Rejected', 'Ended'], true)) {
+        if (in_array($this->archiveStatusFilter, ['Cancelled', 'Approved', 'Rejected', 'Expired', 'Ended'], true)) {
             $query->where('Status', $this->archiveStatusFilter);
         }
 
@@ -66,7 +66,8 @@ class ArchiveManagement extends Component
             'user:id,name',
             'facility:FID,Facility_Name',
         ])
-            ->orderByDesc('deleted_at')
+            ->orderBy('deleted_at')
+            ->orderBy('RID')
             ->paginate(8, pageName: 'archivedRequestsPage');
     }
 
@@ -121,7 +122,8 @@ class ArchiveManagement extends Component
                 ->select(['RID', 'Facility_ID', 'Purpose'])
                 ->with('facility:FID,Facility_Name'),
         ])
-            ->orderByDesc('deleted_at')
+            ->orderBy('deleted_at')
+            ->orderBy('SID')
             ->paginate(8, pageName: 'archivedSchedulesPage');
     }
 
@@ -131,7 +133,8 @@ class ArchiveManagement extends Component
         abort_unless(auth()->user()?->isSuperAdmin(), 403);
         $query = Event::query()->onlyTrashed();
 
-        return $query->orderByDesc('deleted_at')
+        return $query->orderBy('deleted_at')
+            ->orderBy('EID')
             ->paginate(8, pageName: 'archivedEventsPage');
     }
 
@@ -141,7 +144,8 @@ class ArchiveManagement extends Component
         abort_unless(auth()->user()?->isSuperAdmin(), 403);
         $query = User::query()->onlyTrashed();
 
-        return $query->orderByDesc('deleted_at')
+        return $query->orderBy('deleted_at')
+            ->orderBy('id')
             ->paginate(8, pageName: 'archivedUsersPage');
     }
 

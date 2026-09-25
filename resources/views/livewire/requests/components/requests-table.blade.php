@@ -119,6 +119,7 @@
                                     'Awaiting Payment' => 'amber',
                                     'Rejected'  => 'red',
                                     'Cancelled' => 'amber',
+                                    'Expired'   => 'zinc',
                                     'Ended'     => 'zinc',
                                     'Pending' => $request->Review_Requested_At ? 'amber' : 'blue',
                                     default     => 'blue',
@@ -127,7 +128,7 @@
                             >
                                 {{ $request->Review_Requested_At && $request->Status === 'Pending'
                                     ? 'Needs Revision'
-                                    : ($request->Status === 'Ended' ? 'Event Ended' : $request->Status) }}
+                                    : ($request->Status === 'Ended' ? 'Completed' : $request->Status) }}
                             </x-ui::badge>
                         </x-ui::table.cell>
 
@@ -191,19 +192,28 @@
                                     @if ($request->attachment_path)
                                         <x-ui::menu.separator />
                                         <x-ui::menu.item
-                                            icon="arrow-down-tray"
-                                            href="{{ route('requests.attachment.download', $request) }}"
+                                            icon="eye"
+                                            wire:click="previewAttachment({{ $request->RID }})"
                                         >
-                                            Download attachment
+                                            View attachment
                                         </x-ui::menu.item>
                                     @endif
                                     @if ($request->Payment_Proof_Path)
                                         <x-ui::menu.item
-                                            icon="arrow-down-tray"
-                                            href="{{ route('requests.payment-proof.download', $request) }}"
+                                            icon="eye"
+                                            wire:click="previewPaymentProof({{ $request->RID }})"
                                         >
-                                            Download payment proof
+                                            View payment proof
                                         </x-ui::menu.item>
+                                        @if ($request->Status === 'Awaiting Payment')
+                                            <x-ui::menu.item
+                                                icon="arrow-path"
+                                                class="text-amber-700 dark:text-amber-300"
+                                                wire:click="openPaymentProofReplacementModal({{ $request->RID }})"
+                                            >
+                                                Request re-upload
+                                            </x-ui::menu.item>
+                                        @endif
                                     @endif
                                     @if (auth()->user()->isSuperAdmin())
                                         <x-ui::menu.separator />

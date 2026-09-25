@@ -12,8 +12,9 @@
         <x-ui::input wire:model="paymentAmount" type="number" min="0.01" step="0.01" label="Amount due (PHP)" prefix="₱" />
         @error('paymentAmount') <p class="text-sm font-semibold text-red-600">{{ $message }}</p> @enderror
 
-        <x-ui::input wire:model="paymentDeadline" type="datetime-local" label="Payment deadline" />
+        <x-ui::input wire:model="paymentDeadline" type="datetime-local" :max="$paymentDeadlineMaximum" label="Payment deadline" />
         @error('paymentDeadline') <p class="text-sm font-semibold text-red-600">{{ $message }}</p> @enderror
+        @error('paymentRequestId') <p class="text-sm font-semibold text-red-600">{{ $message }}</p> @enderror
 
         <div class="flex gap-3">
             <x-ui::button wire:click="$set('showPaymentModal', false)" variant="ghost" class="flex-1">Go back</x-ui::button>

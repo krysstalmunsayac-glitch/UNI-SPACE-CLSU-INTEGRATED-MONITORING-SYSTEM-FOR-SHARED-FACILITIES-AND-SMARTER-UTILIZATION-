@@ -78,11 +78,12 @@
                             'Awaiting Payment' => 'amber',
                             'Rejected'  => 'red',
                             'Cancelled' => 'amber',
+                            'Expired'   => 'zinc',
                             'Ended'     => 'zinc',
                             default     => 'blue',
                         }"
                     >
-                        {{ $form->Status === 'Ended' ? 'Event Ended' : $form->Status }}
+                        {{ $form->Status === 'Ended' ? 'Completed' : $form->Status }}
                     </x-ui::badge>
                 </div>
 
@@ -106,9 +107,9 @@
                         <dt class="text-xs font-semibold text-zinc-500 dark:text-zinc-400">Attachment</dt>
                         <dd class="mt-1 text-sm font-bold">
                             @if ($attachmentPath)
-                                <a href="{{ route('requests.attachment.download', $viewingId) }}" class="inline-flex items-center gap-1.5 text-emerald-700 hover:underline dark:text-emerald-300">
+                                <button type="button" wire:click="previewAttachment({{ $viewingId }})" class="inline-flex items-center gap-1.5 text-emerald-700 hover:underline dark:text-emerald-300">
                                     <span aria-hidden="true">↓</span> Download attachment
-                                </a>
+                                </button>
                             @else
                                 —
                             @endif
@@ -144,6 +145,34 @@
                                 <p class="text-sm font-bold">{{ isset($dailySchedule['date']) ? \Carbon\Carbon::parse($dailySchedule['date'])->format('M d, Y') : 'Date not recorded' }}</p>
                                 <p class="mt-1 text-xs text-zinc-500">{{ $dailySchedule['start'] ?? '—' }} – {{ $dailySchedule['end'] ?? '—' }}</p>
                             </div>
+                        @endforeach
+                    </div>
+                </section>
+            @endif
+
+            @if (! empty($Schedule_Changes))
+                <section class="mt-6">
+                    <h3 class="mb-3 text-[11px] font-black uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">Schedule change history</h3>
+                    <div class="space-y-3">
+                        @foreach ($Schedule_Changes as $scheduleChange)
+                            <article class="overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800">
+                                <div class="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-200 bg-zinc-50 px-4 py-2.5 text-xs dark:border-zinc-800 dark:bg-zinc-900">
+                                    <span class="font-bold text-zinc-700 dark:text-zinc-200">Changed by {{ $scheduleChange['changed_by'] }}</span>
+                                    <span class="text-zinc-500 dark:text-zinc-400">{{ $scheduleChange['changed_at'] }}</span>
+                                </div>
+                                <div class="grid sm:grid-cols-2">
+                                    <div class="border-b border-zinc-200 px-4 py-3 sm:border-b-0 sm:border-r dark:border-zinc-800">
+                                        <p class="text-[11px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Previous schedule</p>
+                                        <p class="mt-1.5 text-sm font-bold text-zinc-900 dark:text-white">{{ $scheduleChange['old']['date'] }}</p>
+                                        <p class="mt-0.5 text-xs text-zinc-600 dark:text-zinc-300">{{ $scheduleChange['old']['start'] }} - {{ $scheduleChange['old']['end'] }}</p>
+                                    </div>
+                                    <div class="bg-emerald-50/60 px-4 py-3 dark:bg-emerald-500/10">
+                                        <p class="text-[11px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-300">Updated schedule</p>
+                                        <p class="mt-1.5 text-sm font-bold text-zinc-900 dark:text-white">{{ $scheduleChange['new']['date'] }}</p>
+                                        <p class="mt-0.5 text-xs text-zinc-600 dark:text-zinc-300">{{ $scheduleChange['new']['start'] }} - {{ $scheduleChange['new']['end'] }}</p>
+                                    </div>
+                                </div>
+                            </article>
                         @endforeach
                     </div>
                 </section>
@@ -205,7 +234,7 @@
                             <dt class="text-xs font-semibold opacity-70">Payment proof</dt>
                             <dd class="mt-1 text-sm font-bold">{{ $Payment_Proof_Uploaded_At ?: 'Not yet uploaded' }}</dd>
                             @if ($Payment_Proof_Path)
-                                <a href="{{ route('requests.payment-proof.download', $viewingId) }}" class="mt-2 inline-flex text-xs font-black underline">Download proof</a>
+                                <a href="{{ route('requests.payment-proof.view', $viewingId) }}" target="_blank" rel="noopener" class="mt-2 inline-flex text-xs font-black underline">View proof</a>
                             @endif
                         </div>
                     </dl>

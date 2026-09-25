@@ -7,6 +7,7 @@ use App\Services\BookingRequestValidator;
 use App\Services\FacilityAvailabilityService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 class RescheduleWaitingRequest
@@ -32,6 +33,12 @@ class RescheduleWaitingRequest
         try {
             DB::transaction(function () use ($request, $actorId, $validated, $dailySchedules, $amenityQuantities, $attachmentPath, $availability): void {
                 $lockedRequest = FacilityRequest::query()->lockForUpdate()->findOrFail($request->RID);
+
+                if ($lockedRequest->Status !== 'Pending') {
+                    throw ValidationException::withMessages([
+                        'request' => 'This request is read-only and can no longer be changed.',
+                    ]);
+                }
 
                 $this->validator->validateDailyRequestLimit(
                     $actorId,

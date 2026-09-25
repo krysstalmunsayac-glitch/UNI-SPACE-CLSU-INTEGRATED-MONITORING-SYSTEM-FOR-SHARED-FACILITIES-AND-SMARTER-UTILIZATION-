@@ -53,9 +53,10 @@
             <x-ui::select.option value="Needs Revision">Needs Revision</x-ui::select.option>
             <x-ui::select.option value="Approved">Approved</x-ui::select.option>
             <x-ui::select.option value="Awaiting Payment">Awaiting Payment</x-ui::select.option>
-            <x-ui::select.option value="Ended">Event Ended</x-ui::select.option>
+            <x-ui::select.option value="Ended">Completed</x-ui::select.option>
             <x-ui::select.option value="Cancelled">Cancelled</x-ui::select.option>
             <x-ui::select.option value="Rejected">Rejected</x-ui::select.option>
+            <x-ui::select.option value="Expired">Expired</x-ui::select.option>
         </x-ui::select>
     </div>
 </section>

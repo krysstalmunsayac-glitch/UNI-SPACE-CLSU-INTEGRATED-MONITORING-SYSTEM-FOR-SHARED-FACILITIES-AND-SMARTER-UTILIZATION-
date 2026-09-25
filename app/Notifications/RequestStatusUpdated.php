@@ -42,7 +42,9 @@ class RequestStatusUpdated extends Notification
                 'cancellationReason' => $this->request->Status === 'Cancelled'
                     ? $this->request->Cancellation_Reason
                     : null,
-                'actionUrl' => route('requests.waiting.index'),
+                'actionUrl' => $notifiable instanceof AnonymousNotifiable
+                    ? url('/')
+                    : route('requests.waiting.index'),
             ]);
     }
 
@@ -71,6 +73,7 @@ class RequestStatusUpdated extends Notification
             'Approved' => 'Your facility request has been approved',
             'Rejected' => 'Your facility request has been reviewed',
             'Cancelled' => 'Your facility request has been cancelled',
+            'Expired' => 'Your facility request has expired',
             default => 'Your facility request status has been updated',
         };
     }
@@ -81,6 +84,7 @@ class RequestStatusUpdated extends Notification
             'Approved' => 'Your request has been approved and is moving forward.',
             'Rejected' => 'Your request has been reviewed and was not approved.',
             'Cancelled' => 'Your request has been cancelled.',
+            'Expired' => 'Your request expired because its event time passed before approval.',
             default => 'Your request status has been updated.',
         };
     }
@@ -91,6 +95,7 @@ class RequestStatusUpdated extends Notification
             'Approved' => 'Approved',
             'Rejected' => 'Rejected',
             'Cancelled' => 'Cancelled',
+            'Expired' => 'Expired',
             default => 'Updated',
         };
     }

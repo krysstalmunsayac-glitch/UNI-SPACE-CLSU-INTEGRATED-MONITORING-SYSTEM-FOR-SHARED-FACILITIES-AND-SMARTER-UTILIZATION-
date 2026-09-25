@@ -36,6 +36,7 @@ class ScheduleListQuery
     public function schedule(User $actor, int $scheduleId, bool $withTrashed = false): Schedule
     {
         return Schedule::query()->when($withTrashed, fn ($query) => $query->withTrashed())
+            ->with(['request.facility'])
             ->when($actor->isAdmin(), fn ($query) => $query->whereHas('request', fn ($request) => $request
                 ->withTrashed()->whereHas('facility.assignedAdmins', fn ($admins) => $admins->where('users.id', $actor->id))))
             ->findOrFail($scheduleId);
@@ -54,7 +55,8 @@ class ScheduleListQuery
             ->when($actor->isAdmin(), fn ($query) => $query->whereHas('request', fn ($request) => $request
                 ->withTrashed()->whereHas('facility.assignedAdmins', fn ($admins) => $admins->where('users.id', $actor->id))))
             ->with(['request' => fn ($request) => $request->withTrashed()->select(['RID', 'Facility_ID', 'Purpose'])->with('facility:FID,Facility_Name')])
-            ->orderByDesc('deleted_at')
+            ->orderBy('deleted_at')
+            ->orderBy('SID')
             ->paginate(8, pageName: 'archivedSchedulesPage');
     }
 
@@ -67,8 +69,15 @@ class ScheduleListQuery
 
     public function requests(User $actor, ?int $currentRequestId): Collection
     {
-        return FacilityRequest::with('facility:FID,Facility_Name')->select(['RID', 'Facility_ID', 'Purpose'])
+        return FacilityRequest::withTrashed()
+            ->with([
+                'facility:FID,Facility_Name',
+                'user:id,name',
+            ])
+            ->select(['RID', 'User_ID', 'Is_Guest_Booking', 'Guest_Name', 'Facility_ID', 'Purpose', 'deleted_at'])
             ->when($actor->isAdmin(), fn ($query) => $query->whereHas('facility.assignedAdmins', fn ($admins) => $admins->where('users.id', $actor->id)))
+            ->where(fn ($query) => $query->whereNull('deleted_at')
+                ->when($currentRequestId, fn ($query) => $query->orWhere('RID', $currentRequestId)))
             ->where(fn ($query) => $query->whereDoesntHave('schedules')
                 ->when($currentRequestId, fn ($query) => $query->orWhere('RID', $currentRequestId)))
             ->orderByDesc('RID')->get();
@@ -122,7 +131,7 @@ class ScheduleListQuery
             'borderColor' => $isEnded ? '#991b1b' : ($schedule->Status === 'Booked' ? $colors['border'] : '#6b7280'),
             'textColor' => '#ffffff',
             'extendedProps' => [
-                'status' => $isEnded ? 'Ended' : $schedule->Status,
+                'status' => $isEnded ? 'Completed' : $schedule->Status,
                 'scheduleId' => $schedule->SID,
                 'facility' => $facility,
                 'facilityType' => $facilityType ?: 'Unspecified',

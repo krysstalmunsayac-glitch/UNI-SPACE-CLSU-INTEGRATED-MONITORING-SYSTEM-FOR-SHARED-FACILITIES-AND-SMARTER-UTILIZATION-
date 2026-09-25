@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 class Facility extends Model
 {
@@ -82,12 +83,37 @@ class Facility extends Model
 
     protected static function booted(): void
     {
+        static::saving(function (Facility $facility): void {
+            if (blank($facility->slug)) {
+                $facility->slug = static::uniqueSlug(
+                    $facility->Facility_Name,
+                    $facility->exists ? (int) $facility->FID : null,
+                );
+            }
+        });
+
         static::deleting(function (Facility $facility): void {
             $facility->archiveRelatedRequests();
             if ($facility->isForceDeleting()) {
                 $facility->images()->delete();
             }
         });
+    }
+
+    private static function uniqueSlug(?string $name, ?int $ignoreId = null): string
+    {
+        $base = Str::slug((string) $name) ?: 'facility';
+        $slug = $base;
+        $suffix = 2;
+
+        while (static::withTrashed()
+            ->when($ignoreId, fn (Builder $query) => $query->where('FID', '!=', $ignoreId))
+            ->where('slug', $slug)
+            ->exists()) {
+            $slug = $base.'-'.$suffix++;
+        }
+
+        return $slug;
     }
 
     /**

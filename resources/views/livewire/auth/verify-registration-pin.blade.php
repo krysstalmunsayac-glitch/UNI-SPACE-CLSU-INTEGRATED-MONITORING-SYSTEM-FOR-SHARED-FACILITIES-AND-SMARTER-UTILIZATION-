@@ -18,6 +18,8 @@ use Livewire\Volt\Component;
 
 new #[Layout('components.layouts.auth')] class extends Component
 {
+    private const PENDING_REGISTRATION_MISSING = '__pending_registration_missing__';
+
     public string $token = '';
 
     public string $pin = '';
@@ -32,6 +34,13 @@ new #[Layout('components.layouts.auth')] class extends Component
     {
         $this->token = $token;
         $pending = $this->pendingRegistration();
+
+        if (! $pending) {
+            $this->redirectAfterCompletedElsewhere();
+
+            return;
+        }
+
         $this->email = $pending->email;
         $this->refreshCooldown($pending);
     }
@@ -58,7 +67,11 @@ new #[Layout('components.layouts.auth')] class extends Component
             $pending = PendingRegistration::query()
                 ->where('token', $this->token)
                 ->lockForUpdate()
-                ->firstOrFail();
+                ->first();
+
+            if (! $pending) {
+                return self::PENDING_REGISTRATION_MISSING;
+            }
 
             if ($pending->pin_expires_at->isPast()) {
                 throw ValidationException::withMessages([
@@ -113,12 +126,19 @@ new #[Layout('components.layouts.auth')] class extends Component
             return $user;
         });
 
+        if ($result === self::PENDING_REGISTRATION_MISSING) {
+            $this->redirectAfterCompletedElsewhere();
+
+            return;
+        }
+
         if (is_string($result)) {
             throw ValidationException::withMessages(['pin' => $result]);
         }
 
         if (! $result) {
             session()->forget('pending_registration_token');
+            session()->flash('status', 'This account is already registered. Sign in to continue.');
             $this->redirect(route('login', absolute: false), navigate: true);
 
             return;
@@ -155,11 +175,15 @@ new #[Layout('components.layouts.auth')] class extends Component
 
         $pin = (string) random_int(100000, 999999);
 
-        $pending = DB::transaction(function () use ($pin): PendingRegistration {
+        $pending = DB::transaction(function () use ($pin): ?PendingRegistration {
             $pending = PendingRegistration::query()
                 ->where('token', $this->token)
                 ->lockForUpdate()
-                ->firstOrFail();
+                ->first();
+
+            if (! $pending) {
+                return null;
+            }
 
             if ($pending->resend_available_at->isFuture()) {
                 $this->refreshCooldown($pending);
@@ -179,6 +203,12 @@ new #[Layout('components.layouts.auth')] class extends Component
             return $pending;
         });
 
+        if (! $pending) {
+            $this->redirectAfterCompletedElsewhere();
+
+            return;
+        }
+
         RateLimiter::hit($rateLimitKey, 600);
         Notification::route('mail', $pending->email)
             ->notify(new VerifyPendingRegistration($pin, $this->token));
@@ -189,9 +219,20 @@ new #[Layout('components.layouts.auth')] class extends Component
         $this->refreshCooldown($pending);
     }
 
-    private function pendingRegistration(): PendingRegistration
+    private function pendingRegistration(): ?PendingRegistration
     {
-        return PendingRegistration::query()->where('token', $this->token)->firstOrFail();
+        return PendingRegistration::query()->where('token', $this->token)->first();
+    }
+
+    private function redirectAfterCompletedElsewhere(): void
+    {
+        session()->forget('pending_registration_token');
+        session()->flash(
+            'status',
+            'This verification is no longer active. If you completed registration on another device, sign in with your new account.'
+        );
+
+        $this->redirect(route('login', absolute: false), navigate: true);
     }
 
     private function refreshCooldown(PendingRegistration $pending): void

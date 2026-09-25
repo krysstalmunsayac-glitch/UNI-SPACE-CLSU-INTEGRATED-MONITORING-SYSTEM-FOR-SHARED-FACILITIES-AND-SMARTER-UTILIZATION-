@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\Amenity;
 use App\Models\Event;
 use App\Models\Facility;
 use App\Models\FacilityRequest;
@@ -47,8 +46,6 @@ class DatabaseSeeder extends Seeder
 
         // This is the sole source of seeded facilities and amenities.
         $this->call(ClsuFacilitySeeder::class);
-
-        $amenityIds = Amenity::query()->orderBy('AID')->pluck('AID')->all();
 
         $seedEvent = Event::updateOrCreate(
             ['Event_Title' => 'University Founding Anniversary'],
@@ -100,9 +97,10 @@ class DatabaseSeeder extends Seeder
                 ]
             );
 
-            $dummyRequest->amenities()->syncWithoutDetaching(
-                collect($amenityIds)
-                    ->take(($index % count($amenityIds)) + 1)
+            $facilityAmenityIds = $facility->amenities()->orderBy('amenities.AID')->pluck('amenities.AID')->all();
+            $dummyRequest->amenities()->sync(
+                collect($facilityAmenityIds)
+                    ->take($facilityAmenityIds === [] ? 0 : min(count($facilityAmenityIds), ($index % count($facilityAmenityIds)) + 1))
                     ->mapWithKeys(fn (int $amenityId) => [$amenityId => ['quantity' => 1]])
                     ->all()
             );

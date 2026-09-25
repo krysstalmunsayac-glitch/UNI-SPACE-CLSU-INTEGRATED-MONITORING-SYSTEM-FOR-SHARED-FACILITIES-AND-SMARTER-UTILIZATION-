@@ -10,6 +10,18 @@
         </div>
 
         <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+            <x-ui::select
+                wire:model.live="facilityFilter"
+                placeholder="All facilities"
+                class="w-full sm:w-[220px]"
+            >
+                @foreach ($this->facilityOptions as $facility)
+                    <x-ui::select.option value="{{ $facility->FID }}">
+                        {{ $facility->Facility_Name }}
+                    </x-ui::select.option>
+                @endforeach
+            </x-ui::select>
+
             <x-ui::input
                 wire:model.live.debounce.400ms="searchInput"
                 placeholder="Search by name or description..."

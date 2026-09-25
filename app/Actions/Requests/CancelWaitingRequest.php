@@ -7,8 +7,10 @@ use App\Models\FacilityRequest;
 use App\Models\User;
 use App\Notifications\RequestCancelledByUser;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 class CancelWaitingRequest
 {
@@ -17,7 +19,7 @@ class CancelWaitingRequest
         $request = DB::transaction(function () use ($request, $reason): FacilityRequest {
             $lockedRequest = FacilityRequest::query()->lockForUpdate()->findOrFail($request->RID);
 
-            if (! in_array($lockedRequest->Status, ['Pending', 'Approved'], true)) {
+            if (! in_array($lockedRequest->Status, ['Pending', 'Awaiting Payment', 'Approved'], true)) {
                 throw ValidationException::withMessages([
                     'Cancellation_Reason' => 'This request has already been cancelled or can no longer be cancelled.',
                 ]);
@@ -33,7 +35,15 @@ class CancelWaitingRequest
         }, 3);
 
         $request->refresh()->load(['facility', 'user']);
-        Notification::send($this->recipients($request->facility), new RequestCancelledByUser($request));
+
+        try {
+            Notification::send($this->recipients($request->facility), new RequestCancelledByUser($request));
+        } catch (Throwable $exception) {
+            Log::warning('Request was cancelled by its user, but administrators could not be notified.', [
+                'request_id' => $request->RID,
+                'exception' => $exception,
+            ]);
+        }
 
         return $request;
     }

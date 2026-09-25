@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Amenity;
 use App\Models\Facility;
 use App\Models\User;
 
@@ -21,7 +22,26 @@ it('shows unavailable facilities to external users without a booking action', fu
         ->assertSee('Unavailable')
         ->assertSee('images/siel-space-slide-01.jpg', false)
         ->assertDontSee('images/siel-space-slide-03.jpg', false)
-        ->assertDontSee('href="'.route('requests.create', Facility::query()->first()).'"', false);
+        ->assertDontSee('href="'.route('requests.create', ['facilitySlug' => Facility::query()->first()->slug]).'"', false);
+});
+
+it('shows only amenity names on the public facility page', function () {
+    $facility = Facility::query()->create([
+        'Facility_Name' => 'Public Amenity Display Hall',
+        'Status' => 'Available',
+    ]);
+    $amenity = Amenity::query()->create([
+        'name' => 'Fixed Sound System',
+        'Status' => 'Available',
+        'inventory_type' => 'countable',
+        'inventory_quantity' => 1,
+    ]);
+    $facility->amenities()->attach($amenity->AID);
+
+    $this->get(route('facilities.show', $facility))
+        ->assertOk()
+        ->assertSee('Fixed Sound System')
+        ->assertDontSee('1 unit');
 });
 
 it('shows the responsible office instead of the location on the request page', function () {
@@ -44,7 +64,7 @@ it('shows the responsible office instead of the location on the request page', f
     $facility->assignedAdmins()->attach($officeAdmin->id);
 
     $this->actingAs($externalUser)
-        ->get(route('requests.create', $facility))
+        ->get(route('requests.create', ['facilitySlug' => $facility->slug]))
         ->assertOk()
         ->assertSee('Office')
         ->assertSee('CLSU Alumni Association Inc.')

@@ -63,7 +63,7 @@ class SuperAdminFacility extends Component
 
     public string $sortBy = 'created_at';
 
-    public string $sortDirection = 'desc';
+    public string $sortDirection = 'asc';
 
     #[Validate('required|string|min:2|max:150')]
     public string $Facility_Name = '';
@@ -437,8 +437,8 @@ class SuperAdminFacility extends Component
                     ->orWhere('Office', 'like', '%'.$this->search.'%');
             }))
             ->with(['images' => fn ($query) => $query->oldest('id')->limit(1)])
-            ->orderByDesc('deleted_at')
-            ->orderByDesc('FID');
+            ->orderBy('deleted_at')
+            ->orderBy('FID');
 
         $facilities = $query->paginate(
             perPage: 8,

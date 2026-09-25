@@ -2,6 +2,8 @@
 
 namespace App\Livewire\Queries;
 
+use App\Models\Event;
+use App\Models\Facility;
 use App\Models\FacilityRequest;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -31,37 +33,62 @@ class RequestListQuery
                 $status !== '' && $status !== 'Needs Revision',
                 fn (Builder $query) => $query->where('Status', $status),
             )
-            ->when($sortBy === 'priority', fn (Builder $query) => $query
-                ->orderByRaw("CASE Status
-                    WHEN 'Pending' THEN 0
-                    WHEN 'Awaiting Payment' THEN 1
-                    WHEN 'Approved' THEN 2
-                    WHEN 'Rejected' THEN 3
-                    WHEN 'Cancelled' THEN 4
-                    WHEN 'Ended' THEN 5
-                    ELSE 6
-                END")
-                ->orderBy('Proposed_Date')
-                ->orderBy('RID'))
-            ->when($sortBy !== 'priority', fn (Builder $query) => $query
-                ->orderBy($sortBy, $sortDirection)
-                ->orderBy('RID', $sortDirection))
+            ->when($sortBy === 'Created_at', fn (Builder $query) => $query->orderByRaw(
+                "CASE Status
+                    WHEN 'Pending' THEN 1
+                    WHEN 'Awaiting Payment' THEN 2
+                    WHEN 'Approved' THEN 3
+                    WHEN 'Rejected' THEN 4
+                    WHEN 'Cancelled' THEN 5
+                    WHEN 'Expired' THEN 6
+                    WHEN 'Ended' THEN 7
+                    ELSE 8
+                END"
+            ))
+            ->orderBy($sortBy, $sortDirection)
+            ->orderBy('RID', $sortDirection)
             ->paginate(8, pageName: 'requestsPage');
     }
 
-    public function archived(User $actor, string $search, string $status): LengthAwarePaginator
-    {
+    public function archived(
+        User $actor,
+        string $search,
+        string $status,
+        string $sortBy = 'deleted_at',
+        string $sortDirection = 'asc',
+    ): LengthAwarePaginator {
         abort_unless($actor->isSuperAdmin(), 403);
+
+        if (! in_array($sortBy, ['RID', 'requester', 'Proposed_Date', 'Proposed_Start_Time', 'event_type', 'facility', 'Status', 'deleted_at'], true)) {
+            $sortBy = 'deleted_at';
+        }
+
+        $sortDirection = $sortDirection === 'desc' ? 'desc' : 'asc';
 
         return $this->visibleTo($actor, withTrashed: true)
             ->onlyTrashed()
             ->when(
-                in_array($status, ['Cancelled', 'Approved', 'Rejected', 'Ended'], true),
+                in_array($status, ['Cancelled', 'Approved', 'Rejected', 'Expired', 'Ended'], true),
                 fn (Builder $query) => $query->where('Status', $status),
             )
             ->when($search !== '', fn (Builder $query) => $this->applySearch($query, $search, includeId: true))
             ->with($this->listRelations())
-            ->orderByDesc('deleted_at')
+            ->when($sortBy === 'requester', fn (Builder $query) => $query->orderByRaw(
+                "COALESCE(Guest_Name, (SELECT name FROM users WHERE users.id = requests.User_ID), '') {$sortDirection}"
+            ))
+            ->when($sortBy === 'event_type', fn (Builder $query) => $query->orderBy(
+                Event::withTrashed()->select('Event_Scope')->whereColumn('events.EID', 'requests.Event_ID'),
+                $sortDirection,
+            ))
+            ->when($sortBy === 'facility', fn (Builder $query) => $query->orderBy(
+                Facility::withTrashed()->select('Facility_Name')->whereColumn('facilities.FID', 'requests.Facility_ID'),
+                $sortDirection,
+            ))
+            ->when(
+                in_array($sortBy, ['RID', 'Proposed_Date', 'Proposed_Start_Time', 'Status', 'deleted_at'], true),
+                fn (Builder $query) => $query->orderBy($sortBy, $sortDirection),
+            )
+            ->orderBy('RID', $sortDirection)
             ->paginate(8, pageName: 'archivedRequestsPage');
     }
 

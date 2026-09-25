@@ -3,7 +3,9 @@
 use App\Models\PendingRegistration;
 use App\Models\User;
 use App\Notifications\VerifyPendingRegistration;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Str;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Volt\Volt;
 
@@ -142,4 +144,55 @@ it('allows the user to abandon a pending registration explicitly', function () {
         ->assertOk();
 
     expect(session('pending_registration_token'))->toBeNull();
+});
+
+it('verifies a pending registration from a different device session', function () {
+    $pin = '123456';
+    $token = (string) Str::uuid();
+
+    PendingRegistration::query()->create([
+        'token' => $token,
+        'email' => 'cross-device@example.com',
+        'clsu_id' => null,
+        'registration_data' => [
+            'name' => 'Cross Device User',
+            'account_type' => 'external',
+            'privacy_consent' => true,
+            'privacy_consented_at' => now()->toIso8601String(),
+            'privacy_notice_version' => User::PRIVACY_NOTICE_VERSION,
+            'clsu_id' => null,
+            'email' => 'cross-device@example.com',
+            'password' => Hash::make('Secure1!Password'),
+            'contact_number' => '09123456789',
+            'address' => 'Science City of Munoz, Nueva Ecija',
+        ],
+        'pin_hash' => Hash::make($pin),
+        'pin_expires_at' => now()->addMinutes(10),
+        'resend_available_at' => now()->addMinute(),
+        'failed_attempts' => 0,
+    ]);
+
+    session()->invalidate();
+
+    Volt::test('auth.verify-registration-pin', ['token' => $token])
+        ->set('pin', $pin)
+        ->call('verifyPin')
+        ->assertHasNoErrors()
+        ->assertRedirect(route('dashboard', absolute: false));
+
+    $user = User::query()->where('email', 'cross-device@example.com')->firstOrFail();
+
+    expect($user->email_verified_at)->not->toBeNull()
+        ->and(PendingRegistration::query()->where('token', $token)->exists())->toBeFalse();
+    $this->assertAuthenticatedAs($user);
+
+    auth()->logout();
+    session()->invalidate();
+
+    $this->get(route('registration.pin', $token))
+        ->assertRedirect(route('login', absolute: false))
+        ->assertSessionHas(
+            'status',
+            'This verification is no longer active. If you completed registration on another device, sign in with your new account.'
+        );
 });

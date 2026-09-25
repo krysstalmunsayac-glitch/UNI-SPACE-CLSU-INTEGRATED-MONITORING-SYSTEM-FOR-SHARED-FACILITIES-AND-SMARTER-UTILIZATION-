@@ -13,9 +13,11 @@ class EndWaitingRequest
         DB::transaction(function () use ($request): void {
             $lockedRequest = FacilityRequest::query()->lockForUpdate()->findOrFail($request->RID);
 
-            if ($lockedRequest->Status !== 'Approved') {
+            if ($lockedRequest->Status !== 'Approved' || ! $lockedRequest->scheduledEndAt()?->lte(now())) {
                 throw ValidationException::withMessages([
-                    'request' => 'This event has already ended or its status has changed.',
+                    'request' => $lockedRequest->Status === 'Approved'
+                        ? 'This event can only be completed after its scheduled end time.'
+                        : 'This event is already completed or its status has changed.',
                 ]);
             }
 

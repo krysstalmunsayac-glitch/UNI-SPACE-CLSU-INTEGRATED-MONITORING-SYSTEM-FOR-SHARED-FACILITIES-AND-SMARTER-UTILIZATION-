@@ -177,7 +177,7 @@
             <div class="mt-2 flex min-h-7 flex-wrap gap-2">
                 @forelse ($visibleAmenities as $amenity)
                     <span class="rounded-full border border-emerald-200 bg-white px-2.5 py-1 text-xs font-semibold text-emerald-800 dark:border-emerald-800 dark:bg-zinc-950 dark:text-emerald-300">
-                        {{ $amenity->name }} · {{ number_format($amenity->inventory_quantity) }}
+                        {{ $amenity->name }}
                     </span>
                 @empty
                     <span class="text-sm text-emerald-900/60 dark:text-zinc-400">No amenities listed</span>
@@ -201,7 +201,7 @@
                 Review Details
             </a>
             @if ($isAvailable)
-                <a href="{{ route('requests.create', $facility) }}" class="inline-flex items-center justify-center rounded-xl bg-emerald-700 px-4 py-3 text-sm font-bold text-white transition hover:bg-emerald-800">
+                <a href="{{ route('requests.create', ['facilitySlug' => $facility->slug]) }}" class="inline-flex items-center justify-center rounded-xl bg-emerald-700 px-4 py-3 text-sm font-bold text-white transition hover:bg-emerald-800">
                     Book
                 </a>
             @else

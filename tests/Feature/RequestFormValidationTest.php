@@ -1,12 +1,15 @@
 <?php
 
+use App\Actions\Requests\RescheduleWaitingRequest;
 use App\Models\Amenity;
 use App\Models\Event;
 use App\Models\Facility;
 use App\Models\FacilityRequest;
 use App\Models\User;
 use App\Services\BookingRequestValidator;
+use App\Services\FacilityAvailabilityService;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Validation\ValidationException;
 
 function requestFormUser(): User
 {
@@ -54,12 +57,30 @@ it('shows the facility attendee capacity and request letter requirements', funct
     ]);
 
     $this->actingAs(requestFormUser())
-        ->get(route('requests.create', $facility))
+        ->get(route('requests.create', ['facilitySlug' => $facility->slug]))
         ->assertOk()
         ->assertSee('Facility capacity: 250 people')
         ->assertSee('This facility can accommodate up to 250 attendees.')
         ->assertSee('Choose a PDF request letter')
         ->assertSee('PDF only, maximum file size 5 MB');
+});
+
+it('uses a clean facility slug in the booking URL and redirects legacy links', function () {
+    $facility = Facility::query()->create([
+        'Facility_Name' => 'Alumni Social Hall',
+        'Status' => 'Available',
+    ]);
+    $user = requestFormUser();
+    $cleanUrl = route('requests.create', ['facilitySlug' => $facility->slug]);
+
+    expect($facility->slug)->toBe('alumni-social-hall')
+        ->and($cleanUrl)->toContain('/reserve/alumni-social-hall')
+        ->and($cleanUrl)->not->toContain('/requests/create/')
+        ->and($cleanUrl)->not->toEndWith('/'.$facility->FID);
+
+    $this->actingAs($user)
+        ->get(route('requests.create.legacy', $facility))
+        ->assertRedirect($cleanUrl);
 });
 
 it('stores purpose of request and request details separately', function () {
@@ -206,4 +227,73 @@ it('keeps amenity units unchanged across overlapping bookings and filters by sta
         ->assertOk()
         ->assertJsonPath("amenities.{$amenity->AID}", 10)
         ->assertJsonMissingPath("amenities.{$unavailableAmenity->AID}");
+});
+
+it('keeps awaiting payment requests read only against direct update posts', function () {
+    $user = requestFormUser();
+    $facility = Facility::query()->create([
+        'Facility_Name' => 'Payment Guard Hall',
+        'Capacity' => 100,
+        'Status' => 'Available',
+    ]);
+    $originalDate = today()->addDays(4)->toDateString();
+    $attemptedDate = today()->addDays(5)->toDateString();
+    $paymentDeadline = now()->addDays(2)->startOfMinute();
+
+    $facilityRequest = FacilityRequest::query()->create([
+        'User_ID' => $user->id,
+        'Facility_ID' => $facility->FID,
+        'Proposed_Date' => $originalDate,
+        'Proposed_End_Date' => $originalDate,
+        'Proposed_Start_Time' => '09:00',
+        'Proposed_End_Time' => '11:00',
+        'Daily_Schedules' => [[
+            'date' => $originalDate,
+            'start' => '09:00',
+            'end' => '11:00',
+        ]],
+        'Status' => 'Awaiting Payment',
+        'Payment_Amount' => 2500,
+        'Payment_Deadline' => $paymentDeadline,
+        'Payment_Proof_Path' => 'payment-proofs/original.pdf',
+        'Payment_Proof_Uploaded_At' => now(),
+        'Purpose' => 'Original purpose',
+        'Request_Details' => 'Original request details',
+        'Purpose_Categories' => ['Meeting or Conference'],
+        'Capacity' => 25,
+    ]);
+
+    $this->actingAs($user)
+        ->post(route('requests.waiting.update', $facilityRequest), [
+            'Request_Details' => 'Attempted changed request details',
+            'Proposed_Date' => $attemptedDate,
+            'Proposed_End_Date' => $attemptedDate,
+            'Proposed_Start_Time' => '13:00',
+            'Proposed_End_Time' => '15:00',
+            'Purpose_Categories' => ['Training Session'],
+            'Capacity' => 50,
+        ])
+        ->assertRedirect(route('dashboard', ['request' => $facilityRequest->RID]))
+        ->assertSessionHas('warning', 'This request is awaiting payment. Its submitted information is read-only.');
+
+    $facilityRequest->refresh();
+
+    expect($facilityRequest->Status)->toBe('Awaiting Payment')
+        ->and($facilityRequest->Proposed_Date->toDateString())->toBe($originalDate)
+        ->and($facilityRequest->Proposed_Start_Time->format('H:i'))->toBe('09:00')
+        ->and($facilityRequest->Purpose)->toBe('Original purpose')
+        ->and($facilityRequest->Request_Details)->toBe('Original request details')
+        ->and($facilityRequest->Payment_Amount)->toBe('2500.00')
+        ->and($facilityRequest->Payment_Deadline->equalTo($paymentDeadline))->toBeTrue()
+        ->and($facilityRequest->Payment_Proof_Path)->toBe('payment-proofs/original.pdf');
+
+    expect(fn () => app(RescheduleWaitingRequest::class)->handle(
+        $facilityRequest,
+        $user->id,
+        [],
+        [],
+        [],
+        null,
+        app(FacilityAvailabilityService::class),
+    ))->toThrow(ValidationException::class, 'This request is read-only and can no longer be changed.');
 });

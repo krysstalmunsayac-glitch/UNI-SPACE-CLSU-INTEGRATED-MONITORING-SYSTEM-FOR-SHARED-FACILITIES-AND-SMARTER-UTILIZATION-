@@ -106,7 +106,8 @@
                 <x-ui::select.option value="request_updated">Updated</x-ui::select.option>
                 <x-ui::select.option value="schedule_updated">Schedule changed</x-ui::select.option>
                 <x-ui::select.option value="request_cancelled">Cancelled</x-ui::select.option>
-                <x-ui::select.option value="event_ended">Event ended</x-ui::select.option>
+                <x-ui::select.option value="request_expired">Expired</x-ui::select.option>
+                <x-ui::select.option value="event_ended">Completed</x-ui::select.option>
                 <x-ui::select.option value="request_archived">Archived</x-ui::select.option>
                 <x-ui::select.option value="request_restored">Restored</x-ui::select.option>
                 <x-ui::select.option value="request_deleted">Deleted</x-ui::select.option>
@@ -138,6 +139,7 @@
                             'request_approved' => 'green',
                             'request_rejected', 'request_deleted' => 'red',
                             'revision_requested', 'request_cancelled' => 'amber',
+                            'request_expired' => 'zinc',
                             'schedule_updated' => 'violet',
                             'event_ended' => 'zinc',
                             default => 'blue',

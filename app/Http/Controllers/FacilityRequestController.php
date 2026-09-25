@@ -11,6 +11,7 @@ use App\Services\BookingRequestValidator;
 use App\Services\FacilityAvailabilityService;
 use App\Services\RequestSubmissionService;
 use Carbon\Carbon;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -25,9 +26,20 @@ class FacilityRequestController extends Controller
         private readonly RequestSubmissionService $submissions,
     ) {}
 
-    public function showRequest(Facility $facility, FacilityAvailabilityService $availability)
+    public function showRequest(string $facilitySlug, FacilityAvailabilityService $availability)
     {
+        $facility = Facility::query()
+            ->where('slug', $facilitySlug)
+            ->firstOrFail();
+
         return $this->renderRequestForm($facility, $availability, false);
+    }
+
+    public function redirectLegacyRequest(Facility $facility): RedirectResponse
+    {
+        return redirect()->route('requests.create', [
+            'facilitySlug' => $facility->slug,
+        ]);
     }
 
     public function showGuestRequest(Facility $facility, FacilityAvailabilityService $availability)

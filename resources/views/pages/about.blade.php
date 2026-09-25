@@ -37,7 +37,7 @@
                 ['value' => '25+', 'label' => 'Facilities listed'],
                 ['value' => '4', 'label' => 'Request statuses'],
                 ['value' => '24/7', 'label' => 'Schedule visibility'],
-                ['value' => 'Automatic', 'label' => 'Ended-event archiving'],
+                ['value' => 'Automatic', 'label' => 'Completed-event archiving'],
             ] as $stat)
                 <div class="rounded-xl border border-emerald-900/10 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-zinc-950">
                     <p class="text-4xl font-black text-emerald-800 dark:text-emerald-300">{{ $stat['value'] }}</p>

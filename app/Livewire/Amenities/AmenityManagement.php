@@ -48,6 +48,7 @@ class AmenityManagement extends Component
 
     public function mount(): void
     {
+        $this->authorizeAmenityManager();
         $this->archiveOnly = request()->boolean('archive');
         $this->showArchivedModal = $this->archiveOnly;
     }
@@ -56,7 +57,9 @@ class AmenityManagement extends Component
 
     public string $search = '';
 
-    public $sortBy = 'name';
+    public ?int $facilityFilter = null;
+
+    public $sortBy = 'created_at';
 
     public $sortDirection = 'asc';
 
@@ -90,6 +93,11 @@ class AmenityManagement extends Component
         $this->applySearch();
     }
 
+    public function updatedFacilityFilter(): void
+    {
+        $this->resetPage('amenitiesPage');
+    }
+
     public function sort($column): void
     {
         if (! in_array($column, ['name', 'Status', 'inventory_quantity'], true)) {
@@ -119,13 +127,15 @@ class AmenityManagement extends Component
 
     public function create(): void
     {
+        $this->authorizeAmenityManager();
         $this->resetForm();
         $this->showModal = true;
     }
 
     public function save(bool $createConfirmed = false): void
     {
-        abort_unless(auth()->user()->isSuperAdminOrAdmin(), 403);
+        $this->authorizeAmenityManager();
+        $this->name = trim($this->name);
 
         $validated = $this->validate([
             'name' => ['required', 'string', 'min:2', 'max:100'],
@@ -178,6 +188,7 @@ class AmenityManagement extends Component
 
     public function edit(int $amenityId): void
     {
+        $this->authorizeAmenityManager();
         $amenity = $this->getScopedAmenity($amenityId);
 
         $this->editingId = $amenity->AID;
@@ -192,6 +203,7 @@ class AmenityManagement extends Component
 
     public function showDetails(int $amenityId): void
     {
+        $this->authorizeAmenityManager();
         $amenity = $this->getVisibleAmenity($amenityId);
         $this->viewingId = $amenity->AID;
         $this->showViewModal = true;
@@ -205,6 +217,7 @@ class AmenityManagement extends Component
 
     public function requestToggleStatus(int $amenityId): void
     {
+        $this->authorizeAmenityManager();
         $amenity = $this->getScopedAmenity($amenityId);
         $this->pendingStatusId = $amenity->AID;
         $this->pendingStatusName = $amenity->name;
@@ -216,6 +229,7 @@ class AmenityManagement extends Component
 
     public function confirmToggleStatus(): void
     {
+        $this->authorizeAmenityManager();
         $amenity = $this->getScopedAmenity($this->pendingStatusId);
 
         if ($amenity->Status === 'Available') {
@@ -244,7 +258,13 @@ class AmenityManagement extends Component
     #[Computed]
     public function amenities()
     {
-        return app(AmenityListQuery::class)->active(auth()->user(), $this->search, $this->sortBy, $this->sortDirection);
+        return app(AmenityListQuery::class)->active(
+            auth()->user(),
+            $this->search,
+            $this->sortBy,
+            $this->sortDirection,
+            $this->facilityFilter,
+        );
     }
 
     #[Computed]
@@ -256,10 +276,6 @@ class AmenityManagement extends Component
     #[Computed]
     public function facilityOptions()
     {
-        if (! $this->showModal) {
-            return collect();
-        }
-
         return app(AmenityListQuery::class)->facilities(auth()->user());
     }
 
@@ -276,6 +292,8 @@ class AmenityManagement extends Component
 
     public function canManageAmenity(Amenity $amenity): bool
     {
+        $this->authorizeAmenityManager();
+
         if (! auth()->user()->isAdmin()) {
             return true;
         }
@@ -295,6 +313,15 @@ class AmenityManagement extends Component
     private function getVisibleAmenity(int $amenityId): Amenity
     {
         return app(AmenityListQuery::class)->visible(auth()->user(), $amenityId);
+    }
+
+    protected function authorizeAmenityManager(): void
+    {
+        abort_unless(
+            auth()->user()?->isSuperAdminOrAdmin(),
+            403,
+            'Only a Super Admin or Office Admin can manage amenities.',
+        );
     }
 
     /** @param array<int, int|string> $facilityIds */

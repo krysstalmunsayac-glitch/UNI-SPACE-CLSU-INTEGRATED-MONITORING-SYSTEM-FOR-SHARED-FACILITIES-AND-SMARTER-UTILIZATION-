@@ -94,7 +94,8 @@ class ReportManagement extends Component
             ->when($this->actionFilter, fn ($query) => $query->where('action', $this->actionFilter))
             ->when($this->dateFrom, fn ($query) => $query->whereDate('created_at', '>=', $this->dateFrom))
             ->when($this->dateTo, fn ($query) => $query->whereDate('created_at', '<=', $this->dateTo))
-            ->latest()
+            ->orderBy('created_at')
+            ->orderBy('id')
             ->paginate(8, pageName: 'auditPage');
     }
 

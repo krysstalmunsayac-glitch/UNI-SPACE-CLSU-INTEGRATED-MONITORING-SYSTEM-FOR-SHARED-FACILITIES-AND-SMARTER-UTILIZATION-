@@ -35,6 +35,7 @@ class UserListQuery
                     ->orWhere('account_type', 'like', $term));
             })
             ->orderBy($sortBy, $direction)
+            ->orderBy('id', $direction)
             ->paginate(perPage: 8, pageName: 'usersPage');
     }
 
@@ -48,7 +49,8 @@ class UserListQuery
                 ->orWhere('clsu_id', 'like', '%'.$search.'%')
                 ->orWhere('account_type', 'like', '%'.$search.'%')
                 ->orWhere('user_type', 'like', '%'.$search.'%')))
-            ->orderByDesc('deleted_at')
+            ->orderBy('deleted_at')
+            ->orderBy('id')
             ->paginate(perPage: 8, pageName: 'archivedUsersPage');
     }
 

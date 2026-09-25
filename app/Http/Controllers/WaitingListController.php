@@ -10,7 +10,6 @@ use App\Models\FacilityRequest;
 use App\Services\BookingPolicy;
 use App\Services\BookingRequestValidator;
 use App\Services\FacilityAvailabilityService;
-use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -34,7 +33,7 @@ class WaitingListController extends Controller
             abort(403);
         }
 
-        if (in_array($requestModel->Status, ['Approved', 'Rejected', 'Cancelled', 'Ended'], true)) {
+        if (in_array($requestModel->Status, ['Awaiting Payment', 'Approved', 'Rejected', 'Cancelled', 'Expired', 'Ended'], true)) {
             $status = strtolower($requestModel->Status);
 
             return redirect()
@@ -162,7 +161,7 @@ class WaitingListController extends Controller
             abort(403);
         }
 
-        if (! in_array($requestModel->Status, ['Pending', 'Approved'], true)) {
+        if (! in_array($requestModel->Status, ['Pending', 'Awaiting Payment', 'Approved'], true)) {
             return redirect()
                 ->route('dashboard')
                 ->with('warning', 'This request can no longer be cancelled.');
@@ -214,26 +213,24 @@ class WaitingListController extends Controller
             abort(403);
         }
 
-        $eventStart = Carbon::parse(
-            $requestModel->Proposed_Date->toDateString().' '.$requestModel->Proposed_Start_Time->format('H:i:s')
-        );
+        $eventEnd = $requestModel->scheduledEndAt();
 
-        if ($requestModel->Status !== 'Approved' || $eventStart->isFuture()) {
+        if ($requestModel->Status !== 'Approved' || ! $eventEnd?->lte(now())) {
             return redirect()
                 ->route('dashboard', ['request' => $requestModel->RID])
-                ->with('warning', $eventStart->isFuture()
-                    ? 'You can end this event after its scheduled start time. Cancel the booking instead if it will not proceed.'
-                    : 'This event can no longer be ended.');
+                ->with('warning', $requestModel->Status === 'Approved'
+                    ? 'You can complete this event after its scheduled end time. Cancel the booking instead if it will not proceed.'
+                    : 'This event can no longer be marked as completed.');
         }
 
         $action->handle($requestModel);
 
         return redirect()
             ->route('dashboard', ['request' => $requestModel->RID])
-            ->with('success', 'Your event has ended. The booking is now read-only and you may leave optional feedback.')
+            ->with('success', 'Your event is completed. The booking is now read-only and you may leave optional feedback.')
             ->with('sweet_alert', [
-                'title' => 'Event ended',
-                'text' => 'The booking was marked as ended. Thank you for using the facility.',
+                'title' => 'Event completed',
+                'text' => 'The booking was marked as completed. Thank you for using the facility.',
                 'icon' => 'success',
             ]);
     }

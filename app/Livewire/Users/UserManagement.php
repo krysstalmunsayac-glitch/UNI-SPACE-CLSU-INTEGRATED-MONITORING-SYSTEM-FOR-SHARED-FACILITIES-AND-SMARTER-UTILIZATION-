@@ -65,7 +65,7 @@ class UserManagement extends Component
 
     public string $sortBy = 'created_at';
 
-    public string $sortDirection = 'desc';
+    public string $sortDirection = 'asc';
 
     public UserForm $form;
 

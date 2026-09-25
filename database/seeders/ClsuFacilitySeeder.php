@@ -8,6 +8,14 @@ use Illuminate\Database\Seeder;
 
 class ClsuFacilitySeeder extends Seeder
 {
+    private bool $amenitiesOnly = false;
+
+    public function rebuildAmenitiesForExistingFacilities(): void
+    {
+        $this->amenitiesOnly = true;
+        $this->run();
+    }
+
     public function run(): void
     {
         $standardProtocols = 'Observe proper waste disposal. Weapons, drugs, and items that can harm a person are prohibited.';
@@ -49,26 +57,6 @@ class ClsuFacilitySeeder extends Seeder
             $this->facility('Alumni Social Hall', 'conference', 'Shared', 3000, '₱3,000 for 3 hours; ₱500 for each succeeding hour. 25% discount for CLSU alumni and 20% for senior citizens with Alumni ID.', 'CLSU Alumni Association Inc.', 'Multi-purpose facility for alumni gatherings, meetings, fellowships, worship services, and university-related social activities.', 100, 'Available', ['Television', 'Sound System', 'Whiteboard'], $standardProtocols, 'CLSU Alumni Association Inc. · (044) 803-9412 · 0955-991-0575', 'https://drive.google.com/drive/folders/1t3zhtEsC-PVyka4MgcdtivK2Te1IMLXZ?usp=sharing', 'Uses a separate booking reservation process; hostel bookings: https://alumni.clsu.edu.ph/hostel'),
         ];
 
-        $amenityNames = collect($facilities)->pluck('amenities')->flatten()->unique()->sort()->values();
-        $amenities = $amenityNames->mapWithKeys(function (string $name): array {
-            $amenity = Amenity::withTrashed()->updateOrCreate(
-                ['name' => $name],
-                [
-                    'Description' => 'Facility-provided amenity listed in the official CLSU events and facilities directory.',
-                    'Status' => 'Available',
-                    'inventory_quantity' => 1,
-                    'inventory_type' => in_array($name, ['Air Conditioning', 'Open Space', 'Restroom Access'], true)
-                        ? 'permanent'
-                        : 'countable',
-                ]
-            );
-            if ($amenity->trashed()) {
-                $amenity->restore();
-            }
-
-            return [$name => $amenity->AID];
-        });
-
         foreach ($facilities as $data) {
             $facilityAmenities = $data['amenities'];
             $facilityType = $data['facility_type'];
@@ -83,18 +71,46 @@ class ClsuFacilitySeeder extends Seeder
                 ->whereIn('Facility_Name', $matchingNames)
                 ->first();
 
-            if ($facility) {
+            if ($this->amenitiesOnly && (! $facility || $facility->trashed())) {
+                continue;
+            }
+
+            if ($facility && ! $this->amenitiesOnly) {
                 // Preserve the facility type already assigned to existing records.
                 $facility->fill($data)->save();
-            } else {
+            } elseif (! $facility) {
                 // New records use only the existing type mapping defined by this seeder.
                 $facility = Facility::query()->create($data + ['facility_type' => $facilityType]);
             }
 
-            if ($facility->trashed()) {
+            if (! $this->amenitiesOnly && $facility->trashed()) {
                 $facility->restore();
             }
-            $facility->amenities()->sync(collect($facilityAmenities)->map(fn (string $name) => $amenities[$name])->all());
+
+            $amenityIds = collect($facilityAmenities)->map(function (string $name) use ($facility): int {
+                $amenity = Amenity::withTrashed()
+                    ->where('name', $name)
+                    ->whereHas('facilities', fn ($query) => $query->where('facilities.FID', $facility->FID))
+                    ->first() ?? new Amenity;
+
+                $amenity->fill([
+                    'name' => $name,
+                    'Description' => 'Facility-provided amenity listed in the official CLSU events and facilities directory.',
+                    'Status' => 'Available',
+                    'inventory_quantity' => 1,
+                    'inventory_type' => in_array($name, ['Air Conditioning', 'Open Space', 'Restroom Access'], true)
+                        ? 'permanent'
+                        : 'countable',
+                ])->save();
+
+                if ($amenity->trashed()) {
+                    $amenity->restore();
+                }
+
+                return (int) $amenity->AID;
+            })->all();
+
+            $facility->amenities()->sync($amenityIds);
         }
     }
 

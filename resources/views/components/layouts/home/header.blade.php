@@ -24,8 +24,7 @@
             box-shadow: 0 3px 14px rgba(0, 45, 22, .18);
         }
 
-        .site-header .navigation-typeface,
-        .site-header .navigation-typeface a {
+        .site-header .navigation-typeface {
             color: #fff !important;
         }
 
@@ -53,12 +52,12 @@
             transform: translateY(-1px);
         }
 
-        .site-header[data-transparent="true"] .navigation-typeface,
-        .site-header[data-transparent="true"] .navigation-typeface a {
+        .site-header[data-transparent="true"] .navigation-typeface {
             color: #fff !important;
         }
 
-        .site-header[data-transparent="true"] .navigation-typeface a {
+        .site-header[data-transparent="true"] .navigation-typeface > a,
+        .site-header[data-transparent="true"] #mobile-navigation > div > a {
             border-color: transparent !important;
         }
 
@@ -92,8 +91,8 @@
             background: #006b2b !important;
         }
 
-        #mobile-navigation a:hover,
-        #mobile-navigation a:focus-visible {
+        #mobile-navigation > div > a:hover,
+        #mobile-navigation > div > a:focus-visible {
             background: rgba(255, 255, 255, .12) !important;
             color: #fff !important;
         }
@@ -207,7 +206,7 @@
                                             @endif
                                         </span>
                                         <div class="grid flex-1 text-left text-sm leading-tight">
-                                            <span class="truncate font-semibold">{{ auth()->user()->name }}</span>
+                                            <span class="truncate font-semibold text-slate-900 dark:text-zinc-100">{{ auth()->user()->name }}</span>
                                             <span class="truncate text-xs text-slate-500 dark:text-zinc-400">{{ auth()->user()->email }}</span>
                                         </div>
                                     </div>
@@ -290,7 +289,7 @@
                                             @endif
                                         </span>
                                         <div class="grid flex-1 text-left text-sm leading-tight">
-                                            <span class="truncate font-semibold">{{ auth()->user()->name }}</span>
+                                            <span class="truncate font-semibold text-slate-900 dark:text-zinc-100">{{ auth()->user()->name }}</span>
                                             <span class="truncate text-xs text-slate-500 dark:text-zinc-400">{{ auth()->user()->email }}</span>
                                         </div>
                                     </div>

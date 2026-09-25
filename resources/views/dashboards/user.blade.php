@@ -29,32 +29,99 @@
             active: 0,
             slides: @js($heroSlidesForBrowser),
             total: {{ count($heroSlides) }},
+            layerASrc: @js($heroSlidesForBrowser[0]['image']),
+            layerAAlt: @js($heroSlidesForBrowser[0]['alt']),
+            layerBSrc: null,
+            layerBAlt: '',
+            visibleLayer: 'a',
+            transitioning: false,
+            loadingIndex: null,
             timer: null,
-            init() { this.start(); },
+            init() { this.start(); this.preload(1); },
             start() {
                 clearInterval(this.timer);
-                this.timer = setInterval(() => this.active = (this.active + 1) % this.total, 10000);
+                this.timer = setInterval(() => this.show((this.active + 1) % this.total), 10000);
             },
             stop() { clearInterval(this.timer); },
-            goTo(index) { this.active = index; this.start(); },
-            previous() { this.active = (this.active - 1 + this.total) % this.total; this.start(); },
-            next() { this.active = (this.active + 1) % this.total; this.start(); },
+            preload(index) { const image = new Image(); image.src = this.slides[index].image; },
+            async show(index) {
+                if (index === this.active || this.transitioning || this.loadingIndex !== null) return;
+                this.loadingIndex = index;
+                const nextSlide = this.slides[index];
+                const nextLayer = this.visibleLayer === 'a' ? 'b' : 'a';
+                if (nextLayer === 'a') {
+                    this.layerASrc = nextSlide.image;
+                    this.layerAAlt = nextSlide.alt;
+                } else {
+                    this.layerBSrc = nextSlide.image;
+                    this.layerBAlt = nextSlide.alt;
+                }
+                await this.$nextTick();
+                const nextImage = nextLayer === 'a' ? this.$refs.layerA : this.$refs.layerB;
+                try {
+                    if (typeof nextImage.decode === 'function') {
+                        await nextImage.decode();
+                    } else if (!nextImage.complete) {
+                        await new Promise((resolve, reject) => {
+                            nextImage.addEventListener('load', resolve, { once: true });
+                            nextImage.addEventListener('error', reject, { once: true });
+                        });
+                    }
+                } catch {
+                    this.loadingIndex = null;
+                    return;
+                }
+                if (!nextImage.complete || nextImage.naturalWidth === 0) {
+                    this.loadingIndex = null;
+                    return;
+                }
+                this.loadingIndex = null;
+                this.transitioning = true;
+                requestAnimationFrame(() => requestAnimationFrame(() => {
+                    this.active = index;
+                    this.visibleLayer = nextLayer;
+                    window.setTimeout(() => {
+                        this.transitioning = false;
+                        this.preload((index + 1) % this.total);
+                    }, window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 800);
+                }));
+            },
+            goTo(index) { this.show(index); this.start(); },
+            previous() { this.show((this.active - 1 + this.total) % this.total); this.start(); },
+            next() { this.show((this.active + 1) % this.total); this.start(); },
             destroy() { clearInterval(this.timer); }
         }"
         x-on:keydown.left.prevent="previous()"
         x-on:keydown.right.prevent="next()"
+        x-on:mouseenter="stop()"
+        x-on:mouseleave="start()"
+        x-on:focusin="stop()"
+        x-on:focusout="start()"
         tabindex="0"
         aria-roledescription="carousel"
         aria-label="SIEL Space campus images"
     >
         <img
+            x-ref="layerA"
             src="{{ asset($heroSlides[0]['image']) }}"
-            x-bind:src="slides[active].image"
+            x-bind:src="layerASrc"
             alt="{{ $heroSlides[0]['alt'] }}"
-            x-bind:alt="slides[active].alt"
-            class="external-hero-slide absolute inset-0 h-full w-full object-cover object-center"
+            x-bind:alt="layerAAlt"
+            x-bind:class="visibleLayer === 'a' ? 'opacity-100' : 'opacity-0'"
+            x-bind:aria-hidden="visibleLayer !== 'a'"
+            class="external-hero-slide absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-700 ease-in-out"
             decoding="async"
             fetchpriority="high"
+        >
+        <img
+            x-ref="layerB"
+            x-bind:src="layerBSrc"
+            x-bind:alt="layerBAlt"
+            x-bind:class="visibleLayer === 'b' ? 'opacity-100' : 'opacity-0'"
+            x-bind:aria-hidden="visibleLayer !== 'b'"
+            class="external-hero-slide absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-700 ease-in-out"
+            decoding="async"
+            aria-live="off"
         >
         <div class="absolute inset-0 bg-gradient-to-b from-black/65 via-black/45 to-black/80" aria-hidden="true"></div>
         <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_20%,rgba(0,0,0,.28)_100%)]" aria-hidden="true"></div>
@@ -68,7 +135,7 @@
                 <h1 class="mt-4 text-5xl font-black leading-[.98] tracking-tight sm:text-6xl lg:text-7xl">Welcome back, {{ auth()->user()->name }}</h1>
                 <p class="mt-7 max-w-2xl text-lg leading-8 text-white/85 sm:text-xl">Browse available campus spaces, check the booking calendar, and manage your reservation requests from one SIEL SPACE dashboard.</p>
                 <div class="mt-9 flex flex-col gap-3 sm:flex-row">
-                    <a href="#facilities" class="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#009639] px-7 py-3 font-bold text-white transition hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-yellow-400">Browse Facilities</a>
+                    <a href="#facilities" class="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#009639] px-7 py-3 font-bold text-white transition hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-yellow-400">Book Facility</a>
                     <a href="#requests" class="inline-flex min-h-12 items-center justify-center rounded-xl border border-white bg-white px-7 py-3 font-bold text-zinc-950 transition hover:bg-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400">My Requests</a>
                 </div>
             </div>
@@ -207,43 +274,16 @@
     </section>
 
     <style>
-        #about {
-            overflow-x: clip;
-        }
-
         .dashboard-reveal {
             opacity: 0;
-            transform: translateY(1.25rem);
-            transition: opacity 700ms ease, transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+            transform: translateY(0.875rem);
+            transition: opacity 850ms ease-out, transform 900ms cubic-bezier(0.22, 1, 0.36, 1);
             will-change: opacity, transform;
         }
 
         .dashboard-reveal.is-visible {
             opacity: 1;
             transform: translateY(0);
-        }
-
-        .dashboard-reveal.about-from-left {
-            transform: translateX(-1.5rem);
-        }
-
-        .dashboard-reveal.about-from-right {
-            transform: translateX(1.5rem);
-        }
-
-        .dashboard-reveal.about-from-left.is-visible,
-        .dashboard-reveal.about-from-right.is-visible {
-            transform: translateX(0);
-        }
-
-        @media (max-width: 767px) {
-            .dashboard-reveal,
-            .dashboard-reveal.about-from-left,
-            .dashboard-reveal.about-from-right {
-                opacity: 1;
-                transform: none;
-                transition: none;
-            }
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -320,13 +360,11 @@
                     });
                 });
 
-                const revealElements = [
-                    ...document.querySelectorAll('#about section > div, #facilities > div, #calendar > div, #requests > div, #map > div, #help > div'),
-                    ...document.querySelectorAll('#about > section:first-child > div > div, #about article, .facility-card, #requests details, #help details'),
-                ];
+                const revealElements = document.querySelectorAll(
+                    '#about > div, #facilities > div, #calendar > div, #requests > div, #map > div, #help > div'
+                );
 
-                const animationsEnabled = !window.matchMedia('(prefers-reduced-motion: reduce)').matches
-                    && !window.matchMedia('(max-width: 767px)').matches;
+                const animationsEnabled = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
                 if (!window.userDashboardRevealObserver && 'IntersectionObserver' in window && animationsEnabled) {
                     window.userDashboardRevealObserver = new IntersectionObserver(entries => {
@@ -334,23 +372,16 @@
                             if (!entry.isIntersecting) return;
 
                             entry.target.classList.add('is-visible');
+                            entry.target.dataset.dashboardRevealDone = 'true';
                             window.userDashboardRevealObserver.unobserve(entry.target);
                         });
-                    }, { threshold: 0.12, rootMargin: '0px 0px -48px' });
+                    }, { threshold: 0.08, rootMargin: '0px 0px -8%' });
                 }
 
-                [...new Set(revealElements)].forEach((element, index) => {
-                    if (element.dataset.dashboardRevealObserved) return;
+                revealElements.forEach((element) => {
+                    if (element.dataset.dashboardRevealObserved || element.dataset.dashboardRevealDone) return;
                     element.dataset.dashboardRevealObserved = 'true';
                     element.classList.add('dashboard-reveal');
-                    if (element.matches('#about article')) {
-                        const aboutCards = [...document.querySelectorAll('#about article')];
-                        element.classList.add(aboutCards.indexOf(element) % 2 === 0 ? 'about-from-left' : 'about-from-right');
-                    } else if (element.matches('#about > section:first-child > div > div')) {
-                        const aboutIntroColumns = [...document.querySelectorAll('#about > section:first-child > div > div')];
-                        element.classList.add(aboutIntroColumns.indexOf(element) === 0 ? 'about-from-left' : 'about-from-right');
-                    }
-                    element.style.transitionDelay = `${Math.min(index % 4, 3) * 70}ms`;
 
                     if (window.userDashboardRevealObserver && animationsEnabled) {
                         window.userDashboardRevealObserver.observe(element);

@@ -23,7 +23,7 @@ class EventRequestController extends Controller
 
     public function create(Event $event)
     {
-        $amenities = Amenity::where('Status', 'Available')->orderBy('name')->get();
+        $amenities = Amenity::where('Status', 'Available')->orderBy('name')->orderBy('AID')->get();
 
         return view('requests.event-request', compact('event', 'amenities'));
     }

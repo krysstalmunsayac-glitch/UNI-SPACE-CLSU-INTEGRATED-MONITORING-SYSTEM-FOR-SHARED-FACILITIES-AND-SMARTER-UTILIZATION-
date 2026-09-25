@@ -9,8 +9,10 @@ use App\Notifications\FacilityUnavailable;
 use Carbon\CarbonPeriod;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 class FacilityAvailabilityService
 {
@@ -91,7 +93,15 @@ class FacilityAvailabilityService
 
         foreach ($cancelledRequests as $request) {
             if ($request->user) {
-                Notification::send($request->user, new FacilityUnavailable($request));
+                try {
+                    Notification::send($request->user, new FacilityUnavailable($request));
+                } catch (Throwable $exception) {
+                    Log::warning('Request was cancelled because its facility became unavailable, but the user could not be notified.', [
+                        'request_id' => $request->RID,
+                        'facility_id' => $facility->FID,
+                        'exception' => $exception,
+                    ]);
+                }
             }
         }
 
@@ -152,7 +162,7 @@ class FacilityAvailabilityService
             }
         }
 
-        $conflicts = $this->conflicts($facilityId, $schedules, $ignoreRequestId, $lock, ['Approved']);
+        $conflicts = $this->conflicts($facilityId, $schedules, $ignoreRequestId, $lock, ['Awaiting Payment', 'Approved']);
         if ($conflicts->isNotEmpty()) {
             throw ValidationException::withMessages(['Daily_Schedules' => 'The selected time on '.$conflicts->first()['date'].' is already booked, including its 30-minute preparation and cleanup buffer.']);
         }
@@ -160,7 +170,7 @@ class FacilityAvailabilityService
         return $schedules;
     }
 
-    public function conflicts(int $facilityId, array $schedules, ?int $ignoreRequestId = null, bool $lock = false, array $statuses = ['Pending', 'Approved']): Collection
+    public function conflicts(int $facilityId, array $schedules, ?int $ignoreRequestId = null, bool $lock = false, array $statuses = ['Pending', 'Awaiting Payment', 'Approved']): Collection
     {
         if ($schedules === []) {
             return collect();

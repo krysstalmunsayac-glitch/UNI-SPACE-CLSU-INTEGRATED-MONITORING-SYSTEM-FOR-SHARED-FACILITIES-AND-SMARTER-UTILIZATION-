@@ -2,7 +2,6 @@
 
 namespace App\Livewire\Schedules;
 
-use App\Actions\Lifecycle\ArchiveRecord;
 use App\Actions\Lifecycle\PermanentlyDeleteRecord;
 use App\Actions\Lifecycle\RestoreRecord;
 use App\Actions\Schedules\UpdateSchedule;
@@ -15,6 +14,7 @@ use App\Services\FacilityAvailabilityService;
 use App\Support\Ui;
 use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Url;
@@ -35,6 +35,10 @@ class ScheduleManagement extends Component
     public bool $showModal = false;
 
     public bool $showArchivedModal = false;
+
+    public bool $scheduleReadOnly = false;
+
+    public string $scheduleReadOnlyReason = '';
 
     public ?string $selectedDate = null;
 
@@ -108,6 +112,8 @@ class ScheduleManagement extends Component
         $this->form->End_Time = '09:00';
         $this->form->Status = 'Booked';
         $this->editingId = null;
+        $this->scheduleReadOnly = false;
+        $this->scheduleReadOnlyReason = '';
         $this->resetValidation();
     }
 
@@ -127,6 +133,15 @@ class ScheduleManagement extends Component
         // Authorize the existing record before validating any user-controlled
         // fields, then enforce the saved notice period and super-admin exception.
         $schedule = $this->getScopedSchedule((int) $this->editingId);
+
+        if ($this->isReadOnlySchedule($schedule)) {
+            $this->scheduleReadOnly = true;
+            $this->scheduleReadOnlyReason = $this->readOnlyReason($schedule);
+            Ui::toast(text: $this->scheduleReadOnlyReason, variant: 'warning');
+
+            return;
+        }
+
         $this->form->earliestDate = app(BookingPolicy::class)->earliestDate(auth()->user());
         $this->form->noticeMessage = app(BookingPolicy::class)->noticeMessage(auth()->user());
         $validated = $this->form->validate();
@@ -211,7 +226,16 @@ class ScheduleManagement extends Component
 
     public function edit(int $scheduleId): void
     {
-        $schedule = $this->getScopedSchedule($scheduleId);
+        try {
+            $schedule = $this->getScopedSchedule($scheduleId);
+        } catch (ModelNotFoundException) {
+            $this->showModal = false;
+            $this->editingId = null;
+            $this->dispatch('calendar-refresh', events: $this->calendarEvents);
+            Ui::toast(text: 'This schedule is no longer available. The calendar has been refreshed.', variant: 'warning');
+
+            return;
+        }
 
         $this->editingId = $schedule->SID;
         $this->form->Request_ID = $schedule->Request_ID;
@@ -220,27 +244,9 @@ class ScheduleManagement extends Component
         $rawEndTime = substr((string) $schedule->getRawOriginal('End_Time'), 0, 5);
         $this->form->End_Time = $rawEndTime === '24:00' ? '24:00' : Carbon::parse($schedule->End_Time)->format('H:i');
         $this->form->Status = $schedule->Status;
+        $this->scheduleReadOnly = $this->isReadOnlySchedule($schedule);
+        $this->scheduleReadOnlyReason = $this->scheduleReadOnly ? $this->readOnlyReason($schedule) : '';
         $this->showModal = true;
-    }
-
-    public function delete(int $scheduleId): void
-    {
-        app(ArchiveRecord::class)->handle($this->getScopedSchedule($scheduleId));
-
-        $this->dispatch('calendar-refresh', events: $this->calendarEvents);
-
-        Ui::toast(
-            text: 'Schedule archived successfully!',
-            variant: 'success'
-        );
-
-        $this->dispatch('swal', [
-            'title' => 'Schedule archived',
-            'text' => 'Schedule archived successfully!',
-            'icon' => 'success',
-        ]);
-
-        $this->showModal = false;
     }
 
     public function openArchivedRecords(): void
@@ -272,6 +278,28 @@ class ScheduleManagement extends Component
     private function getScopedRequest(int $requestId): FacilityRequest
     {
         return app(ScheduleListQuery::class)->request(auth()->user(), $requestId);
+    }
+
+    private function isReadOnlySchedule(Schedule $schedule): bool
+    {
+        $request = $schedule->request;
+
+        if (! $request || $request->trashed() || in_array($request->Status, ['Ended', 'Expired', 'Rejected', 'Cancelled'], true)) {
+            return true;
+        }
+
+        $rawEndTime = substr((string) $schedule->getRawOriginal('End_Time'), 0, 8);
+        $endMinutes = $this->timeToMinutes($rawEndTime);
+        $endsAt = Carbon::parse($schedule->Date)->startOfDay()->addMinutes($endMinutes);
+
+        return $endsAt->lte(now());
+    }
+
+    private function readOnlyReason(Schedule $schedule): string
+    {
+        return $schedule->request?->Status === 'Ended'
+            ? 'Completed schedules are available for reference only and can no longer be changed.'
+            : 'Past or archived schedules are available for reference only and can no longer be changed.';
     }
 
     // ---- Computed ----

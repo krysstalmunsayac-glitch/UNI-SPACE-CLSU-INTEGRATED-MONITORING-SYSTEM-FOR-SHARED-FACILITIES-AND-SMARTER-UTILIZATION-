@@ -11,6 +11,7 @@ trait ManagesAmenityLifecycle
 {
     public function delete(int $amenityId): void
     {
+        $this->authorizeAmenityManager();
         $amenity = $this->getScopedAmenity($amenityId);
         app(ArchiveRecord::class)->handle($amenity);
 
@@ -27,12 +28,14 @@ trait ManagesAmenityLifecycle
 
     public function openArchivedRecords(): void
     {
+        $this->authorizeAmenityManager();
         $this->resetPage('archivedAmenitiesPage');
         $this->showArchivedModal = true;
     }
 
     public function restore(int $amenityId): void
     {
+        $this->authorizeAmenityManager();
         $amenity = $this->getScopedAmenity($amenityId, withTrashed: true);
         app(RestoreRecord::class)->handle($amenity);
 
@@ -42,6 +45,7 @@ trait ManagesAmenityLifecycle
 
     public function forceDelete(int $amenityId): void
     {
+        $this->authorizeAmenityManager();
         $amenity = $this->getScopedAmenity($amenityId, withTrashed: true);
         app(PermanentlyDeleteRecord::class)->handle($amenity);
 

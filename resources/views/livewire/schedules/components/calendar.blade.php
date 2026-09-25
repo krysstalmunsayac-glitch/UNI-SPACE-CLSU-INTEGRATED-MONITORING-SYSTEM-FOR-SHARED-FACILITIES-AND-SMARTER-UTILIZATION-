@@ -67,7 +67,7 @@
                 </div>
                 <div class="flex items-center gap-2 text-xs font-semibold text-emerald-950 dark:text-zinc-200">
                     <span class="h-3 w-3 shrink-0 rounded-full bg-red-600 ring-2 ring-white dark:ring-zinc-950"></span>
-                    <span>Ended event</span>
+                    <span>Completed event</span>
                 </div>
             </div>
         </div>

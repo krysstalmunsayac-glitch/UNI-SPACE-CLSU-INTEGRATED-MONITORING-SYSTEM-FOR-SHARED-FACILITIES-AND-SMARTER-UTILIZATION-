@@ -9,9 +9,11 @@ use App\Livewire\Requests\Concerns\ManagesRequestLifecycle;
 use App\Livewire\Requests\Concerns\ManagesRequestPayments;
 use App\Livewire\Requests\Concerns\ManagesRequestReview;
 use App\Models\Amenity;
+use App\Models\AuditLog;
 use App\Models\FacilityRequest;
 use App\Models\User;
 use App\Support\Ui;
+use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
@@ -59,11 +61,25 @@ class RequestManagement extends Component
 
     public bool $showPaymentModal = false;
 
+    public bool $showPaymentProofReplacementModal = false;
+
+    public ?int $paymentProofReplacementRequestId = null;
+
+    public string $paymentProofReplacementReason = '';
+
+    public bool $showPaymentProofPreview = false;
+
+    public ?string $paymentProofPreviewUrl = null;
+
+    public string $documentPreviewTitle = 'Payment proof';
+
     public ?int $paymentRequestId = null;
 
     public string $paymentAmount = '';
 
     public string $paymentDeadline = '';
+
+    public string $paymentDeadlineMaximum = '';
 
     public ?int $rejectingId = null;
 
@@ -85,13 +101,17 @@ class RequestManagement extends Component
 
     public string $search = '';
 
-    public $sortBy = 'priority';
+    public $sortBy = 'Created_at';
 
     public $sortDirection = 'asc';
 
     public string $statusFilter = '';
 
     public string $archiveStatusFilter = '';
+
+    public string $archiveSortBy = 'deleted_at';
+
+    public string $archiveSortDirection = 'asc';
 
     public RequestForm $form;
 
@@ -130,6 +150,8 @@ class RequestManagement extends Component
     public ?string $attachmentPath = null;
 
     public array $View_Daily_Schedules = [];
+
+    public array $Schedule_Changes = [];
 
     public ?string $Cancellation_Reason = null;
 
@@ -185,6 +207,22 @@ class RequestManagement extends Component
         $this->resetPage('requestsPage');
     }
 
+    public function sortArchived(string $column): void
+    {
+        if (! in_array($column, ['RID', 'requester', 'Proposed_Date', 'Proposed_Start_Time', 'event_type', 'facility', 'Status', 'deleted_at'], true)) {
+            return;
+        }
+
+        if ($this->archiveSortBy === $column) {
+            $this->archiveSortDirection = $this->archiveSortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->archiveSortBy = $column;
+            $this->archiveSortDirection = 'asc';
+        }
+
+        $this->resetPage('archivedRequestsPage');
+    }
+
     public function resetForm(): void
     {
         $this->form->Proposed_Date = now()->addDay()->toDateString();
@@ -215,6 +253,7 @@ class RequestManagement extends Component
         $this->Other_Purpose = null;
         $this->attachmentPath = null;
         $this->View_Daily_Schedules = [];
+        $this->Schedule_Changes = [];
         $this->Cancellation_Reason = null;
         $this->Rejection_Reason = null;
         $this->View_Review_Notes = null;
@@ -258,6 +297,28 @@ class RequestManagement extends Component
         $this->showViewModal = true;
     }
 
+    public function previewPaymentProof(int $requestId): void
+    {
+        $request = $this->getScopedRequest($requestId);
+
+        abort_unless($request->Payment_Proof_Path, 404);
+
+        $this->documentPreviewTitle = 'Payment proof';
+        $this->paymentProofPreviewUrl = route('requests.payment-proof.view', $request);
+        $this->showPaymentProofPreview = true;
+    }
+
+    public function previewAttachment(int $requestId): void
+    {
+        $request = $this->getScopedRequest($requestId);
+
+        abort_unless($request->attachment_path, 404);
+
+        $this->documentPreviewTitle = 'Request attachment';
+        $this->paymentProofPreviewUrl = route('requests.attachment.view', $request);
+        $this->showPaymentProofPreview = true;
+    }
+
     private function fillRequestDetails(FacilityRequest $request): void
     {
 
@@ -291,6 +352,20 @@ class RequestManagement extends Component
         $this->Created_By_Name = $request->creator?->name;
         $this->attachmentPath = $request->attachment_path;
         $this->View_Daily_Schedules = $request->Daily_Schedules ?? [];
+        $this->Schedule_Changes = AuditLog::query()
+            ->with('actor')
+            ->where('auditable_type', FacilityRequest::class)
+            ->where('auditable_id', $request->RID)
+            ->where('action', 'schedule_updated')
+            ->latest()
+            ->get()
+            ->map(fn (AuditLog $auditLog): array => [
+                'old' => $this->formatScheduleAuditValues($auditLog->old_values),
+                'new' => $this->formatScheduleAuditValues($auditLog->new_values),
+                'changed_by' => $auditLog->actor?->name ?? 'System',
+                'changed_at' => $auditLog->created_at?->format('M j, Y g:i A') ?? 'Unknown time',
+            ])
+            ->all();
         $this->Cancellation_Reason = $request->Cancellation_Reason;
         $this->Rejection_Reason = $request->Rejection_Reason;
         $this->View_Review_Notes = $request->Review_Notes;
@@ -307,12 +382,42 @@ class RequestManagement extends Component
         $this->Other_Purpose = $request->Other_Purpose;
     }
 
+    /**
+     * @param  array<string, mixed>|null  $values
+     * @return array{date: string, start: string, end: string}
+     */
+    private function formatScheduleAuditValues(?array $values): array
+    {
+        return [
+            'date' => filled($values['Date'] ?? null)
+                ? Carbon::parse($values['Date'])->format('M d, Y')
+                : 'Not recorded',
+            'start' => $this->formatScheduleAuditTime($values['Start_Time'] ?? null),
+            'end' => $this->formatScheduleAuditTime($values['End_Time'] ?? null),
+        ];
+    }
+
+    private function formatScheduleAuditTime(?string $time): string
+    {
+        $time = substr((string) $time, 0, 5);
+
+        if ($time === '') {
+            return 'Not recorded';
+        }
+
+        if ($time === '24:00') {
+            return '12:00 AM (next day)';
+        }
+
+        return Carbon::createFromFormat('H:i', $time)->format('g:i A');
+    }
+
     public function edit(int $requestId): void
     {
         $request = $this->getScopedRequest($requestId);
 
-        if ($request->Status === 'Cancelled') {
-            Ui::toast(text: 'Cancelled requests are read-only and cannot be edited.', variant: 'warning');
+        if (in_array($request->Status, ['Cancelled', 'Expired'], true)) {
+            Ui::toast(text: "{$request->Status} requests are read-only and cannot be edited.", variant: 'warning');
 
             return;
         }
@@ -338,9 +443,9 @@ class RequestManagement extends Component
     {
         $request = $this->getScopedRequest($this->editingId);
         abort_if(
-            $request->Status === 'Cancelled',
+            in_array($request->Status, ['Cancelled', 'Expired'], true),
             409,
-            'Cancelled requests are read-only and cannot be edited.',
+            'Closed requests are read-only and cannot be edited.',
         );
 
         $this->validate([
@@ -415,6 +520,8 @@ class RequestManagement extends Component
             auth()->user(),
             $this->search,
             $this->archiveStatusFilter,
+            $this->archiveSortBy,
+            $this->archiveSortDirection,
         );
     }
 

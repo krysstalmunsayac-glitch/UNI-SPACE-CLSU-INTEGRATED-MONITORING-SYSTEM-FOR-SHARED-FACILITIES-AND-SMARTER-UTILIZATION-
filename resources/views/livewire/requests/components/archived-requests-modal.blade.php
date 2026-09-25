@@ -13,21 +13,38 @@
                 <x-ui::select.option value="">All statuses</x-ui::select.option>
                 <x-ui::select.option value="Cancelled">Cancelled</x-ui::select.option>
                 <x-ui::select.option value="Approved">Approved</x-ui::select.option>
-                <x-ui::select.option value="Ended">Event Ended</x-ui::select.option>
+                <x-ui::select.option value="Expired">Expired</x-ui::select.option>
+                <x-ui::select.option value="Ended">Completed</x-ui::select.option>
                 <x-ui::select.option value="Rejected">Rejected</x-ui::select.option>
             </x-ui::select>
 
             <div class="min-h-56 overflow-x-auto">
                 <x-ui::table :paginate="$this->archivedRequests" class="request-data-table">
                     <x-ui::table.columns>
-                        <x-ui::table.column>Request ID</x-ui::table.column>
-                        <x-ui::table.column>User</x-ui::table.column>
-                        <x-ui::table.column>Event date</x-ui::table.column>
-                        <x-ui::table.column>Time</x-ui::table.column>
-                        <x-ui::table.column>Event type</x-ui::table.column>
-                        <x-ui::table.column>Facility</x-ui::table.column>
-                        <x-ui::table.column>Status</x-ui::table.column>
-                        <x-ui::table.column>Archived</x-ui::table.column>
+                        <x-ui::table.column sortable :sorted="$archiveSortBy === 'RID'" :direction="$archiveSortDirection" wire:click="sortArchived('RID')">
+                            Request ID
+                        </x-ui::table.column>
+                        <x-ui::table.column sortable :sorted="$archiveSortBy === 'requester'" :direction="$archiveSortDirection" wire:click="sortArchived('requester')">
+                            User
+                        </x-ui::table.column>
+                        <x-ui::table.column sortable :sorted="$archiveSortBy === 'Proposed_Date'" :direction="$archiveSortDirection" wire:click="sortArchived('Proposed_Date')">
+                            Event date
+                        </x-ui::table.column>
+                        <x-ui::table.column sortable :sorted="$archiveSortBy === 'Proposed_Start_Time'" :direction="$archiveSortDirection" wire:click="sortArchived('Proposed_Start_Time')">
+                            Time
+                        </x-ui::table.column>
+                        <x-ui::table.column sortable :sorted="$archiveSortBy === 'event_type'" :direction="$archiveSortDirection" wire:click="sortArchived('event_type')">
+                            Event type
+                        </x-ui::table.column>
+                        <x-ui::table.column sortable :sorted="$archiveSortBy === 'facility'" :direction="$archiveSortDirection" wire:click="sortArchived('facility')">
+                            Facility
+                        </x-ui::table.column>
+                        <x-ui::table.column sortable :sorted="$archiveSortBy === 'Status'" :direction="$archiveSortDirection" wire:click="sortArchived('Status')">
+                            Status
+                        </x-ui::table.column>
+                        <x-ui::table.column sortable :sorted="$archiveSortBy === 'deleted_at'" :direction="$archiveSortDirection" wire:click="sortArchived('deleted_at')">
+                            Archived
+                        </x-ui::table.column>
                         <x-ui::table.column>Actions</x-ui::table.column>
                     </x-ui::table.columns>
 
@@ -83,11 +100,12 @@
                                             'Approved' => 'green',
                                             'Rejected' => 'red',
                                             'Cancelled' => 'amber',
+                                            'Expired' => 'zinc',
                                             'Ended' => 'zinc',
                                             default => 'blue',
                                         }"
                                     >
-                                        {{ $request->Status === 'Ended' ? 'Event Ended' : $request->Status }}
+                                        {{ $request->Status === 'Ended' ? 'Completed' : $request->Status }}
                                     </x-ui::badge>
                                 </x-ui::table.cell>
                                 <x-ui::table.cell class="whitespace-nowrap">

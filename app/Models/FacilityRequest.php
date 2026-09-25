@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Notifications\RequestFeedbackRequested;
+use App\Notifications\RequestStatusUpdated;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,6 +14,10 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
+use Throwable;
 
 class FacilityRequest extends Model
 {
@@ -72,6 +78,7 @@ class FacilityRequest extends Model
         'Payment_Deadline',
         'Payment_Proof_Path',
         'Payment_Proof_Uploaded_At',
+        'Payment_Proof_Replacement_Reason',
         'Cancellation_Reason',
         'Rejection_Reason',
         'Review_Notes',
@@ -106,6 +113,7 @@ class FacilityRequest extends Model
         'Approved' => ['Cancelled', 'Ended'],
         'Rejected' => [],
         'Cancelled' => [],
+        'Expired' => [],
         'Ended' => [],
     ];
 
@@ -187,6 +195,7 @@ class FacilityRequest extends Model
                 'Approved' => 'request_approved',
                 'Rejected' => 'request_rejected',
                 'Cancelled' => 'request_cancelled',
+                'Expired' => 'request_expired',
                 'Ended' => 'event_ended',
                 default => array_key_exists('Review_Requested_At', $changes)
                     ? 'revision_requested'
@@ -198,7 +207,8 @@ class FacilityRequest extends Model
                 'request_approved' => "Approved request #{$request->RID}.",
                 'request_rejected' => "Rejected request #{$request->RID}.",
                 'request_cancelled' => "Cancelled request #{$request->RID}.",
-                'event_ended' => "Marked event for request #{$request->RID} as ended.",
+                'request_expired' => "Marked request #{$request->RID} as expired.",
+                'event_ended' => "Marked event for request #{$request->RID} as completed.",
                 'revision_requested' => "Requested revisions for request #{$request->RID}.",
                 default => "Updated request #{$request->RID}.",
             };
@@ -209,7 +219,14 @@ class FacilityRequest extends Model
                 $request->loadMissing(['user', 'facility']);
 
                 if ($request->user && $request->Facility_ID) {
-                    $request->user->notify(new RequestFeedbackRequested($request));
+                    try {
+                        $request->user->notify(new RequestFeedbackRequested($request));
+                    } catch (Throwable $exception) {
+                        Log::warning('Request was completed, but its feedback notification could not be delivered.', [
+                            'request_id' => $request->RID,
+                            'exception' => $exception,
+                        ]);
+                    }
                 }
             }
         });
@@ -226,11 +243,39 @@ class FacilityRequest extends Model
             "Restored request #{$request->RID}.",
         ));
 
-        static::forceDeleted(fn (FacilityRequest $request) => AuditLog::recordRequest(
-            $request,
-            'request_deleted',
-            "Permanently deleted request #{$request->RID}.",
-        ));
+        static::forceDeleted(function (FacilityRequest $request): void {
+            $request->deleteStoredDocuments();
+
+            AuditLog::recordRequest(
+                $request,
+                'request_deleted',
+                "Permanently deleted request #{$request->RID}.",
+            );
+        });
+    }
+
+    private function deleteStoredDocuments(): void
+    {
+        $paths = collect([$this->attachment_path, $this->Payment_Proof_Path])
+            ->filter(fn ($path): bool => is_string($path) && $path !== '')
+            ->unique();
+
+        foreach ($paths as $path) {
+            try {
+                if (! Storage::disk('local')->delete($path)) {
+                    Log::warning('A request was permanently deleted, but one of its private documents could not be removed.', [
+                        'request_id' => $this->RID,
+                        'path' => $path,
+                    ]);
+                }
+            } catch (Throwable $exception) {
+                Log::warning('A request was permanently deleted, but removing one of its private documents failed.', [
+                    'request_id' => $this->RID,
+                    'path' => $path,
+                    'exception' => $exception,
+                ]);
+            }
+        }
     }
 
     public function user(): BelongsTo
@@ -270,7 +315,7 @@ class FacilityRequest extends Model
             'request_facility_amenities',
             'Request_ID',
             'Amenity_ID'
-        )->withPivot('quantity')->withTimestamps();
+        )->withTrashed()->withPivot('quantity')->withTimestamps();
     }
 
     public function schedule(): HasOne
@@ -291,14 +336,17 @@ class FacilityRequest extends Model
     }
 
     /**
-     * Mark active requests as ended and archive them once their end time passes.
+     * Close and archive requests once their proposed end time passes.
+     *
+     * Requests that were never approved expire. Only approved reservations
+     * are treated as completed events.
      */
     public static function markPastRequestsAsEnded(): int
     {
         $today = now()->toDateString();
         $currentTime = now()->format('H:i:s');
 
-        $endedCount = 0;
+        $closedCount = 0;
 
         static::query()
             ->whereIn('Status', ['Pending', 'Awaiting Payment', 'Approved'])
@@ -310,31 +358,121 @@ class FacilityRequest extends Model
                     });
             })
             ->with(['user', 'facility'])
-            ->select(['RID', 'User_ID', 'Facility_ID', 'Status'])
-            ->chunkById(100, function ($requests) use (&$endedCount): void {
+            ->select([
+                'RID',
+                'User_ID',
+                'Facility_ID',
+                'Is_Guest_Booking',
+                'Guest_Email',
+                'Proposed_Date',
+                'Proposed_End_Date',
+                'Proposed_Start_Time',
+                'Proposed_End_Time',
+                'Status',
+            ])
+            ->chunkById(100, function ($requests) use (&$closedCount): void {
                 foreach ($requests as $request) {
                     $oldStatus = $request->Status;
-                    $request->updateQuietly(['Status' => 'Ended']);
+                    $newStatus = $oldStatus === 'Approved' ? 'Ended' : 'Expired';
+                    $action = $newStatus === 'Expired' ? 'request_expired' : 'event_ended';
+                    $description = $newStatus === 'Expired'
+                        ? "Automatically expired pending request #{$request->RID} after its event time passed."
+                        : "Automatically marked event for request #{$request->RID} as completed.";
+
+                    $request->updateQuietly(['Status' => $newStatus]);
 
                     AuditLog::recordRequest(
                         $request,
-                        'event_ended',
-                        "Automatically marked event for request #{$request->RID} as ended.",
+                        $action,
+                        $description,
                         ['Status' => $oldStatus],
-                        ['Status' => 'Ended'],
+                        ['Status' => $newStatus],
                         useAuthenticatedActor: false,
                     );
 
-                    if ($request->user && $request->Facility_ID) {
-                        $request->user->notify(new RequestFeedbackRequested($request));
-                    }
-
                     $request->delete();
-                    $endedCount++;
+                    $closedCount++;
+
+                    if ($newStatus === 'Expired') {
+                        try {
+                            if ($request->user) {
+                                $request->user->notify(new RequestStatusUpdated($request, $oldStatus));
+                            } elseif ($request->Is_Guest_Booking && $request->Guest_Email) {
+                                Notification::route('mail', $request->Guest_Email)
+                                    ->notify(new RequestStatusUpdated($request, $oldStatus));
+                            }
+                        } catch (Throwable $exception) {
+                            Log::warning('Request was expired and archived, but its status notification could not be delivered.', [
+                                'request_id' => $request->RID,
+                                'exception' => $exception,
+                            ]);
+                        }
+                    } elseif ($request->user && $request->Facility_ID) {
+                        try {
+                            $request->user->notify(new RequestFeedbackRequested($request));
+                        } catch (Throwable $exception) {
+                            Log::warning('Request was completed and archived, but its feedback notification could not be delivered.', [
+                                'request_id' => $request->RID,
+                                'exception' => $exception,
+                            ]);
+                        }
+                    }
                 }
             }, 'RID', 'RID');
 
-        return $endedCount;
+        return $closedCount;
+    }
+
+    /**
+     * Expire unpaid requests after their payment deadline. A proof uploaded on
+     * time keeps the request open for administrator review.
+     */
+    public static function expireOverduePaymentRequests(): int
+    {
+        $expiredCount = 0;
+
+        static::query()
+            ->where('Status', 'Awaiting Payment')
+            ->whereNull('Payment_Proof_Path')
+            ->whereNotNull('Payment_Deadline')
+            ->where('Payment_Deadline', '<=', now())
+            ->with(['user', 'facility'])
+            ->chunkById(100, function ($requests) use (&$expiredCount): void {
+                foreach ($requests as $request) {
+                    $oldStatus = $request->Status;
+
+                    $request->schedules()->delete();
+                    $request->updateQuietly(['Status' => 'Expired']);
+
+                    AuditLog::recordRequest(
+                        $request,
+                        'request_expired',
+                        "Automatically expired request #{$request->RID} after its payment deadline passed.",
+                        ['Status' => $oldStatus],
+                        ['Status' => 'Expired'],
+                        useAuthenticatedActor: false,
+                    );
+
+                    $request->delete();
+                    $expiredCount++;
+
+                    try {
+                        if ($request->user) {
+                            $request->user->notify(new RequestStatusUpdated($request, $oldStatus));
+                        } elseif ($request->Is_Guest_Booking && $request->Guest_Email) {
+                            Notification::route('mail', $request->Guest_Email)
+                                ->notify(new RequestStatusUpdated($request, $oldStatus));
+                        }
+                    } catch (Throwable $exception) {
+                        Log::warning('Request was expired after its payment deadline, but its status notification could not be delivered.', [
+                            'request_id' => $request->RID,
+                            'exception' => $exception,
+                        ]);
+                    }
+                }
+            }, 'RID', 'RID');
+
+        return $expiredCount;
     }
 
     /**
@@ -374,6 +512,42 @@ class FacilityRequest extends Model
             'start' => $this->Proposed_Start_Time?->format('H:i') ?? '00:00',
             'end' => $this->Proposed_End_Time?->format('H:i') ?? '00:00',
         ];
+    }
+
+    public function scheduledStartAt(): ?Carbon
+    {
+        $firstDate = $this->Proposed_Date?->toDateString();
+
+        if (! $firstDate) {
+            return null;
+        }
+
+        $schedule = $this->scheduleForDate($firstDate);
+
+        return $schedule ? $this->scheduledDateTime($firstDate, $schedule['start']) : null;
+    }
+
+    public function scheduledEndAt(): ?Carbon
+    {
+        $lastDate = ($this->Proposed_End_Date ?? $this->Proposed_Date)?->toDateString();
+
+        if (! $lastDate) {
+            return null;
+        }
+
+        $schedule = $this->scheduleForDate($lastDate);
+
+        return $schedule ? $this->scheduledDateTime($lastDate, $schedule['end']) : null;
+    }
+
+    private function scheduledDateTime(string $date, string $time): Carbon
+    {
+        [$hours, $minutes, $seconds] = array_pad(array_map('intval', explode(':', $time)), 3, 0);
+
+        return Carbon::parse($date)->startOfDay()
+            ->addHours($hours)
+            ->addMinutes($minutes)
+            ->addSeconds($seconds);
     }
 
     /** @param array<int, array{date:string,start:string,end:string}> $dailySchedules */
