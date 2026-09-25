@@ -93,8 +93,9 @@
 
         #mobile-navigation > div > a:hover,
         #mobile-navigation > div > a:focus-visible {
-            background: rgba(255, 255, 255, .12) !important;
             color: #fff !important;
+            outline: 2px solid rgba(255, 255, 255, .7);
+            outline-offset: 2px;
         }
 
         .header-profile-control * {
