@@ -53,9 +53,10 @@
                     sharedEndTime: @js(data_get(old('Daily_Schedules', []), '0.end', '')),
                     slots: @js($scheduling['slots']),
                     endSlots: [...@js($scheduling['slots']), @js($scheduling['closes_at'])],
+                    maximumScheduleDays: @js($scheduling['maximum_days']),
                     availabilityUrl: @js($scheduling['availability_url']),
                     amenityAvailability: @js($additionalAmenities->mapWithKeys(fn ($amenity) => [(string) $amenity->AID => $amenity->inventory_quantity])),
-                    bookingToday: @js(today()->toDateString()),
+                    bookingToday: @js($historicalEntry ? '0000-01-01' : today()->toDateString()),
                     bookingCurrentTime: @js(now()->format('H:i')),
                     customizeDailyTimes: @js(collect(old('Daily_Schedules', []))->map(fn ($schedule) => ($schedule['start'] ?? '').'|'.($schedule['end'] ?? ''))->unique()->count() > 1),
                     eventType: @js(old('Type_Event', '')),
@@ -97,7 +98,7 @@
                             return `${year}-${month}-${day}`;
                         };
 
-                        while (current <= last && schedules.length < 31) {
+                        while (current <= last && schedules.length < this.maximumScheduleDays) {
                             const date = formatDate(current);
                             schedules.push(previous.get(date) ?? { date, start: this.sharedStartTime, end: this.sharedEndTime });
                             current.setDate(current.getDate() + 1);
@@ -399,6 +400,9 @@
                         >
                             @csrf
                             <input type="hidden" name="_step" x-bind:value="step">
+                            @if ($guestBooking)
+                                <input type="hidden" name="Initial_Status" value="{{ $initialStatus }}">
+                            @endif
 
                             @include('requests.steps.event-details')
 

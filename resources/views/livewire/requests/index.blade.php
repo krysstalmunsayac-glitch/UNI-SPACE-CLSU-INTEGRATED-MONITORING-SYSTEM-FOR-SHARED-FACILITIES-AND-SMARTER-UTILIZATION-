@@ -11,6 +11,9 @@
     @else
     @include('livewire.requests.components.page-header')
     @include('livewire.requests.components.requests-table')
+    @if ($showWalkInRequestModal)
+        @include('livewire.requests.components.walk-in-request-modal')
+    @endif
     @if ($showArchivedModal)
         <x-ui::modal wire:model.self="showArchivedModal" class="w-[95vw] max-w-7xl">
             @include('livewire.requests.components.archived-requests-modal')
@@ -42,5 +45,4 @@
     @endif
     @endif
 </div>
-
 

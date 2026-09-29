@@ -231,7 +231,7 @@ class RequestWorkflowService
         if ($data['Status'] !== $previousStatus) {
             $this->notifyStatusChange($request, $previousStatus);
         }
-        if ($data['Status'] === 'Cancelled' && $previousStatus !== 'Cancelled') {
+        if ($data['Status'] !== 'Approved' && $wasApproved) {
             $request->schedules()->delete();
         }
         if ($data['Status'] === 'Approved' && ! $wasApproved) {

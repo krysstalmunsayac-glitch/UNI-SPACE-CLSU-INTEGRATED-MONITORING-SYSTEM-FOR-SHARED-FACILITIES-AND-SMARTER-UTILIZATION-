@@ -18,6 +18,9 @@
                     </div>
                 </div>
             </div>
+            <x-ui::button variant="primary" icon="plus" wire:click="openWalkInRequestModal">
+                New walk-in request
+            </x-ui::button>
         </div>
     </div>
 
@@ -60,4 +63,3 @@
         </x-ui::select>
     </div>
 </section>
-

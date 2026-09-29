@@ -10,6 +10,7 @@ use App\Livewire\Requests\Concerns\ManagesRequestPayments;
 use App\Livewire\Requests\Concerns\ManagesRequestReview;
 use App\Models\Amenity;
 use App\Models\AuditLog;
+use App\Models\Facility;
 use App\Models\FacilityRequest;
 use App\Models\User;
 use App\Support\Ui;
@@ -40,6 +41,12 @@ class RequestManagement extends Component
     public bool $viewingArchived = false;
 
     public bool $showArchivedModal = false;
+
+    public bool $showWalkInRequestModal = false;
+
+    public ?int $walkInFacilityId = null;
+
+    public string $walkInInitialStatus = 'Pending';
 
     public bool $archiveOnly = false;
 
@@ -267,6 +274,40 @@ class RequestManagement extends Component
         $this->reviewingId = null;
         $this->reviewNotes = '';
         $this->resetValidation();
+    }
+
+    public function openWalkInRequestModal(): void
+    {
+        $this->walkInFacilityId = null;
+        $this->walkInInitialStatus = 'Pending';
+        $this->resetValidation('walkInFacilityId');
+        $this->showWalkInRequestModal = true;
+    }
+
+    public function beginWalkInRequest(): void
+    {
+        $this->validate([
+            'walkInFacilityId' => ['required', 'integer'],
+            'walkInInitialStatus' => ['required', Rule::in(['Pending', 'Approved', 'Ended'])],
+        ]);
+
+        $facility = Facility::query()
+            ->where('Status', 'Available')
+            ->when(
+                auth()->user()->isAdmin(),
+                fn ($query) => $query->whereHas(
+                    'assignedAdmins',
+                    fn ($admins) => $admins->where('users.id', auth()->id()),
+                ),
+            )
+            ->findOrFail($this->walkInFacilityId);
+
+        abort_if($this->walkInInitialStatus === 'Ended' && ! auth()->user()->isSuperAdmin(), 403);
+
+        $this->redirectRoute('admin.requests.create', [
+            'facility' => $facility->FID,
+            'initial_status' => $this->walkInInitialStatus,
+        ], navigate: true);
     }
 
     public function showRequest(int $requestId): void
@@ -535,6 +576,22 @@ class RequestManagement extends Component
             $this->sortBy,
             $this->sortDirection,
         );
+    }
+
+    #[Computed]
+    public function walkInFacilities()
+    {
+        return Facility::query()
+            ->where('Status', 'Available')
+            ->when(
+                auth()->user()->isAdmin(),
+                fn ($query) => $query->whereHas(
+                    'assignedAdmins',
+                    fn ($admins) => $admins->where('users.id', auth()->id()),
+                ),
+            )
+            ->orderBy('Facility_Name')
+            ->get(['FID', 'Facility_Name', 'Office']);
     }
 
     #[Computed]

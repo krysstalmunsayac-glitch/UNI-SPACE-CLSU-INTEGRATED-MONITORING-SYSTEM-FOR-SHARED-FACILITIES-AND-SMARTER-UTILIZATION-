@@ -31,11 +31,11 @@ class RequestForm extends Form
         return [
             'Event_ID' => ['nullable', 'integer'],
             'User_ID' => ['nullable', 'integer'],
-            'Proposed_Date' => ['required', 'date', 'after:today'],
+            'Proposed_Date' => ['required', 'date'],
             'Proposed_End_Date' => ['required', 'date', 'after_or_equal:Proposed_Date'],
             'Proposed_Start_Time' => ['required', 'date_format:H:i'],
             'Proposed_End_Time' => ['required', 'date_format:H:i', 'after:Proposed_Start_Time'],
-            'Status' => ['required', 'in:Pending,Approved,Rejected,Cancelled'],
+            'Status' => ['required', 'in:Pending,Awaiting Payment,Approved,Rejected,Cancelled,Expired,Ended'],
             'Purpose' => ['required', 'string', 'min:5', 'max:1000'],
             'Request_Details' => ['required', 'string', 'min:5', 'max:2000'],
             'Capacity' => ['nullable', 'integer', 'min:1', 'max:100000'],

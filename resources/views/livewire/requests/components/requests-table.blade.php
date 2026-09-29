@@ -140,6 +140,9 @@
                                     <x-ui::menu.item icon="eye" wire:click="showRequest({{ $request->RID }})">
                                         View details
                                     </x-ui::menu.item>
+                                    <x-ui::menu.item icon="pencil-square" wire:click="edit({{ $request->RID }})">
+                                        Edit request
+                                    </x-ui::menu.item>
                                     @if ($request->canBeReviewed() && ! $request->Is_Guest_Booking)
                                         <x-ui::menu.item
                                             icon="document-magnifying-glass"
@@ -245,4 +248,3 @@
             </x-ui::table.rows>
         </x-ui::table>
     </x-ui::card>
-

@@ -128,11 +128,12 @@ class FacilityAvailabilityService
             ->all();
     }
 
-    public function validateSchedules(int $facilityId, string $firstDate, string $lastDate, array $submitted, ?int $ignoreRequestId = null, bool $lock = false): array
+    public function validateSchedules(int $facilityId, string $firstDate, string $lastDate, array $submitted, ?int $ignoreRequestId = null, bool $lock = false, ?int $maxDays = null): array
     {
+        $maxDays ??= self::MAX_DAYS;
         $expected = collect(CarbonPeriod::create($firstDate, $lastDate))->map->format('Y-m-d')->values();
-        if ($expected->count() > self::MAX_DAYS) {
-            throw ValidationException::withMessages(['Proposed_End_Date' => 'A reservation may cover no more than 31 consecutive days.']);
+        if ($expected->count() > $maxDays) {
+            throw ValidationException::withMessages(['Proposed_End_Date' => "A reservation may cover no more than {$maxDays} consecutive days."]);
         }
 
         $items = collect($submitted);

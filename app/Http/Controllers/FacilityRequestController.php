@@ -21,6 +21,8 @@ use Throwable;
 
 class FacilityRequestController extends Controller
 {
+    private const HISTORICAL_MAX_DAYS = 366;
+
     public function __construct(
         private readonly BookingRequestValidator $validator,
         private readonly RequestSubmissionService $submissions,
@@ -68,6 +70,14 @@ class FacilityRequestController extends Controller
         $additionalAmenities = $availableAmenities->reject->isPermanent()->values();
 
         $events = Event::orderBy('Event_Title')->get();
+        $initialStatus = $guestBooking && in_array(request()->query('initial_status'), ['Approved', 'Ended'], true)
+            ? request()->query('initial_status')
+            : 'Pending';
+        abort_if($initialStatus === 'Ended' && ! auth()->user()->isSuperAdmin(), 403);
+        $historicalEntry = $initialStatus === 'Ended';
+        $defaultScheduleDate = $historicalEntry
+            ? today()->subDay()->toDateString()
+            : app(BookingPolicy::class)->earliestDate(auth()->user());
 
         $scheduling = [
             'slots' => $availability->slots(),
@@ -76,8 +86,9 @@ class FacilityRequestController extends Controller
             'minimum_minutes' => $availability::MINIMUM_MINUTES,
             'buffer_minutes' => $availability::BUFFER_MINUTES,
             'availability_url' => $guestBooking
-                ? route('admin.requests.availability', $facility)
+                ? route('admin.requests.availability', ['facility' => $facility, 'historical' => $historicalEntry])
                 : route('requests.availability', $facility),
+            'maximum_days' => $historicalEntry ? self::HISTORICAL_MAX_DAYS : FacilityAvailabilityService::MAX_DAYS,
         ];
 
         return view('requests.create', compact(
@@ -88,6 +99,9 @@ class FacilityRequestController extends Controller
             'additionalAmenities',
             'scheduling',
             'guestBooking',
+            'initialStatus',
+            'historicalEntry',
+            'defaultScheduleDate',
         ));
     }
 
@@ -101,17 +115,21 @@ class FacilityRequestController extends Controller
     public function availability(Request $request, Facility $facility, FacilityAvailabilityService $availability)
     {
         abort_unless($facility->Status === 'Available', 409);
+        $historical = $request->boolean('historical');
+        abort_if($historical && ! auth()->user()->isSuperAdmin(), 403);
+
         $validated = $request->validate([
-            'from' => ['required', 'date', 'after_or_equal:'.app(BookingPolicy::class)->earliestDate(auth()->user())],
+            'from' => ['required', 'date', ...($historical ? [] : ['after_or_equal:'.app(BookingPolicy::class)->earliestDate(auth()->user())])],
             'to' => ['required', 'date', 'after_or_equal:from'],
-            'schedules' => ['sometimes', 'array', 'max:31'],
+            'schedules' => ['sometimes', 'array', 'max:'.($historical ? self::HISTORICAL_MAX_DAYS : FacilityAvailabilityService::MAX_DAYS)],
             'schedules.*.date' => ['required_with:schedules', 'date_format:Y-m-d'],
             'schedules.*.start' => ['required_with:schedules', 'date_format:H:i'],
             'schedules.*.end' => ['required_with:schedules', 'regex:/^(?:[01]\d|2[0-3]):[0-5]\d|24:00$/'],
         ]);
 
-        if (Carbon::parse($validated['from'])->diffInDays(Carbon::parse($validated['to'])) >= FacilityAvailabilityService::MAX_DAYS) {
-            throw ValidationException::withMessages(['to' => 'Availability may be requested for no more than 31 days.']);
+        $maximumDays = $historical ? self::HISTORICAL_MAX_DAYS : FacilityAvailabilityService::MAX_DAYS;
+        if (Carbon::parse($validated['from'])->diffInDays(Carbon::parse($validated['to'])) >= $maximumDays) {
+            throw ValidationException::withMessages(['to' => "Availability may be requested for no more than {$maximumDays} days."]);
         }
 
         $response = $availability->availability($facility->FID, $validated['from'], $validated['to']);
@@ -144,7 +162,11 @@ class FacilityRequestController extends Controller
 
         $earliestReservationDate = app(BookingPolicy::class)->earliestDate(auth()->user());
 
+        $historicalEntry = $guestBooking && $request->input('Initial_Status') === 'Ended';
+        abort_if($historicalEntry && ! auth()->user()->isSuperAdmin(), 403);
+
         $validated = $request->validate([
+            'Initial_Status' => ['nullable', Rule::in(['Pending', 'Approved', 'Ended'])],
             'Guest_Name' => [$guestBooking ? 'required' : 'nullable', 'string', 'min:2', 'max:150', 'regex:/^(?=.*\pL).+$/u'],
             'Guest_Organization' => ['nullable', 'string', 'max:200'],
             'Guest_Email' => ['nullable', 'email:rfc', 'max:255'],
@@ -174,9 +196,9 @@ class FacilityRequestController extends Controller
             'Type_Event' => ['required', Rule::in(['Meeting', 'Seminar', 'Workshop', 'Conference', 'Other'])],
             'Event_Scope' => ['required', Rule::in(['Internal', 'External'])],
             'Other_Event_Type' => ['nullable', 'required_if:Type_Event,Other', 'string', 'max:100', 'regex:/^(?=.*\pL)[\pL\s]+$/u'],
-            'Proposed_Date' => ['required', 'date', 'after_or_equal:'.$earliestReservationDate],
+            'Proposed_Date' => ['required', 'date', ...($historicalEntry ? [] : ['after_or_equal:'.$earliestReservationDate])],
             'Proposed_End_Date' => ['required', 'date', 'after_or_equal:Proposed_Date'],
-            'Daily_Schedules' => ['required', 'array', 'min:1', 'max:31'],
+            'Daily_Schedules' => ['required', 'array', 'min:1', 'max:'.($historicalEntry ? self::HISTORICAL_MAX_DAYS : FacilityAvailabilityService::MAX_DAYS)],
             'Daily_Schedules.*.date' => ['required', 'date_format:Y-m-d'],
             'Daily_Schedules.*.start' => ['required', 'date_format:H:i'],
             'Daily_Schedules.*.end' => ['required', 'regex:/^(?:[01]\d|2[0-3]):[0-5]\d|24:00$/'],
@@ -193,14 +215,21 @@ class FacilityRequestController extends Controller
             'Capacity.required' => 'Enter the expected number of attendees.',
         ]);
 
+        if ($guestBooking) {
+            $validated['Initial_Status'] = $validated['Initial_Status'] ?? 'Pending';
+        }
+
         $dailySchedules = $availability->validateSchedules(
             $facility->FID,
             $validated['Proposed_Date'],
             $validated['Proposed_End_Date'],
             $validated['Daily_Schedules'],
+            maxDays: $historicalEntry ? self::HISTORICAL_MAX_DAYS : null,
         );
         $firstSchedule = $dailySchedules[0];
-        app(BookingPolicy::class)->validateFutureStart($firstSchedule['date'], $firstSchedule['start'], 'Daily_Schedules.0.start');
+        if (! $historicalEntry) {
+            app(BookingPolicy::class)->validateFutureStart($firstSchedule['date'], $firstSchedule['start'], 'Daily_Schedules.0.start');
+        }
 
         if (($validated['Type_Event'] ?? null) === 'Other') {
             $validated['Type_Event'] = trim($validated['Other_Event_Type']);
@@ -256,7 +285,7 @@ class FacilityRequestController extends Controller
         }
 
         return redirect()
-            ->route($guestBooking ? 'Request' : 'dashboard', $guestBooking ? ['request' => $requestModel->RID] : [])
+            ->route($guestBooking ? 'requests.index' : 'dashboard', $guestBooking ? ['request' => $requestModel->RID] : [])
             ->with('success', $guestBooking
                 ? 'The guest facility request has been submitted successfully.'
                 : 'Your request has been submitted successfully.')

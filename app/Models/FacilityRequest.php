@@ -113,8 +113,9 @@ class FacilityRequest extends Model
         'Approved' => ['Cancelled', 'Ended'],
         'Rejected' => [],
         'Cancelled' => [],
+        // Administrators may correct the final status of historical requests.
         'Expired' => [],
-        'Ended' => [],
+        'Ended' => ['Pending', 'Approved', 'Rejected', 'Cancelled'],
     ];
 
     public function canTransitionTo(string $status): bool

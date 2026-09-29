@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Actions\Schedules\CreateSchedule;
 use App\Models\Event;
 use App\Models\Facility;
 use App\Models\FacilityRequest;
@@ -16,7 +17,10 @@ use Throwable;
 
 class RequestSubmissionService
 {
-    public function __construct(private readonly BookingRequestValidator $validator) {}
+    public function __construct(
+        private readonly BookingRequestValidator $validator,
+        private readonly CreateSchedule $createSchedule,
+    ) {}
 
     public function submitEvent(Event $event, User $actor, array $validated): FacilityRequest
     {
@@ -121,7 +125,9 @@ class RequestSubmissionService
                 'Proposed_Start_Time' => $firstSchedule['start'],
                 'Proposed_End_Time' => $lastSchedule['end'],
                 'Daily_Schedules' => $dailySchedules,
-                'Status' => 'Pending',
+                // Administrators may keep a direct request pending for review or
+                // approve it immediately; regular user requests always start pending.
+                'Status' => $guestBooking ? ($validated['Initial_Status'] ?? 'Pending') : 'Pending',
                 'Purpose' => $validated['Purpose'],
                 'Request_Details' => $validated['Request_Details'],
                 'Purpose_Categories' => $validated['Purpose_Categories'],
@@ -135,6 +141,18 @@ class RequestSubmissionService
                     fn (int $quantity, int $amenityId) => [$amenityId => ['quantity' => $quantity]]
                 )->all()
             );
+
+            if ($guestBooking && in_array($request->Status, ['Approved', 'Ended'], true)) {
+                foreach ($dailySchedules as $schedule) {
+                    $this->createSchedule->handle([
+                        'Request_ID' => $request->RID,
+                        'Date' => $schedule['date'],
+                        'Start_Time' => $schedule['start'],
+                        'End_Time' => $schedule['end'],
+                        'Status' => 'Booked',
+                    ]);
+                }
+            }
 
             return $request;
         }, 3);

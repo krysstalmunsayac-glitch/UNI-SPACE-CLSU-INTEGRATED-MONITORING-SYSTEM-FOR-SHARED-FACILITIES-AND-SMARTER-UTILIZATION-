@@ -125,5 +125,55 @@ class DatabaseSeeder extends Seeder
                     ->forceDelete();
             }
         }
+
+        // Dedicated historical records make the Archived Requests screen useful
+        // immediately after seeding, including its Actions menu (view, restore,
+        // and permanent delete).
+        $historicalStatuses = ['Ended', 'Cancelled', 'Rejected', 'Expired'];
+
+        foreach ($historicalStatuses as $index => $status) {
+            $user = $requestUsers[$index % $requestUsers->count()];
+            $facility = $requestFacilities[$index % $requestFacilities->count()];
+            $eventDate = now()->subMonths($index + 2)->startOfDay()->addHours(9);
+            $purpose = 'Archived Request Preview '.($index + 1);
+
+            $historicalRequest = FacilityRequest::withTrashed()->updateOrCreate(
+                ['User_ID' => $user->id, 'Purpose' => $purpose],
+                [
+                    'Event_ID' => $seedEvent->EID,
+                    'Facility_ID' => $facility->FID,
+                    'Proposed_Date' => $eventDate->toDateString(),
+                    'Proposed_End_Date' => $eventDate->toDateString(),
+                    'Proposed_Start_Time' => '09:00:00',
+                    'Proposed_End_Time' => '11:00:00',
+                    'Daily_Schedules' => [[
+                        'date' => $eventDate->toDateString(),
+                        'start' => '09:00',
+                        'end' => '11:00',
+                    ]],
+                    'Status' => $status,
+                    'Cancellation_Reason' => $status === 'Cancelled' ? 'Historical sample cancellation.' : null,
+                    'Rejection_Reason' => $status === 'Rejected' ? 'Historical sample rejection.' : null,
+                    'Purpose_Categories' => ['Academic activity'],
+                    'Capacity' => min(20 + $index, (int) $facility->Capacity),
+                ],
+            );
+
+            if ($status === 'Ended') {
+                Schedule::withTrashed()->updateOrCreate(
+                    ['Request_ID' => $historicalRequest->RID],
+                    [
+                        'Date' => $eventDate->toDateString(),
+                        'Start_Time' => '09:00:00',
+                        'End_Time' => '11:00:00',
+                        'Status' => 'Booked',
+                    ],
+                );
+            }
+
+            if (! $historicalRequest->trashed()) {
+                $historicalRequest->delete();
+            }
+        }
     }
 }

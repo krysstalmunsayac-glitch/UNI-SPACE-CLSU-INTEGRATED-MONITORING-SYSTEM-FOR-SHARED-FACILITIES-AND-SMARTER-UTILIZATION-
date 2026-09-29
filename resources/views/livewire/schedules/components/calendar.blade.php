@@ -35,10 +35,17 @@
             >
                 Today
             </button>
+            <button
+                type="button"
+                class="admin-calendar-control"
+                x-on:click="calendar?.prev(); calendar?.updateSize()"
+            >
+                Previous period
+            </button>
         </div>
 
         <p class="mt-5 text-xs leading-5 text-emerald-900/60 dark:text-zinc-400">
-            Click an existing event to review or update it.
+            Use Previous period to view past bookings. Completed events remain visible for reference and are read-only.
         </p>
 
         <div class="mt-5 rounded-xl border border-emerald-100 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-zinc-950">

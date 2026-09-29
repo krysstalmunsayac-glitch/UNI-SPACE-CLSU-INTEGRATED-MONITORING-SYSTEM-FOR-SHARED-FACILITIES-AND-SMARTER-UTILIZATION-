@@ -117,7 +117,9 @@
                                 <x-ui::table.cell>
                                     <div class="flex items-center justify-end gap-2">
                                         <x-ui::dropdown position="bottom" align="end">
-                                            <x-ui::button variant="ghost" size="sm" icon="ellipsis-horizontal" aria-label="Actions for request REQ-{{ str_pad((string) $request->RID, 5, '0', STR_PAD_LEFT) }}" />
+                                            <x-ui::button variant="ghost" size="sm" icon="ellipsis-horizontal" aria-label="Actions for old request REQ-{{ str_pad((string) $request->RID, 5, '0', STR_PAD_LEFT) }}">
+                                                Actions
+                                            </x-ui::button>
                                             <x-ui::menu>
                                                 <x-ui::menu.item icon="eye" wire:click="showArchivedRequest({{ $request->RID }})">View details</x-ui::menu.item>
                                                 <x-ui::menu.item icon="arrow-path" wire:click="restore({{ $request->RID }})">Restore</x-ui::menu.item>
@@ -143,4 +145,3 @@
             </div>
             @endunless
     </div>
-
