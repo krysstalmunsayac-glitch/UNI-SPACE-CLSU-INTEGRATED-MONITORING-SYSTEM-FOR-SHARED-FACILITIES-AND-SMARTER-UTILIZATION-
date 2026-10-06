@@ -46,16 +46,6 @@
                 </div>
             @endif
 
-            @if ($hasPaidRate)
-                <div role="alert" class="flex gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-amber-950 shadow-sm dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
-                    <svg class="mt-0.5 size-6 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M12 9v4m0 4h.01M10.3 3.4 2.7 17a2 2 0 0 0 1.74 3h15.12a2 2 0 0 0 1.74-3L13.7 3.4a2 2 0 0 0-3.4 0Z" /></svg>
-                    <div>
-                        <p class="font-black">Disclaimer</p>
-                        <p class="mt-1 text-sm leading-6">Payment for this facility is non-refundable. Please review the selected facility, schedule, and rate carefully before submitting your reservation request.</p>
-                    </div>
-                </div>
-            @endif
-
             <div
                 class="grid items-start gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(28rem,1.1fr)]"
                 x-data="bookingRequestForm({
@@ -298,7 +288,7 @@
                         </div>
                     @endif
 
-                    @if ($facility->rates || $facility->protocols_and_guidelines)
+                    @if ($facility->rates || $facility->protocols_and_guidelines || $hasPaidRate)
                         <div class="mt-5 grid gap-4 border-t border-emerald-900/10 pt-5 dark:border-white/10 sm:grid-cols-2">
                             @if ($facility->rates)
                                 <div class="rounded-2xl bg-emerald-50 p-4 dark:bg-emerald-950/30">
@@ -307,10 +297,18 @@
                                 </div>
                             @endif
 
-                            @if ($facility->protocols_and_guidelines)
+                            @if ($facility->protocols_and_guidelines || $hasPaidRate)
                                 <div class="rounded-2xl bg-yellow-50 p-4 dark:bg-yellow-400/10">
                                     <p class="text-xs font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Protocols and Guidelines</p>
-                                    <p class="mt-2 whitespace-pre-line text-sm leading-6 text-emerald-900/75 dark:text-zinc-300">{{ $facility->protocols_and_guidelines }}</p>
+                                    @if ($facility->protocols_and_guidelines)
+                                        <p class="mt-2 whitespace-pre-line text-sm leading-6 text-emerald-900/75 dark:text-zinc-300">{{ $facility->protocols_and_guidelines }}</p>
+                                    @endif
+                                    @if ($hasPaidRate)
+                                        <div class="mt-3 flex gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-bold leading-6 text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
+                                            <svg class="mt-0.5 size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M12 9v4m0 4h.01M10.3 3.4 2.7 17a2 2 0 0 0 1.74 3h15.12a2 2 0 0 0 1.74-3L13.7 3.4a2 2 0 0 0-3.4 0Z" /></svg>
+                                            <p><span class="block text-xs uppercase tracking-wide">Disclaimer</span>Payment for this facility is non-refundable.</p>
+                                        </div>
+                                    @endif
                                 </div>
                             @endif
                         </div>

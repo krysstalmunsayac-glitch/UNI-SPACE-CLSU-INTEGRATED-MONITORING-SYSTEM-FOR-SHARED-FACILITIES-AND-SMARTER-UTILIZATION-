@@ -201,7 +201,7 @@
             @if ($hasPaidRate)
                 <div class="mt-3 flex gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold leading-5 text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
                     <svg class="mt-0.5 size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M12 9v4m0 4h.01M10.3 3.4 2.7 17a2 2 0 0 0 1.74 3h15.12a2 2 0 0 0 1.74-3L13.7 3.4a2 2 0 0 0-3.4 0Z" /></svg>
-                    <span><strong>Disclaimer:</strong> Payment for this facility is non-refundable.</span>
+                    <span><strong>Disclaimer:</strong> Payment is non-refundable.</span>
                 </div>
             @endif
         </div>

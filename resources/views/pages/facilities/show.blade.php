@@ -260,6 +260,10 @@
                         <div>
                             <h2 class="text-sm font-black uppercase tracking-wide text-emerald-700">Rates</h2>
                             <p class="mt-2 whitespace-pre-line leading-7 text-zinc-600">{{ $rate }}</p>
+                        </div>
+                        <div>
+                            <h2 class="text-sm font-black uppercase tracking-wide text-emerald-700">Protocols and guidelines</h2>
+                            <p class="mt-2 whitespace-pre-line leading-7 text-zinc-600">{{ $facility->protocols_and_guidelines ?: ($facility->Protocols ?: 'No protocols listed.') }}</p>
                             @if ($hasPaidRate)
                                 <div class="mt-3 flex gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold leading-6 text-amber-900">
                                     <svg class="mt-0.5 size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M12 9v4m0 4h.01M10.3 3.4 2.7 17a2 2 0 0 0 1.74 3h15.12a2 2 0 0 0 1.74-3L13.7 3.4a2 2 0 0 0-3.4 0Z" /></svg>
@@ -267,7 +271,6 @@
                                 </div>
                             @endif
                         </div>
-                        <div><h2 class="text-sm font-black uppercase tracking-wide text-emerald-700">Protocols and guidelines</h2><p class="mt-2 whitespace-pre-line leading-7 text-zinc-600">{{ $facility->protocols_and_guidelines ?: ($facility->Protocols ?: 'No protocols listed.') }}</p></div>
                     </div>
 
                     @if ($isAvailable)
