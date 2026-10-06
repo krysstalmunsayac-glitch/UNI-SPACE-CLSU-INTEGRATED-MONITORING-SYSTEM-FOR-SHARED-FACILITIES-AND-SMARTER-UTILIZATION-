@@ -13,6 +13,7 @@
     $facilityPhotos = $facility->images
         ->map(fn ($image) => asset('storage/'.ltrim($image->image_path, '/')))
         ->values();
+    $galleryEventId = 'facility-gallery-'.$facility->getKey();
 
     if ($facilityPhotos->isEmpty() && filled($facility->Image_URL)) {
         $facilityPhotos->push($facility->primaryImageUrl());
@@ -53,6 +54,8 @@
         x-on:keydown.escape.window="if (expanded) closePhoto()"
         x-on:keydown.left.window="if (expanded) previousPhoto()"
         x-on:keydown.right.window="if (expanded) nextPhoto()"
+        x-on:{{ $galleryEventId }}-previous.window="previousPhoto()"
+        x-on:{{ $galleryEventId }}-next.window="nextPhoto()"
     >
         @if (! $isAvailable)
             <div class="absolute inset-0 z-10 bg-zinc-950/35" aria-hidden="true"></div>
@@ -127,10 +130,10 @@
                     </button>
 
                     @if ($facilityPhotos->count() > 1)
-                        <button type="button" class="fixed left-4 top-1/2 z-10 inline-flex size-12 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white/70 bg-black/25 text-white transition hover:border-amber-300 hover:bg-black/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 sm:left-6" x-on:click="previousPhoto()" aria-label="Show previous photo">
+                        <button type="button" class="fixed left-4 top-1/2 z-10 inline-flex size-12 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white/70 bg-black/25 text-white transition hover:border-amber-300 hover:bg-black/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 sm:left-6" x-on:click.stop="$dispatch('{{ $galleryEventId }}-previous')" aria-label="Show previous photo">
                             <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
                         </button>
-                        <button type="button" class="fixed right-4 top-1/2 z-10 inline-flex size-12 -translate-y-1/2 items-center justify-center rounded-full bg-black/35 text-white transition hover:bg-black/55 focus:outline-none focus-visible:ring-2 focus-visible:ring-white sm:right-6" x-on:click="nextPhoto()" aria-label="Show next photo">
+                        <button type="button" class="fixed right-4 top-1/2 z-10 inline-flex size-12 -translate-y-1/2 items-center justify-center rounded-full bg-black/35 text-white transition hover:bg-black/55 focus:outline-none focus-visible:ring-2 focus-visible:ring-white sm:right-6" x-on:click.stop="$dispatch('{{ $galleryEventId }}-next')" aria-label="Show next photo">
                             <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
                         </button>
                     @endif

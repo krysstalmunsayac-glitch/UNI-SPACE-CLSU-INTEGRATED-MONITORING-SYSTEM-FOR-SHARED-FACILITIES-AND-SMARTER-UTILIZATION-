@@ -93,7 +93,6 @@
                                         maxlength="2000"
                                         placeholder="Describe the event, activity, setup, or other important details"
                                     >{{ old('Request_Details') }}</x-ui::textarea>
-                                    @error('Request_Details') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                                     </div>
                                 </div>
 
