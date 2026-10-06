@@ -9,6 +9,7 @@
         : ($facility->Price !== null
             ? ((float) $facility->Price > 0 ? '₱'.number_format((float) $facility->Price, 2) : 'No rental fee')
             : 'Rate upon inquiry');
+    $hasPaidRate = filled($facility->rates) || (float) ($facility->Price ?? 0) > 0;
     $facilityPhotos = $facility->images
         ->map(fn ($image) => asset('storage/'.ltrim($image->image_path, '/')))
         ->values();
@@ -194,6 +195,12 @@
         <div class="mt-4 border-t border-emerald-900/10 pt-4 dark:border-white/10">
             <p class="text-[11px] font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Rate</p>
             <p class="mt-1 line-clamp-2 text-sm font-semibold leading-5 text-emerald-950 dark:text-white">{{ $rateSummary }}</p>
+            @if ($hasPaidRate)
+                <div class="mt-3 flex gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold leading-5 text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
+                    <svg class="mt-0.5 size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M12 9v4m0 4h.01M10.3 3.4 2.7 17a2 2 0 0 0 1.74 3h15.12a2 2 0 0 0 1.74-3L13.7 3.4a2 2 0 0 0-3.4 0Z" /></svg>
+                    <span><strong>Disclaimer:</strong> Payment for this facility is non-refundable.</span>
+                </div>
+            @endif
         </div>
 
         <div class="mt-auto grid gap-3 pt-5 sm:grid-cols-2">
@@ -201,7 +208,13 @@
                 Review Details
             </a>
             @if ($isAvailable)
-                <a href="{{ route('requests.create', ['facilitySlug' => $facility->slug]) }}" class="inline-flex items-center justify-center rounded-xl bg-emerald-700 px-4 py-3 text-sm font-bold text-white transition hover:bg-emerald-800">
+                <a href="{{ route('requests.create', ['facilitySlug' => $facility->slug]) }}" class="inline-flex items-center justify-center rounded-xl bg-emerald-700 px-4 py-3 text-sm font-bold text-white transition hover:bg-emerald-800"
+                    @if ($hasPaidRate)
+                        data-ui-confirm="Payment for this facility is non-refundable. Do you want to continue with your reservation request?"
+                        data-ui-confirm-title="⚠ Disclaimer"
+                        data-ui-confirm-label="Continue"
+                    @endif
+                >
                     Book
                 </a>
             @else

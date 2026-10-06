@@ -13,6 +13,7 @@
             : ($facility->Price !== null
                 ? ((float) $facility->Price > 0 ? '₱'.number_format((float) $facility->Price, 2) : 'No rental fee')
                 : 'Rate upon inquiry');
+        $hasPaidRate = filled($facility->rates) || (float) ($facility->Price ?? 0) > 0;
         $isAvailable = $facility->Status === 'Available';
         $assignedOfficeAdmin = $facility->assignedAdmins->first();
         $fixedAmenities = $facility->amenities->filter->isPermanent();
@@ -256,12 +257,27 @@
                     </div>
 
                     <div class="mt-7 grid gap-4 border-t border-zinc-200 pt-6">
-                        <div><h2 class="text-sm font-black uppercase tracking-wide text-emerald-700">Rates</h2><p class="mt-2 whitespace-pre-line leading-7 text-zinc-600">{{ $rate }}</p></div>
+                        <div>
+                            <h2 class="text-sm font-black uppercase tracking-wide text-emerald-700">Rates</h2>
+                            <p class="mt-2 whitespace-pre-line leading-7 text-zinc-600">{{ $rate }}</p>
+                            @if ($hasPaidRate)
+                                <div class="mt-3 flex gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold leading-6 text-amber-900">
+                                    <svg class="mt-0.5 size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M12 9v4m0 4h.01M10.3 3.4 2.7 17a2 2 0 0 0 1.74 3h15.12a2 2 0 0 0 1.74-3L13.7 3.4a2 2 0 0 0-3.4 0Z" /></svg>
+                                    <p><span class="block uppercase tracking-wide">Disclaimer</span>Payment for this facility is non-refundable.</p>
+                                </div>
+                            @endif
+                        </div>
                         <div><h2 class="text-sm font-black uppercase tracking-wide text-emerald-700">Protocols and guidelines</h2><p class="mt-2 whitespace-pre-line leading-7 text-zinc-600">{{ $facility->protocols_and_guidelines ?: ($facility->Protocols ?: 'No protocols listed.') }}</p></div>
                     </div>
 
                     @if ($isAvailable)
-                        <a href="{{ route('requests.create', ['facilitySlug' => $facility->slug]) }}" class="mt-8 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-emerald-700 px-6 py-3 font-black text-white transition hover:bg-emerald-800">
+                        <a href="{{ route('requests.create', ['facilitySlug' => $facility->slug]) }}" class="mt-8 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-emerald-700 px-6 py-3 font-black text-white transition hover:bg-emerald-800"
+                            @if ($hasPaidRate)
+                                data-ui-confirm="Payment for this facility is non-refundable. Do you want to continue with your reservation request?"
+                                data-ui-confirm-title="⚠ Disclaimer"
+                                data-ui-confirm-label="Continue"
+                            @endif
+                        >
                             Book This Facility
                         </a>
                     @else

@@ -1,5 +1,8 @@
 <x-dynamic-component :component="$guestBooking ? 'layouts.app' : 'layouts.home.header'">
-    @php($assignedOfficeAdmin = $facility->assignedAdmins->first())
+    @php
+        $assignedOfficeAdmin = $facility->assignedAdmins->first();
+        $hasPaidRate = filled($facility->rates) || (float) ($facility->Price ?? 0) > 0;
+    @endphp
     <x-ui::main class="bg-emerald-50/70 px-4 py-8 dark:bg-zinc-950 sm:px-6 lg:px-8">
         <div class="mx-auto max-w-7xl space-y-6">
             <div class="overflow-hidden rounded-3xl border border-emerald-900/10 bg-white shadow-xl shadow-emerald-950/5 dark:border-white/10 dark:bg-zinc-950">
@@ -40,6 +43,16 @@
             @if (session('success'))
                 <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-900 dark:border-emerald-500/30 dark:bg-emerald-950/20 dark:text-emerald-200">
                     {{ session('success') }}
+                </div>
+            @endif
+
+            @if ($hasPaidRate)
+                <div role="alert" class="flex gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-amber-950 shadow-sm dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
+                    <svg class="mt-0.5 size-6 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M12 9v4m0 4h.01M10.3 3.4 2.7 17a2 2 0 0 0 1.74 3h15.12a2 2 0 0 0 1.74-3L13.7 3.4a2 2 0 0 0-3.4 0Z" /></svg>
+                    <div>
+                        <p class="font-black">Disclaimer</p>
+                        <p class="mt-1 text-sm leading-6">Payment for this facility is non-refundable. Please review the selected facility, schedule, and rate carefully before submitting your reservation request.</p>
+                    </div>
                 </div>
             @endif
 
@@ -478,8 +491,8 @@
                                         x-show="step === 3"
                                         type="submit"
                                         class="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 px-5 text-sm font-semibold text-white transition hover:bg-emerald-800 disabled:pointer-events-none disabled:opacity-60 sm:w-auto"
-                                        data-ui-confirm="Are you sure you want to submit this reservation request? Please review the selected facility, date, time, and amenities before continuing."
-                                        data-ui-confirm-title="Confirm request submission"
+                                        data-ui-confirm="{{ $hasPaidRate ? 'Payment for this facility is non-refundable. Please review the selected facility, rate, and schedule before continuing.' : 'Are you sure you want to submit this reservation request? Please review the selected facility, date, time, and amenities before continuing.' }}"
+                                        data-ui-confirm-title="{{ $hasPaidRate ? '⚠ Disclaimer' : 'Confirm request submission' }}"
                                         data-ui-confirm-label="Submit request"
                                         x-bind:disabled="submitting || availabilityLoading || availabilityError || hasBlockingConflict()"
                                         x-bind:aria-busy="submitting"
